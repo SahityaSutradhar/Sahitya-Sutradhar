@@ -199,7 +199,7 @@ const targets = [
 ];
 for (const [name,count,pattern] of targets) {
 const parts = pattern.split('-');
-if (padas.every(p => p.items.length === count && parts.every((part, k) => p.items.slice(k3,k3+3).map(x => x.traditional==='गुरु'?'G':'L').join('') === part))) {
+if (padas.every(p => p.items.length === count && parts.every((part, k) => p.items.slice(k*3,k*3+3).map(x => x.traditional==='गुरु'?'G':'L').join('') === part))) {
 results.push({name, detail:'चारों पादों का लघु-गुरु-गण विन्यास दिए गए सामान्य पैटर्न से मेल खाता है।', confidence:'संभावित'});
 }
 }
