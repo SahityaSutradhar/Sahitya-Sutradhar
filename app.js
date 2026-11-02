@@ -425,7 +425,7 @@ init();
     mode = nextMode;
     showMessage("");
     document.getElementById("authHeading").textContent =
-      mode === "login" ? "साहित्य-ग्राम में प्रवेश" : "नया खाता बनाएँ";
+      mode === "login" ? "साहित्य सूत्रधार में प्रवेश" : "नया खाता बनाएँ";
     submit.textContent =
       mode === "login" ? "लॉगिन करें" : "रजिस्टर करें";
     register.textContent =
