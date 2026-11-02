@@ -387,7 +387,7 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
 }
 function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState();applyTheme();}
 init();
-/* साहित्य-ग्राम: Supabase लॉगिन */
+/* साहित्य सूत्रधार: Supabase लॉगिन */
 
 (function setupSahityaGramAuth() {
   const dialog = document.getElementById("authDialog");
