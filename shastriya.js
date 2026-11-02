@@ -263,7 +263,20 @@ $('sgClearChhanda').addEventListener('click', () => { $('sgChhandaText').value='
 // Comparative commentary worksheet
 $('sgCompare').addEventListener('click', () => {
 const base = $('sgBase').value.trim(), a = $('sgComment1').value.trim(), b = $('sgComment2').value.trim();
-$('sgCompareOut').textContent = मूल पाठ\n${base || '—'}\n\nभाष्य १\n${a || 'अभी दर्ज नहीं'}\n\nभाष्य २\n${b || 'अभी दर्ज नहीं'}\n\nतुलनात्मक अध्ययन के प्रश्न:\n• दोनों टीकाओं में समान अर्थ कौन-सा है?\n• व्याख्या या व्याकरण में कहाँ भिन्नता है?\n• प्रत्येक मत का मूल स्रोत/ग्रन्थ-सन्दर्भ क्या है?;
+
+$('sgCompareOut').textContent = `मूल पाठ
+${base || '—'}
+
+भाष्य १
+${a || 'अभी दर्ज नहीं'}
+
+भाष्य २
+${b || 'अभी दर्ज नहीं'}
+
+तुलनात्मक अध्ययन के प्रश्न:
+• दोनों टीकाओं में समान अर्थ कौन-सा है?
+• व्याख्या या व्याकरण में कहाँ भिन्नता है?
+• प्रत्येक मत का मूल स्रोत/ग्रन्थ-सन्दर्भ क्या है?`;
 });
 
 // Pothi preview / print
