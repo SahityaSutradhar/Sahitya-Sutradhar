@@ -21,12 +21,47 @@
       <nav class="sgs-tabs" aria-label="शास्त्रीय साहित्य विभाग">
         <button class="active" data-tab="reader">श्लोक-व्याख्या</button><button data-tab="chhanda">छन्दशाला</button><button data-tab="archive">ग्रन्थालय</button><button data-tab="bhasya">तुलनात्मक भाष्य</button><button data-tab="pothi">पोथी निर्माता</button>
       </nav>
-      <div class="sgs-panel" data-panel="reader"><h2>श्लोक एवं पद्य व्याख्या</h2><label>श्लोक / पद्य<textarea id="sgVerse" rows="4" placeholder="यहाँ संस्कृत श्लोक या अपनी रचना लिखें…">विद्या ददाति विनयं विनयाद् याति पात्रताम्।
-पात्रत्वाद् धनमाप्नोति धनाद् धर्मं ततः सुखम्॥</textarea></label><div class="sgs-actions"><button id="sgExplain">पाठ व्यवस्थित करें</button><button class="secondary" id="sgCopyVerse">पाठ कॉपी करें</button></div><div id="sgVerseOutput" class="sgs-result" aria-live="polite">श्लोक लिखकर “पाठ व्यवस्थित करें” दबाएँ। यहाँ पंक्ति-विभाजन और अध्ययन नोट्स तैयार होंगे।</div><p class="sgs-hint">ध्यान दें: यह उपकरण पाठ को व्यवस्थित करता है; प्रमाणित शब्दार्थ या शास्त्रीय टीका स्वयं सत्यापित स्रोत से जोड़ें।</p></div>
-      <div class="sgs-panel" data-panel="chhanda" hidden><h2>छन्दशाला</h2><label>पद्य की पंक्तियाँ<textarea id="sgChhandaText" rows="4" placeholder="एक पंक्ति में एक चरण लिखें…"></textarea></label><div class="sgs-actions"><button id="sgScan">अक्षर एवं मात्रा संकेत देखें</button></div><div id="sgChhandaOutput" class="sgs-result" aria-live="polite">यह प्रारम्भिक सहायक विश्लेषण है। संस्कृत/हिन्दी उच्चारण, संयुक्ताक्षर और गुरु-लघु के नियमों के कारण परिणाम का विद्वत् परीक्षण आवश्यक है।</div></div>
+
+      <div class="sgs-panel" data-panel="reader">
+        <h2>श्लोक एवं पद्य व्याख्या</h2>
+        <label>श्लोक / पद्य<textarea id="sgVerse" rows="4" placeholder="यहाँ संस्कृत श्लोक या अपनी रचना लिखें…">विद्या ददाति विनयं विनयाद् याति पात्रताम्।
+पात्रत्वाद् धनमाप्नोति धनाद् धर्मं ततः सुखम्॥</textarea></label>
+        <div class="sgs-actions"><button id="sgExplain">पाठ व्यवस्थित करें</button><button class="secondary" id="sgCopyVerse">पाठ कॉपी करें</button></div>
+        <div id="sgVerseOutput" class="sgs-result" aria-live="polite">श्लोक लिखकर “पाठ व्यवस्थित करें” दबाएँ। यहाँ पंक्ति-विभाजन और अध्ययन नोट्स तैयार होंगे।</div>
+        <p class="sgs-hint">यह उपकरण पाठ को व्यवस्थित करता है; प्रमाणित शब्दार्थ या शास्त्रीय टीका के लिए स्रोत और संस्करण अवश्य जाँचें।</p>
+      </div>
+
+      <div class="sgs-panel" data-panel="chhanda" hidden>
+        <h2>छन्दशाला</h2>
+        <p class="sgs-hint">एक पंक्ति में एक चरण लिखें। संस्कृत/वर्णिक श्लोक के लिए चार चरण अलग-अलग पंक्तियों में लिखना उपयोगी रहेगा।</p>
+        <label>पद्य की पंक्तियाँ<textarea id="sgChhandaText" rows="5" placeholder="एक पंक्ति में एक चरण लिखें…"></textarea></label>
+        <div class="sgs-mode">
+          <span class="sgs-mode-title">विश्लेषण-पद्धति</span>
+          <label class="sgs-radio"><input type="radio" name="sgChhandaMode" value="spoken" checked> सामान्य उच्चारण / पाठ-विभाजन</label>
+          <label class="sgs-radio"><input type="radio" name="sgChhandaMode" value="classical"> पारंपरिक छन्दशास्त्र (लघु-गुरु)</label>
+        </div>
+        <div class="sgs-actions"><button id="sgScan">विश्लेषण करें</button><button class="secondary" id="sgClearChhanda">साफ़ करें</button></div>
+        <div id="sgChhandaOutput" class="sgs-result" aria-live="polite">यहाँ अक्षर-विभाजन, मात्रा-संकेत और चुनी हुई पद्धति के अनुसार परिणाम दिखाई देंगे।</div>
+        <p class="sgs-hint">ध्यान दें: देवनागरी का लिखित रूप हर बार वास्तविक बोलचाल का उच्चारण नहीं बताता। सामान्य उच्चारण मोड पाठ-आधारित अनुमान देता है; पारंपरिक मोड संस्कृत छन्दशास्त्र के नियम लागू करता है। हिन्दी छन्दों के लिए मात्रा-गणना और चरण-विन्यास अलग से जाँचे जाते हैं।</p>
+      </div>
+
       <div class="sgs-panel" data-panel="archive" hidden><h2>डिजिटल ग्रन्थालय</h2><input id="sgSearch" type="search" placeholder="ग्रन्थ, लेखक या विषय खोजें…"><div id="sgArchiveList" class="sgs-cards"></div><p class="sgs-hint">अभी नमूना सूची है। आगे इसे Supabase की सार्वजनिक ग्रन्थ-सारणी से जोड़ा जा सकता है।</p></div>
-      <div class="sgs-panel" data-panel="bhasya" hidden><h2>तुलनात्मक भाष्य कार्य-पटल</h2><label>मूल पाठ<textarea id="sgBase" rows="2" placeholder="मूल श्लोक या पाठ"></textarea></label><div class="sgs-two"><label>भाष्य / टीका १<textarea id="sgComment1" rows="5" placeholder="प्रथम टीका"></textarea></label><label>भाष्य / टीका २<textarea id="sgComment2" rows="5" placeholder="द्वितीय टीका"></textarea></label></div><button id="sgCompare">तुलना-पत्र तैयार करें</button><div id="sgCompareOut" class="sgs-result"></div></div>
-      <div class="sgs-panel" data-panel="pothi" hidden><h2>पोथी निर्माता</h2><label>शीर्षक<input id="sgPothiTitle" placeholder="ग्रन्थ / रचना का शीर्षक"></label><label>लेखक<input id="sgPothiAuthor" placeholder="लेखक का नाम"></label><label>पाठ<textarea id="sgPothiBody" rows="9" placeholder="अपना पाठ यहाँ लिखें…"></textarea></label><div class="sgs-actions"><button id="sgPreview">पूर्वावलोकन</button><button class="secondary" id="sgPrint">प्रिंट / PDF</button></div><article id="sgPothiPreview" class="sgs-pothi"></article></div>
+
+      <div class="sgs-panel" data-panel="bhasya" hidden>
+        <h2>तुलनात्मक भाष्य कार्य-पटल</h2>
+        <label>मूल पाठ<textarea id="sgBase" rows="2" placeholder="मूल श्लोक या पाठ"></textarea></label>
+        <div class="sgs-two"><label>भाष्य / टीका १<textarea id="sgComment1" rows="5" placeholder="प्रथम टीका"></textarea></label><label>भाष्य / टीका २<textarea id="sgComment2" rows="5" placeholder="द्वितीय टीका"></textarea></label></div>
+        <button id="sgCompare">तुलना-पत्र तैयार करें</button><div id="sgCompareOut" class="sgs-result"></div>
+      </div>
+
+      <div class="sgs-panel" data-panel="pothi" hidden>
+        <h2>पोथी निर्माता</h2>
+        <label>शीर्षक<input id="sgPothiTitle" placeholder="ग्रन्थ / रचना का शीर्षक"></label>
+        <label>लेखक<input id="sgPothiAuthor" placeholder="लेखक का नाम"></label>
+        <label>पाठ<textarea id="sgPothiBody" rows="9" placeholder="अपना पाठ यहाँ लिखें…"></textarea></label>
+        <div class="sgs-actions"><button id="sgPreview">पूर्वावलोकन</button><button class="secondary" id="sgPrint">प्रिंट / PDF</button></div>
+        <article id="sgPothiPreview" class="sgs-pothi"></article>
+      </div>
       <footer class="sgs-foot">साहित्य-ग्राम · शास्त्रीय अध्ययन अनुभाग <span>ज्ञान · परम्परा · सृजन</span></footer>
     </section>
   </main>
