@@ -221,9 +221,9 @@ function renderChhanda() {
 const text = $('sgChhandaText').value.trim();
 if (!text) { $('sgChhandaOutput').textContent = 'पहले पद्य लिखें।'; return; }
 const mode = root.querySelector('input[name="sgChhandaMode"]:checked')?.value || 'spoken';
-const lines = text
-  .replace(/([।॥])/g, '$1\n')
+   const lines = text
   .split(/\n+/)
+  .flatMap(line => line.split(/(?<=[।॥])/u))
   .map(s => s.trim())
   .filter(Boolean);
 const padas = lines.map((line, i) => analyzePada(line, mode, i + 1));
