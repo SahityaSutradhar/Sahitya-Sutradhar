@@ -138,7 +138,9 @@ function renderWriters(){
   document.getElementById("newWritersList").innerHTML=render([...writers].sort((a,b)=>b.firstPublished-a.firstPublished).slice(0,8));
   const sort=document.getElementById("writerSort")?.value||"reads";
   document.getElementById("activeWritersList").innerHTML=render([...writers].sort((a,b)=>sort==="works"?b.works-a.works:sort==="followers"?Number(b.followers||0)-Number(a.followers||0):b.reads-a.reads).slice(0,12));
-  document.querySelectorAll("[data-writer]").forEach(b=>b.addEventListener("click",()=>openWriterProfile(b.dataset.writer)));
+  document.querySelectorAll("#newWritersList [data-writer], #activeWritersList [data-writer]").forEach(b=>{
+  b.onclick = () => openWriterProfile(b.dataset.writer);
+});
 }
 async function openWriterProfile(authorId){
   const story=state.stories.find(s=>s.authorId===authorId);if(story)currentReaderId=story.id;await openAuthorProfile(authorId);
@@ -164,7 +166,9 @@ async function loadHomepageStats(){
     const render=list=>list.map(w=>`<button class="writer-card" type="button" data-writer="${escapeHtml(w.id)}"><span class="mini-avatar">${w.avatar?`<img src="${escapeHtml(w.avatar)}" alt="">`:escapeHtml((w.name||"अ").slice(0,1))}</span><span class="writer-card-main"><strong>${escapeHtml(w.name)}</strong><small>${w.works} रचनाएँ · ${w.reads} पाठक · ${w.followers} फ़ॉलोअर</small></span></button>`).join("")||'<p class="muted">अभी लेखक सूची उपलब्ध नहीं है।</p>';
     document.getElementById("newWritersList").innerHTML=render([...writers].sort((a,b)=>b.firstPublished-a.firstPublished).slice(0,8));
     document.getElementById("activeWritersList").innerHTML=render([...writers].sort((a,b)=>sort==="works"?b.works-a.works:sort==="followers"?b.followers-a.followers:b.reads-a.reads).slice(0,12));
-    document.querySelectorAll("[data-writer]").forEach(b=>b.addEventListener("click",()=>openWriterProfile(b.dataset.writer)));
+    document.querySelectorAll("#newWritersList [data-writer], #activeWritersList [data-writer]").forEach(b=>{
+  b.onclick = () => openWriterProfile(b.dataset.writer);
+});
   }
 }
 function renderPreferredCategories(){
