@@ -87,6 +87,103 @@ function openWrite(){
   restoreDraft();document.getElementById("writeDialog").showModal();
 }
 
+function getDatabaseWorkType(type, subtype) {
+  if (type === "पद्य") return "poem";
+  const mapping = {
+    "कहानी": "story",
+    "लघुकथा": "story",
+    "उपन्यास": "novel",
+    "लेख": "article",
+    "निबंध": "essay"
+  };
+  return mapping[subtype] || "other";
+}
+
+async function loadCloudWorks() {
+  if (!supabaseClient) return;
+
+  try {
+    const { data: works, error } = await supabaseClient
+      .from("works")
+      .select("id,author_id,title,content,work_type,main_form,subtype,created_at")
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const ids = (works || []).map(w => w.id);
+    const authorIds = [...new Set((works || []).map(w => w.author_id))];
+    let links = [], categories = [], profiles = [];
+
+    if (ids.length) {
+      const { data, error: linksError } = await supabaseClient
+        .from("work_categories")
+        .select("work_id,category_id")
+        .in("work_id", ids);
+      if (linksError) throw linksError;
+      links = data || [];
+    }
+
+    const categoryIds = [...new Set(links.map(x => x.category_id))];
+    if (categoryIds.length) {
+      const { data, error: categoriesError } = await supabaseClient
+        .from("categories")
+        .select("id,name")
+        .in("id", categoryIds);
+      if (categoriesError) throw categoriesError;
+      categories = data || [];
+    }
+
+    if (authorIds.length) {
+      const { data, error: profilesError } = await supabaseClient
+        .from("profiles")
+        .select("id,display_name,username")
+        .in("id", authorIds);
+      if (profilesError) throw profilesError;
+      profiles = data || [];
+    }
+
+    const cloudStories = (works || []).map(w => {
+      const profile = profiles.find(p => p.id === w.author_id);
+      const linkedCategoryIds = links
+        .filter(link => link.work_id === w.id)
+        .map(link => link.category_id);
+
+      return {
+        id: w.id,
+        title: w.title,
+        body: w.content,
+        type: w.main_form || (w.work_type === "poem" ? "पद्य" : "गद्य"),
+        subtype: w.subtype || "",
+        categories: categories
+          .filter(c => linkedCategoryIds.includes(c.id))
+          .map(c => c.name),
+        author: profile?.display_name || profile?.username || "अनाम लेखक",
+        authorId: w.author_id,
+        created: new Date(w.created_at).getTime(),
+        reads: 0,
+        minutes: minutesFor(w.content),
+        source: "supabase"
+      };
+    });
+
+    // पुराने LocalStorage रिकॉर्ड मिटाए बिना क्लाउड रिकॉर्ड ताज़ा करें।
+    const cloudIds = new Set(cloudStories.map(s => s.id));
+    const localStories = (state.stories || []).filter(
+      s => !cloudIds.has(s.id) && s.source !== "supabase"
+    );
+    state.stories = [...cloudStories, ...localStories];
+
+    saveState();
+    renderStories();
+    renderProfile();
+    renderLibrary();
+  } catch (error) {
+    console.error("Supabase रचनाएँ लोड नहीं हुईं:", error);
+    toast("Supabase से रचनाएँ लोड नहीं हुईं: " + error.message);
+  }
+}
+
 async function publishStory(e) {
   e.preventDefault();
 
@@ -102,37 +199,57 @@ async function publishStory(e) {
     toast("शीर्षक, सामग्री, विधा और कम-से-कम एक श्रेणी भरें।");
     return;
   }
-
   if (type !== "चंपू काव्य" && !subtype) {
     toast("कृपया रचना का उपप्रकार चुनें।");
     return;
   }
-
   if (!supabaseClient) {
     toast("Supabase कनेक्शन उपलब्ध नहीं है।");
     return;
   }
 
-  const { data: authData, error: authError } =
-    await supabaseClient.auth.getUser();
-
-  const user = authData?.user;
-
-  if (authError || !user) {
-    toast("रचना प्रकाशित करने के लिए पहले लॉगिन करें।");
-    return;
-  }
-
-  let work = null;
+  const submitButton = document.querySelector(
+    '#storyForm button[type="submit"]'
+  );
+  if (submitButton) submitButton.disabled = true;
 
   try {
-    const { data, error } = await supabaseClient
+    const { data: authData, error: authError } =
+      await supabaseClient.auth.getUser();
+    if (authError) throw authError;
+
+    const user = authData?.user;
+    if (!user) {
+      toast("रचना प्रकाशित करने के लिए पहले लॉगिन करें।");
+      return;
+    }
+
+    // श्रेणियों की ID पहले जाँचें ताकि गलत श्रेणी पर रचना insert न हो।
+    const { data: categoryRows, error: categoryError } =
+      await supabaseClient
+        .from("categories")
+        .select("id,name")
+        .in("name", categoryNames);
+    if (categoryError) throw categoryError;
+
+    const categoryMap = new Map(
+      (categoryRows || []).map(row => [row.name, row.id])
+    );
+    const missing = categoryNames.filter(name => !categoryMap.has(name));
+    if (missing.length) {
+      throw new Error(
+        "ये श्रेणियाँ Supabase की categories टेबल में नहीं मिलीं: " +
+        missing.join(", ")
+      );
+    }
+
+    const { data: work, error: workError } = await supabaseClient
       .from("works")
       .insert({
         author_id: user.id,
         title,
         content: body,
-        work_type: type,
+        work_type: getDatabaseWorkType(type, subtype),
         main_form: type,
         subtype: subtype || null,
         status: "published",
@@ -140,107 +257,37 @@ async function publishStory(e) {
       })
       .select()
       .single();
+    if (workError) throw workError;
 
-    if (error) throw error;
-    work = data;
-
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("display_name, username")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const { data: categoryRows, error: categoryError } =
-      await supabaseClient
-        .from("categories")
-        .select("*");
-
-    if (categoryError) throw categoryError;
-
-    const links = [];
-
-    for (const name of categoryNames) {
-      const row = (categoryRows || []).find(item =>
-        Object.values(item).some(value =>
-          typeof value === "string" &&
-          value.trim() === name
-        )
-      );
-
-      if (!row) {
-        throw new Error(
-          `श्रेणी "${name}" डेटाबेस में नहीं मिली।`
-        );
-      }
-
-      const categoryId = row.id ?? row.category_id;
-
-      if (categoryId == null) {
-        throw new Error(
-          `श्रेणी "${name}" की ID नहीं मिली।`
-        );
-      }
-
-      links.push({
-        work_id: work.id,
-        category_id: categoryId
-      });
-    }
-
+    const links = categoryNames.map(name => ({
+      work_id: work.id,
+      category_id: categoryMap.get(name)
+    }));
     const { error: linkError } = await supabaseClient
       .from("work_categories")
       .insert(links);
 
-    if (linkError) throw linkError;
-
-    const story = {
-      id: work.id,
-      title: work.title,
-      body: work.content,
-      type: work.work_type,
-      subtype: work.subtype || "",
-      categories: categoryNames,
-      author:
-        profile?.display_name ||
-        profile?.username ||
-        user.email ||
-        "अनाम लेखक",
-      created: new Date(work.created_at).getTime(),
-      reads: 0,
-      minutes: minutesFor(work.content)
-    };
-
-    state.stories = [
-      story,
-      ...state.stories.filter(s => s.id !== story.id)
-    ];
-
-    state.drafts = {
-      title: "",
-      body: "",
-      type: "",
-      subtype: "",
-      categories: []
-    };
-
-    saveState();
-    document.getElementById("writeDialog").close();
-    renderStories();
-    renderProfile();
-
-    toast("रचना क्लाउड पर प्रकाशित हो गई!");
-
-  } catch (error) {
-    console.error("रचना प्रकाशित करने में समस्या:", error);
-
-    if (work) {
+    if (linkError) {
+      console.error("श्रेणी लिंक सेव नहीं हुए:", linkError);
       toast(
-        "रचना सेव हो गई, लेकिन श्रेणी या अन्य जानकारी जोड़ने में समस्या आई: " +
-        error.message
+        "रचना Supabase में सेव हो गई, लेकिन श्रेणियाँ नहीं जुड़ीं: " +
+        linkError.message
       );
     } else {
-      toast("रचना प्रकाशित नहीं हुई: " + error.message);
+      toast("रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!");
     }
+
+    state.drafts = {
+      title: "", body: "", type: "", subtype: "", categories: []
+    };
+    saveState();
+    document.getElementById("writeDialog").close();
+    await loadCloudWorks();
+  } catch (error) {
+    console.error("रचना प्रकाशित करने में समस्या:", error);
+    toast("रचना प्रकाशित नहीं हुई: " + (error.message || String(error)));
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 function openReader(id){
@@ -387,6 +434,8 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
 }
 function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState();applyTheme();}
 init();
+loadCloudWorks();
+loadCloudProfile();
 /* साहित्य सूत्रधार: Supabase लॉगिन */
 
 (function setupSahityaGramAuth() {
@@ -532,6 +581,7 @@ google.addEventListener("click", async () => {
   showMessage("लॉगिन सफल हुआ!");
   await refreshAuth();
   await loadCloudProfile();
+  await loadCloudWorks();
   setTimeout(() => dialog.close(), 1000);
       }
     } catch (error) {
@@ -543,7 +593,13 @@ google.addEventListener("click", async () => {
 
   supabaseClient.auth.onAuthStateChange(() => {
     refreshAuth();
+    // Auth callback के भीतर सीधे Supabase query न चलाएँ।
+    setTimeout(() => {
+      loadCloudWorks();
+      loadCloudProfile();
+    }, 0);
   });
 
   refreshAuth();
 })();
+      
