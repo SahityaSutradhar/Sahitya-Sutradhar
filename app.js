@@ -1016,6 +1016,7 @@ document.getElementById("editProfile").addEventListener("click",async()=>{const 
         });
     });
   }
+}
 function openWorkFromHash(){
   const match=location.hash.match(/^#work-(.+)$/);if(!match)return;
   const id=decodeURIComponent(match[1]);if(state.stories.some(x=>String(x.id)===String(id)))openReader(id);
