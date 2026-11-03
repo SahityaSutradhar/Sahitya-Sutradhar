@@ -8,7 +8,7 @@ const SUBTYPES = {
   "पद्य":["कविता","गीत","मुक्तक","छंद","नई कविता"],
   "चंपू काव्य":[]
 };
-const CACHE = "sahitya-sutradhar-shell-v4";
+const STORAGE = "sahityaSutradhar.account.v2";
 const seed = [];
 let state = loadState();
 let activeCategory = "सभी";
