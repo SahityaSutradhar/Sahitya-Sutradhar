@@ -112,9 +112,34 @@ function renderStories(){
   bindReadButtons(); applyUILanguage();
 }
 function bindReadButtons(){
-  document.querySelectorAll("[data-read]").forEach(b=>b.addEventListener("click",()=>openReader(b.dataset.read)));
-  document.querySelectorAll("[data-edit-work]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();openEditWork(b.dataset.editWork);}));
-  document.querySelectorAll("[data-story-author]").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.storyAuthor)openAuthorProfile(b.dataset.storyAuthor);}));
+  const roots = [
+    "#storyList",
+    "#latestWorksList",
+    "#libraryList",
+    "#myStoryList",
+    "#myDraftList"
+  ];
+
+  roots.forEach(root => {
+    document.querySelectorAll(`${root} [data-read]`).forEach(b => {
+      b.onclick = () => openReader(b.dataset.read);
+    });
+
+    document.querySelectorAll(`${root} [data-edit-work]`).forEach(b => {
+      b.onclick = e => {
+        e.stopPropagation();
+        openEditWork(b.dataset.editWork);
+      };
+    });
+
+    document.querySelectorAll(`${root} [data-story-author]`).forEach(b => {
+      b.onclick = () => {
+        if (b.dataset.storyAuthor) {
+          openAuthorProfile(b.dataset.storyAuthor);
+        }
+      };
+    });
+  });
 }
 function formatMarkup(value=""){
   let safe=escapeHtml(value);
