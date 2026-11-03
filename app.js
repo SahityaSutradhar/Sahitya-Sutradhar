@@ -18,6 +18,7 @@ let editingWorkId = null;
 let currentUserId = null;
 let authSyncVersion = 0;
 let readingStartedAt = 0;
+let readerPageIndex = 0, readerPagesTotal = 1, readerSeenPages = new Set(), readerTrack = false, readerWordsTotal = 0;
 let toastTimer;
 
 
@@ -162,7 +163,8 @@ function renderWriters(){
   const render=(list)=>list.map(w=>`<button class="writer-card" type="button" data-writer="${escapeHtml(w.id)}"><span class="mini-avatar">${w.avatar?`<img src="${escapeHtml(w.avatar)}" alt="">`:escapeHtml(w.name.slice(0,1))}</span><span class="writer-card-main"><strong>${escapeHtml(w.name)}</strong><small>${w.works} प्रकाशित रचनाएँ</small></span><span class="tag">प्रोफ़ाइल ↗</span></button>`).join("")||'<p class="muted">अभी लेखक सूची उपलब्ध नहीं है।</p>';
   document.getElementById("newWritersList").innerHTML=render([...writers].sort((a,b)=>b.firstPublished-a.firstPublished).slice(0,8));
   const sort=document.getElementById("writerSort")?.value||"reads";
-  document.getElementById("activeWritersList").innerHTML=render([...writers].sort((a,b)=>sort==="works"?b.works-a.works:sort==="followers"?Number(b.followers||0)-Number(a.followers||0):b.reads-a.reads).slice(0,12));
+
+document.getElementById("activeWritersList").innerHTML=render([...writers].sort((a,b)=>sort==="works"?b.works-a.works:sort==="followers"?Number(b.followers||0)-Number(a.followers||0):b.reads-a.reads).slice(0,12));
   document.querySelectorAll("#newWritersList [data-writer], #activeWritersList [data-writer]").forEach(b=>{
   b.onclick = () => openWriterProfile(b.dataset.writer);
 });
@@ -332,6 +334,7 @@ async function loadCloudWorks() {
         .filter(link => link.work_id === w.id)
         .map(link => link.category_id);
 
+                                           
       return {
         id: w.id,
         title: w.title,
@@ -538,9 +541,9 @@ async function publishStory(e) {
       toast("रचना का पाठ सुरक्षित हुआ, लेकिन श्रेणियाँ पूरी तरह अपडेट नहीं हुईं: " + linkError.message);
     } else {
       toast(editingWorkId ? "पुरानी प्रकाशित रचना के बदलाव सुरक्षित हो गए।" : "रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!");
-    }
-    
-    editingWorkId = null;
+  }
+
+     editingWorkId = null;
     state.drafts = {
       title: "", body: "", type: "", subtype: "", categories: []
     };
@@ -557,12 +560,15 @@ async function publishStory(e) {
 
 async function shareExcerptAsImage(){
   const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;
-  const selection=window.getSelection()?.toString().trim();
-  if(!selection){toast("पहले रचना में से कोई अंश चुनें, फिर यह बटन दबाएँ।");return;}
+  const sel=window.getSelection(),selection=sel?.toString().trim();
+  const body=document.getElementById("readerBody");
+  if(!selection||!sel.anchorNode||!body?.contains(sel.anchorNode)||!sel.focusNode||!body.contains(sel.focusNode)){toast("केवल रचना के पृष्ठ के भीतर का अंश चुनें।");return;}
+  try{await document.fonts?.ready;}catch{}
   const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;
   const ctx=canvas.getContext("2d");const g=ctx.createLinearGradient(0,0,1080,1350);g.addColorStop(0,"#5b1d28");g.addColorStop(1,"#9a7047");ctx.fillStyle=g;ctx.fillRect(0,0,1080,1350);
   ctx.strokeStyle="#e8cf9d";ctx.lineWidth=4;ctx.strokeRect(42,42,996,1266);
-  ctx.fillStyle="#f6dfb5";ctx.textAlign="center";ctx.font="bold 38px Georgia, serif";ctx.fillText("साहित्य सूत्रधार",540,130);
+  ctx.fillStyle="#f6dfb5";ctx.textAlign="center";ctx.font="bold 38px sans-serif";ctx.fillText("साहित्य सूत्रधार",540,145);
+  try{const logo=new Image();logo.src="assets/sahitya-sutradhar-logo.png";await logo.decode();ctx.drawImage(logo,490,65,100,70);}catch{}
   ctx.fillStyle="#fff8e9";ctx.font="bold 48px sans-serif";wrapCanvasText(ctx,s.title,540,250,850,64,5);
   ctx.strokeStyle="#d9b56e";ctx.beginPath();ctx.moveTo(160,390);ctx.lineTo(920,390);ctx.stroke();
   ctx.textAlign="left";ctx.fillStyle="#fffaf0";ctx.font="36px sans-serif";wrapCanvasText(ctx,selection,140,480,800,58,11);
@@ -571,7 +577,7 @@ async function shareExcerptAsImage(){
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob){toast("चित्र तैयार नहीं हो सका।");return;}
   const file=new File([blob],"sahitya-sutradhar-excerpt.png",{type:"image/png"});
   if(navigator.canShare?.({files:[file]})&&navigator.share){try{await navigator.share({files:[file],title:s.title,text:"साहित्य सूत्रधार पर पढ़ें — "+s.author});return;}catch(e){if(e.name==="AbortError")return;}}
-  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sahitya-sutradhar-excerpt.png";a.click();URL.revokeObjectURL(url);toast("चुने हुए अंश का चित्र डाउनलोड हो गया।");
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sahitya-sutradhar-excerpt.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);toast("चुने हुए अंश का चित्र डाउनलोड हो गया।");
 }
 function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines){
   const words=String(text).split(/\s+/);let line="",lines=[];
@@ -580,11 +586,45 @@ function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines){
   lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));return lines.length;
 }
 
+const READER_PROGRESS_KEY="sutradhar.reader.progress.v1";
+function loadReaderProgress(){try{return JSON.parse(localStorage.getItem(READER_PROGRESS_KEY)||"{}");}catch{return {};}}
+function saveReaderProgress(id,entry){const all=loadReaderProgress();all[String(id)]=entry;localStorage.setItem(READER_PROGRESS_KEY,JSON.stringify(all));}
+function readerProgressFor(id){return loadReaderProgress()[String(id)]||{page:0,seen:[],words:0};}
+function readerPageMetrics(){
+ const el=document.getElementById("readerBody");if(!el)return;
+ readerPagesTotal=Math.max(1,Math.round(el.scrollWidth/Math.max(1,el.clientWidth)));
+ readerPageIndex=Math.min(readerPagesTotal-1,Math.max(0,Math.round(el.scrollLeft/Math.max(1,el.clientWidth))));
+ document.getElementById("readerPageStatus").textContent=`पृष्ठ ${readerPageIndex+1} / ${readerPagesTotal}`;
+ document.getElementById("readerPrevPage").disabled=readerPageIndex===0;
+ document.getElementById("readerNextPage").disabled=readerPageIndex>=readerPagesTotal-1;
+}
+function readerGoPage(index,direction){
+ const el=document.getElementById("readerBody");if(!el)return;
+ const next=Math.max(0,Math.min(readerPagesTotal-1,index));el.classList.remove("flip-next","flip-prev");void el.offsetWidth;el.classList.add(direction==="prev"?"flip-prev":"flip-next");
+ el.scrollTo({left:next*el.clientWidth,behavior:"smooth"});readerPageIndex=next;readerPageMetrics();recordReaderPage(next);
+}
+async function recordReaderPage(page){
+ const id=String(currentReaderId),seen=readerSeenPages;
+ if(seen.has(page))return;
+ seen.add(page);
+ const pageWords=Math.max(0,Math.ceil(readerWordsTotal/readerPagesTotal));
+ const progress=readerProgressFor(id);progress.page=page;progress.seen=[...seen];progress.words=(progress.words||0)+pageWords;progress.updatedAt=Date.now();saveReaderProgress(id,progress);
+ if(readerTrack&&supabaseClient){const {data:{user}}=await supabaseClient.auth.getUser();if(user&&user.id!==state.stories.find(x=>String(x.id)===id)?.authorId){
+  const {error}=await supabaseClient.from("work_reads").insert({work_id:id,reader_id:user.id,words_count:pageWords});
+  if(error)console.warn("पृष्ठ-पठन रिकॉर्ड सेव नहीं हुआ",error.message);
+ }}
+}
+function setupReaderPagination(id){
+ const body=document.getElementById("readerBody"),saved=readerProgressFor(id);
+ readerPageIndex=Number(saved.page)||0;readerSeenPages=new Set(saved.seen||[]);readerWordsTotal=wordCount(body.innerText||"");readerPagesTotal=1;
+ body.scrollLeft=0;requestAnimationFrame(()=>{readerPageMetrics();readerGoPage(Math.min(readerPageIndex,readerPagesTotal-1),"next");});
+}
 async function openReader(id){
   const s=state.stories.find(x=>x.id===id);if(!s)return;
   currentReaderId=id;readingStartedAt=Date.now();
   const {data:{user}} = supabaseClient ? await supabaseClient.auth.getUser() : {data:{user:null}};
   if(s.source==="supabase" && s.status==="published" && !user){
+    readerTrack=false;
     document.getElementById("readerTitle").textContent=s.title;
     document.getElementById("readerCategory").textContent=[s.type,s.subtype,...(s.categories||[])].filter(Boolean).join(" · ");
     document.getElementById("readerAuthor").textContent=s.author||"अनाम लेखक";
@@ -597,11 +637,7 @@ async function openReader(id){
     document.getElementById("readerDialog").showModal();
     return;
   }
-  if(s.source==="supabase" && s.status==="published" && user && user.id!==s.authorId){
-    const wc=wordCount(s.body||"");
-    const {error:readError}=await supabaseClient.from("work_reads").insert({work_id:s.id,reader_id:user.id,words_count:wc});
-    if(readError) console.warn("पठन इवेंट सेव नहीं हुआ",readError.message);
-  }
+  readerTrack=!!(s.source==="supabase"&&s.status==="published"&&user&&user.id!==s.authorId);
   document.getElementById("readerTitle").textContent=s.title;
  document.getElementById("readerCategory").textContent=[s.type,s.subtype,...(s.categories||[])].filter(Boolean).join(" · ");
   document.getElementById("readerAuthor").textContent=(s.author||"अनाम लेखक");
@@ -619,6 +655,7 @@ async function openReader(id){
   const panel=document.getElementById("feedbackPanel");
   if(panel) panel.classList.toggle("hidden",s.source!=="supabase" || s.status==="draft");
   document.getElementById("readerDialog").showModal();
+  setupReaderPagination(id);
   if(s.source==="supabase" && s.status!=="draft") await loadWorkFeedback(id);
   if(s.source==="supabase" && user) await refreshReaderStats(s);
   if(s.source==="supabase" && s.status==="published") await refreshWorkLikes(id);
@@ -653,7 +690,8 @@ async function loadWorkFeedback(workId){
       const who=profiles.find(p=>p.id===r.user_id);
       return `<article class="review-card"><button class="profile-link" type="button" data-person-profile="${escapeHtml(r.user_id)}"><span class="mini-avatar">${who?.avatar_url?`<img src="${escapeHtml(who.avatar_url)}" alt="">`:escapeHtml((who?.display_name||who?.username||"प").slice(0,1))}</span><strong>${escapeHtml(who?.display_name||who?.username||"पाठक")}</strong></button><p>${escapeHtml(r.review_text)}</p><small>${new Date(r.created_at).toLocaleDateString("hi-IN")}</small><div class="review-comments" id="reviewComments-${r.id}">कमेंट लोड हो रहे हैं…</div><form class="review-comment-form" data-review-comment="${r.id}"><input name="comment" maxlength="1500" placeholder="इस समीक्षा पर टिप्पणी करें…" required><button type="submit">भेजें</button></form></article>`;
     }).join("");
-    reviewsBox.querySelectorAll("[data-person-profile]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.personProfile)));
+
+      reviewsBox.querySelectorAll("[data-person-profile]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.personProfile)));
     for(const r of (reviews||[])) await loadReviewComments(r.id,workId);
   }catch(e){summary.textContent="फीडबैक लोड नहीं हुआ: "+e.message;}
 }
@@ -702,8 +740,9 @@ async function submitReviewComment(form){
 
 async function finishReading(){
   const s=state.stories.find(x=>x.id===currentReaderId);
+  readerPageMetrics();const p=readerProgressFor(currentReaderId);p.page=readerPageIndex;p.seen=[...readerSeenPages];p.updatedAt=Date.now();saveReaderProgress(currentReaderId,p);
   document.getElementById("readerDialog").close();
-  if(s)toast("पठन सत्र समाप्त हुआ। पढ़ने का रिकॉर्ड रचना खोलते समय सुरक्षित किया गया था।");
+  if(s)toast(`पठन सुरक्षित: ${readerSeenPages.size} पृष्ठ देखे गए।`);
 }
 
 function toggleBookmark(){
@@ -913,6 +952,13 @@ function init(){
   document.getElementById("formCategories").addEventListener("change",saveDraftFromForm);
   document.getElementById("closeWrite").addEventListener("click",()=>document.getElementById("writeDialog").close());
   document.getElementById("closeReader").addEventListener("click",()=>document.getElementById("readerDialog").close());
+  document.getElementById("readerPrevPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex-1,"prev"));
+  document.getElementById("readerNextPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex+1,"next"));
+  document.getElementById("readerBody")?.addEventListener("scroll",()=>{readerPageMetrics();recordReaderPage(readerPageIndex);},{passive:true});
+  document.getElementById("readerFontSize")?.addEventListener("input",e=>{document.getElementById("readerBody").style.fontSize=e.target.value+"px";requestAnimationFrame(readerPageMetrics);});
+  document.getElementById("readerBody")?.addEventListener("touchstart",e=>{window.__readerTouchX=e.changedTouches[0].clientX;},{passive:true});
+  document.getElementById("readerBody")?.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-(window.__readerTouchX||e.changedTouches[0].clientX);if(Math.abs(dx)>55)readerGoPage(readerPageIndex+(dx<0?1:-1),dx<0?"next":"prev");},{passive:true});
+
   document.getElementById("finishReading").addEventListener("click",finishReading);
   document.getElementById("bookmarkButton").addEventListener("click",toggleBookmark);
   document.getElementById("submitFeedback")?.addEventListener("click",submitRatingReview);
@@ -954,7 +1000,8 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
   toast("परिचय डेटाबेस में सुरक्षित हो गया।");
 });
 
-  document.getElementById("editProfile").addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
+
+document.getElementById("editProfile").addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
   document.getElementById("resetData").addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
   document.getElementById("writeDialog").addEventListener("close",saveDraftFromForm);
   // पुराने Service Worker की cached JS/HTML फ़ाइलें account बदलने पर पुराना डेटा दिखा सकती हैं।
@@ -1156,4 +1203,4 @@ google.addEventListener("click", async () => {
     syncCurrentAccount(data?.session?.user || null);
   });
 })();
-  
+
