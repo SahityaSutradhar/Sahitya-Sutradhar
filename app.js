@@ -1,4 +1,3 @@
-
 const supabaseClient = window.supabase?.createClient(
   window.SUPABASE_URL,
   window.SUPABASE_ANON_KEY
@@ -161,8 +160,11 @@ async function saveCloudDraft() {
 async function loadCloudDrafts() {
   if (!supabaseClient) return;
   try {
-    const { data:{user}, error:authError } = await supabaseClient.auth.getUser();
+    // getSession() restores the persisted login before draft loading; getUser()
+    // can throw AuthSessionMissingError during the initial page-load race.
+    const { data:{session}, error:authError } = await supabaseClient.auth.getSession();
     if (authError) throw authError;
+    const user = session?.user;
     if (!user) { cloudDrafts=[]; renderProfile(); return; }
     const { data:rows, error } = await supabaseClient.from("works").select("id,author_id,title,content,work_type,main_form,subtype,created_at").eq("author_id",user.id).eq("status","draft").order("created_at",{ascending:false});
     if (error) throw error;
@@ -259,7 +261,7 @@ async function loadCloudWorks() {
     });
 
     // पुराने LocalStorage रिकॉर्ड मिटाए बिना क्लाउड रिकॉर्ड ताज़ा करें।
-    const cloudIds = new Set(cloudStories.map(s => s.id));
+  const cloudIds = new Set(cloudStories.map(s => s.id));
     const localStories = (state.stories || []).filter(
       s => !cloudIds.has(s.id) && s.source !== "supabase"
     );
@@ -386,7 +388,7 @@ function renderProfile(){
   const draftHost=document.getElementById("myDraftList");
   if(draftHost){
     draftHost.innerHTML=cloudDrafts.length?cloudDrafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title||"बिना शीर्षक")}</h3><p>${escapeHtml(d.type||"ड्राफ्ट")}${d.subtype?" / "+escapeHtml(d.subtype):""}</p><p class="excerpt">${escapeHtml((d.body||"").replace(/\s+/g," ").slice(0,130))}</p><div class="story-meta"><button type="button" data-edit-draft="${escapeHtml(d.id)}">संपादित करें / प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">अभी Supabase में कोई निजी ड्राफ्ट नहीं है।</p>';
-    draftHost.querySelectorAll("[data-edit-draft]").forEach(b=>b.addEventListener("click",()=>editCloudDraft(b.dataset.editDraft)));
+   draftHost.querySelectorAll("[data-edit-draft]").forEach(b=>b.addEventListener("click",()=>editCloudDraft(b.dataset.editDraft)));
   }
   bindReadButtons();
 }
@@ -509,8 +511,7 @@ loadCloudDrafts();
       mode === "login" ? "नया खाता बनाएँ" : "पहले से खाता है? लॉगिन करें";
     passwordInput.autocomplete =
       mode === "login" ? "current-password" : "new-password";
-  }
-
+                          }
   async function refreshAuth() {
     const { data, error } = await supabaseClient.auth.getUser();
 
@@ -625,6 +626,7 @@ google.addEventListener("click", async () => {
     setTimeout(() => {
       loadCloudWorks();
       loadCloudProfile();
+      loadCloudDrafts();
     }, 0);
   });
 
