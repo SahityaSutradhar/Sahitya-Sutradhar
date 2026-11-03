@@ -8,7 +8,7 @@ const SUBTYPES = {
   "पद्य":["कविता","गीत","मुक्तक","छंद","नई कविता"],
   "चंपू काव्य":[]
 };
-const STORAGE = "sahityaSutradhar.account.v2";
+const CACHE = "sahitya-sutradhar-shell-v4";
 const seed = [];
 let state = loadState();
 let activeCategory = "सभी";
@@ -1004,11 +1004,18 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
 document.getElementById("editProfile").addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
   document.getElementById("resetData").addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
   document.getElementById("writeDialog").addEventListener("close",saveDraftFromForm);
-  // पुराने Service Worker की cached JS/HTML फ़ाइलें account बदलने पर पुराना डेटा दिखा सकती हैं।
-  if("serviceWorker" in navigator && location.protocol.startsWith("http")){
-    navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(reg=>reg.unregister())).catch(()=>{});
+  // साहित्य सूत्रधार PWA Service Worker
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js")
+        .then(registration => {
+          console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
+        })
+        .catch(error => {
+          console.error("PWA Service Worker रजिस्टर नहीं हुआ:", error);
+        });
+    });
   }
-}
 function openWorkFromHash(){
   const match=location.hash.match(/^#work-(.+)$/);if(!match)return;
   const id=decodeURIComponent(match[1]);if(state.stories.some(x=>String(x.id)===String(id)))openReader(id);
