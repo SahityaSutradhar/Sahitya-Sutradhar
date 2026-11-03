@@ -8,131 +8,29 @@
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .feedback-panel{border-top:1px solid var(--line,#ddd);margin-top:22px;padding-top:18px}.feedback-panel h2{font-size:1.25rem}.feedback-form{display:grid;gap:10px;margin:14px 0 22px}.feedback-form select,.feedback-form textarea,.review-comment-form input{width:100%;padding:11px;border:1px solid var(--line,#ccc);border-radius:10px;background:var(--surface,#fff);color:inherit;font:inherit}.feedback-form textarea{min-height:90px}.review-card{border:1px solid var(--line,#ddd);border-radius:12px;padding:14px;margin:12px 0}.review-card>p{white-space:pre-wrap}.review-card small{opacity:.7}.review-comments{margin:12px 0 8px;padding-left:10px;border-left:2px solid var(--line,#ddd)}.review-comment{font-size:.92rem;margin:7px 0}.review-comment-form{display:flex;gap:8px}.review-comment-form button,.review-card button{border:0;border-radius:9px;padding:9px 13px;background:#641f2b;color:#fff}.owner-action{margin:14px 0;width:100%}.rating-summary{font-weight:600;margin:10px 0}.draft-heading{margin-top:28px}
+  </style>
 </head>
 <body>
   <header class="topbar">
     <button class="avatar" id="profileShortcut" aria-label="प्रोफ़ाइल खोलें">अ</button>
-    <a class="brand" href="#" aria-label="साहित्य सूत्रधार मुख्यपृष्ठ">
-      <span class="brand-mark">❀</span>
-      <span><strong>साहित्य सूत्रधार</strong><small>शब्दों का अपना संसार</small></span>
-    </a>
+    <a class="brand" href="#" aria-label="साहित्य सूत्रधार मुख्यपृष्ठ"><span class="brand-mark">❀</span><span><strong>साहित्य सूत्रधार</strong><small>शब्दों का अपना संसार</small></span></a>
     <button class="icon-button" id="themeToggle" aria-label="थीम बदलें" title="डार्क/ब्राइट मोड">◐</button>
   </header>
-
   <main class="app-shell">
-    <section class="welcome">
-      <div>
-        <p class="eyebrow">आपका साहित्यिक आँगन</p>
-        <h1>जहाँ शब्द मिलते हैं।</h1>
-        <p class="welcome-copy">पढ़िए, लिखिए और अपनी रचनाओं को पाठकों तक पहुँचाइए।</p>
-      </div>
-      <div class="lotus-art" aria-hidden="true"><span>❀</span><span>❀</span><span>❀</span></div>
-    </section>
-
-    <section class="section-block">
-      <div class="section-heading">
-        <div><p class="eyebrow">अपनी पसंद चुनें</p><h2>साहित्य की श्रेणियाँ</h2></div>
-        <button class="text-button" id="clearCategory">सभी देखें</button>
-      </div>
-      <div class="chips" id="categoryChips"></div>
-    </section>
-<section class="section-block">
-  <div class="section-heading">
-    <div>
-      <p class="eyebrow">ज्ञान · परम्परा · सृजन</p>
-      <h2>शास्त्रीय साहित्य एवं शोध</h2>
-    </div>
-  </div>
-  <a href="shastriya.html" class="primary-button full-width">
-    शास्त्रीय विभाग में प्रवेश करें →
-  </a>
-</section>
-    <section class="section-block">
-      <div class="section-heading">
-        <div><p class="eyebrow">पढ़ने के लिए</p><h2 id="storyHeading">रचनाओं की दुनिया</h2></div>
-        <span class="subtle" id="storyCount"></span>
-      </div>
-      <div class="story-list" id="storyList"></div>
-      <div class="empty-state hidden" id="emptyState">
-        <span class="empty-flower">✿</span><h3>यहाँ से शुरुआत करें</h3>
-        <p>अपनी पहली रचना लिखें या चुनी हुई श्रेणी बदलें।</p>
-        <button class="primary-button" data-go="write">रचना लिखें</button>
-      </div>
-    </section>
+    <section class="welcome"><div><p class="eyebrow">आपका साहित्यिक आँगन</p><h1>जहाँ शब्द मिलते हैं।</h1><p class="welcome-copy">पढ़िए, लिखिए और अपनी रचनाओं को पाठकों तक पहुँचाइए।</p></div><div class="lotus-art" aria-hidden="true"><span>❀</span><span>❀</span><span>❀</span></div></section>
+    <section class="section-block"><div class="section-heading"><div><p class="eyebrow">अपनी पसंद चुनें</p><h2>साहित्य की श्रेणियाँ</h2></div><button class="text-button" id="clearCategory">सभी देखें</button></div><div class="chips" id="categoryChips"></div></section>
+    <section class="section-block"><div class="section-heading"><div><p class="eyebrow">ज्ञान · परम्परा · सृजन</p><h2>शास्त्रीय साहित्य एवं शोध</h2></div></div><a href="shastriya.html" class="primary-button full-width">शास्त्रीय विभाग में प्रवेश करें →</a></section>
+    <section class="section-block"><div class="section-heading"><div><p class="eyebrow">पढ़ने के लिए</p><h2 id="storyHeading">रचनाओं की दुनिया</h2></div><span class="subtle" id="storyCount"></span></div><div class="story-list" id="storyList"></div><div class="empty-state hidden" id="emptyState"><span class="empty-flower">✿</span><h3>यहाँ से शुरुआत करें</h3><p>अपनी पहली रचना लिखें या चुनी हुई श्रेणी बदलें।</p><button class="primary-button" data-go="write">रचना लिखें</button></div></section>
   </main>
-
-  <nav class="bottom-nav" aria-label="मुख्य नेविगेशन">
-    <button class="nav-item active" data-tab="home"><span>⌂</span>मुख्यपृष्ठ</button>
-    <button class="nav-item" data-tab="library"><span>▤</span>पुस्तकालय</button>
-    <button class="nav-item write-nav" data-tab="write"><span>＋</span>लिखें</button>
-    <button class="nav-item" data-tab="profile"><span>♙</span>प्रोफ़ाइल</button>
-    <button class="nav-item" data-tab="settings"><span>⚙</span>सेटिंग्स</button>
-  </nav>
-
-  <dialog id="writeDialog" class="modal">
-    <form id="storyForm" method="dialog">
-      <div class="modal-heading"><div><p class="eyebrow">आपकी आवाज़</p><h2>नई रचना</h2></div><button type="button" class="close-button" id="closeWrite" aria-label="बंद करें">×</button></div>
-      <label for="storyTitle">रचना का शीर्षक</label>
-      <input id="storyTitle" name="title" maxlength="120" required placeholder="शीर्षक लिखें">
-      <div class="form-row">
-        <div><label for="formType">रचना का रूप</label><select id="formType" required><option value="">चुनें</option><option>गद्य</option><option>पद्य</option><option>चंपू काव्य</option></select></div>
-        <div><label for="formSubType">उपप्रकार</label><select id="formSubType"><option value="">पहले रूप चुनें</option></select></div>
-      </div>
-      <label for="formCategory">श्रेणी (अधिकतम 4)</label>
-      <div class="category-checks" id="formCategories"></div>
-      <label for="storyBody">अपनी रचना लिखें</label>
-      <textarea id="storyBody" name="body" rows="8" required placeholder="यहाँ लिखें… आपका मसौदा इसी डिवाइस पर अपने-आप सुरक्षित होता रहेगा।"></textarea>
-      <div class="editor-foot"><span id="charCount">0 अक्षर</span><span id="draftStatus">मसौदा सुरक्षित रहेगा</span></div>
-      <label class="checkline"><input type="checkbox" id="rightsCheck" required> मैं पुष्टि करता/करती हूँ कि यह सामग्री प्रकाशित करने का अधिकार मेरे पास है और यह लागू कानूनों व मंच की सामग्री नीति का उल्लंघन नहीं करती।</label>
-      <button class="primary-button full-width" type="submit">प्रकाशित करें</button>
-      <p class="tiny-note">यह शुरुआती डेमो है। अभी रचनाएँ केवल इसी ब्राउज़र/डिवाइस में सेव होती हैं, सार्वजनिक सर्वर पर नहीं।</p>
-    </form>
-  </dialog>
-
-  <dialog id="readerDialog" class="modal reader-modal">
-    <div class="reader-top"><button class="text-button" id="closeReader">← वापस</button><span id="readerMeta"></span><button class="icon-button" id="bookmarkButton" title="बुकमार्क">♧</button></div>
-    <article class="reader-page"><p class="eyebrow" id="readerCategory"></p><h1 id="readerTitle"></h1><p class="reader-author" id="readerAuthor"></p><div id="readerBody" class="reader-body"></div></article>
-    <div class="reader-bottom"><span id="readerWords"></span><button class="primary-button" id="finishReading">पढ़ना पूरा किया</button></div>
-  </dialog>
-
-  <section class="view hidden" id="libraryView">
-    <p class="eyebrow">आपकी किताबें</p><h1>पुस्तकालय</h1><p class="muted">आपकी सेव की गई और बुकमार्क की गई रचनाएँ यहाँ दिखेंगी।</p>
-    <div class="story-list" id="libraryList"></div>
-  </section>
-  <section class="view hidden" id="profileView">
-    <p class="eyebrow">आपका साहित्यिक परिचय</p><h1>प्रोफ़ाइल</h1>
-    <div class="profile-card"><div class="profile-avatar" id="profileAvatar">अ</div><div><h2 id="profileName">अनाम पाठक</h2><p id="profileRole">पाठक</p></div><button class="text-button" id="editProfile">बदलें</button></div>
-    <label for="introInput">परिचय (अधिकतम 1,000 अक्षर)</label><textarea id="introInput" rows="4" maxlength="1000" placeholder="अपने बारे में लिखें…"></textarea><div class="editor-foot"><span id="introCount">0/1000 अक्षर</span><button class="primary-button" id="saveProfile">परिचय सुरक्षित करें</button></div>
-    <div class="stats-grid"><div><strong id="wordsRead">0</strong><span>अनुमानित पढ़े शब्द</span></div><div><strong id="publishedCount">0</strong><span>मेरी रचनाएँ</span></div><div><strong>0</strong><span>फ़ॉलोअर (डेमो)</span></div></div>
-    <h2>मेरी प्रकाशित रचनाएँ</h2><div class="story-list" id="myStoryList"></div>
-  </section>
-  <section class="view hidden" id="settingsView">
-    <p class="eyebrow">अपनी पसंद</p><h1>सेटिंग्स</h1>
-    <div class="setting-row"><div><strong>डार्क मोड</strong><p>रात में पढ़ने के लिए रंग बदलें।</p></div><button class="secondary-button" id="themeToggle2">थीम बदलें</button></div>
-    <div class="setting-row"><div><strong>डेमो डेटा मिटाएँ</strong><p>इस डिवाइस पर सुरक्षित स्थानीय रचनाएँ और प्रोफ़ाइल हटेंगी।</p></div><button class="danger-button" id="resetData">रीसेट</button></div>
-    <p class="tiny-note">लॉगिन, क्लाउड सिंक, संदेश और सार्वजनिक प्रकाशन अगली विकास अवस्था में साझा बैकएंड से जोड़े जाएँगे।</p>
-  </section>
+  <nav class="bottom-nav" aria-label="मुख्य नेविगेशन"><button class="nav-item active" data-tab="home"><span>⌂</span>मुख्यपृष्ठ</button><button class="nav-item" data-tab="library"><span>▤</span>पुस्तकालय</button><button class="nav-item write-nav" data-tab="write"><span>＋</span>लिखें</button><button class="nav-item" data-tab="profile"><span>♙</span>प्रोफ़ाइल</button><button class="nav-item" data-tab="settings"><span>⚙</span>सेटिंग्स</button></nav>
+  <dialog id="writeDialog" class="modal"><form id="storyForm" method="dialog"><div class="modal-heading"><div><p class="eyebrow">आपकी आवाज़</p><h2>नई रचना</h2></div><button type="button" class="close-button" id="closeWrite" aria-label="बंद करें">×</button></div><label for="storyTitle">रचना का शीर्षक</label><input id="storyTitle" name="title" maxlength="120" required placeholder="शीर्षक लिखें"><div class="form-row"><div><label for="formType">रचना का रूप</label><select id="formType" required><option value="">चुनें</option><option>गद्य</option><option>पद्य</option><option>चंपू काव्य</option></select></div><div><label for="formSubType">उपप्रकार</label><select id="formSubType"><option value="">पहले रूप चुनें</option></select></div></div><label for="formCategory">श्रेणी (अधिकतम 4)</label><div class="category-checks" id="formCategories"></div><label for="storyBody">अपनी रचना लिखें</label><textarea id="storyBody" name="body" rows="8" required placeholder="यहाँ लिखें… आपका मसौदा इसी डिवाइस पर अपने-आप सुरक्षित होता रहेगा।"></textarea><div class="editor-foot"><span id="charCount">0 अक्षर</span><span id="draftStatus">मसौदा सुरक्षित रहेगा</span></div><label class="checkline"><input type="checkbox" id="rightsCheck" required> मैं पुष्टि करता/करती हूँ कि यह सामग्री प्रकाशित करने का अधिकार मेरे पास है और यह लागू कानूनों व मंच की सामग्री नीति का उल्लंघन नहीं करती।</label><button class="primary-button full-width" type="submit">प्रकाशित करें</button><p class="tiny-note">रचनाएँ Supabase में प्रकाशित होंगी। लिखते समय का अस्थायी मसौदा इसी डिवाइस पर सुरक्षित होता है।</p></form></dialog>
+  <dialog id="readerDialog" class="modal reader-modal"><div class="reader-top"><button class="text-button" id="closeReader">← वापस</button><span id="readerMeta"></span><button class="icon-button" id="bookmarkButton" title="बुकमार्क">♧</button></div><article class="reader-page"><p class="eyebrow" id="readerCategory"></p><h1 id="readerTitle"></h1><p class="reader-author" id="readerAuthor"></p><div id="readerBody" class="reader-body"></div></article><button id="workOwnerAction" class="secondary-button full-width owner-action hidden" type="button">अप्रकाशित करके ड्राफ्ट में रखें</button><section id="feedbackPanel" class="feedback-panel hidden"><h2>पाठकों की प्रतिक्रिया</h2><p id="ratingSummary" class="rating-summary">रेटिंग लोड हो रही है…</p><div class="feedback-form"><label for="ratingInput">आपकी रेटिंग</label><select id="ratingInput"><option value="">रेटिंग चुनें</option><option value="5">★★★★★ — उत्कृष्ट</option><option value="4">★★★★ — बहुत अच्छा</option><option value="3">★★★ — अच्छा</option><option value="2">★★ — ठीक</option><option value="1">★ — सुधार की गुंजाइश</option></select><label for="reviewInput">आपकी समीक्षा</label><textarea id="reviewInput" maxlength="5000" placeholder="रचना के बारे में अपनी राय लिखें…"></textarea><button id="submitFeedback" class="primary-button" type="button">रेटिंग / समीक्षा सुरक्षित करें</button></div><h3>समीक्षाएँ और उन पर टिप्पणियाँ</h3><div id="reviewsList"></div></section><div class="reader-bottom"><span id="readerWords"></span><button class="primary-button" id="finishReading">पढ़ना पूरा किया</button></div></dialog>
+  <section class="view hidden" id="libraryView"><p class="eyebrow">आपकी किताबें</p><h1>पुस्तकालय</h1><p class="muted">आपकी सेव की गई और बुकमार्क की गई रचनाएँ यहाँ दिखेंगी।</p><div class="story-list" id="libraryList"></div></section>
+  <section class="view hidden" id="profileView"><p class="eyebrow">आपका साहित्यिक परिचय</p><h1>प्रोफ़ाइल</h1><div class="profile-card"><div class="profile-avatar" id="profileAvatar">अ</div><div><h2 id="profileName">अनाम पाठक</h2><p id="profileRole">पाठक</p></div><button class="text-button" id="editProfile">बदलें</button></div><label for="introInput">परिचय (अधिकतम 1,000 अक्षर)</label><textarea id="introInput" rows="4" maxlength="1000" placeholder="अपने बारे में लिखें…"></textarea><div class="editor-foot"><span id="introCount">0/1000 अक्षर</span><button class="primary-button" id="saveProfile">परिचय सुरक्षित करें</button></div><div class="stats-grid"><div><strong id="wordsRead">0</strong><span>अनुमानित पढ़े शब्द</span></div><div><strong id="publishedCount">0</strong><span>मेरी रचनाएँ</span></div><div><strong>0</strong><span>फ़ॉलोअर (डेमो)</span></div></div><h2>मेरी प्रकाशित रचनाएँ</h2><div class="story-list" id="myStoryList"></div><h2 class="draft-heading">मेरे निजी ड्राफ्ट</h2><p class="muted">ये रचनाएँ केवल आपको दिखाई देती हैं।</p><div class="story-list" id="myDraftList"></div></section>
+  <section class="view hidden" id="settingsView"><p class="eyebrow">अपनी पसंद</p><h1>सेटिंग्स</h1><div class="setting-row"><div><strong>डार्क मोड</strong><p>रात में पढ़ने के लिए रंग बदलें।</p></div><button class="secondary-button" id="themeToggle2">थीम बदलें</button></div><div class="setting-row"><div><strong>डेमो डेटा मिटाएँ</strong><p>इस डिवाइस पर सुरक्षित स्थानीय रचनाएँ और प्रोफ़ाइल हटेंगी।</p></div><button class="danger-button" id="resetData">रीसेट</button></div><p class="tiny-note">लॉगिन और क्लाउड सिंक Supabase से जुड़े हैं।</p></section>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<dialog id="authDialog">
-  <form id="authForm">
-    <h2 id="authHeading">साहित्य सूत्रधार में प्रवेश</h2>
-
-    <label for="authEmail">ईमेल</label>
-    <input id="authEmail" type="email" required autocomplete="email">
-
-    <label for="authPassword">पासवर्ड</label>
-    <input id="authPassword" type="password" required minlength="6" autocomplete="current-password">
-
-    <p id="authMessage" role="status"></p>
-
-<button type="submit" id="authSubmit">लॉगिन करें</button>
-<button type="button" id="authGoogle">🌐 Google से लॉगिन करें</button>
-<button type="button" id="authRegister">नया खाता बनाएँ</button>
-<button type="button" id="authClose">बंद करें</button>
-  </form>
-</dialog>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script src="app.js"></script>
-</body>
-</html>
+  <dialog id="authDialog"><form id="authForm"><h2 id="authHeading">साहित्य सूत्रधार में प्रवेश</h2><label for="authEmail">ईमेल</label><input id="authEmail" type="email" required autocomplete="email"><label for="authPassword">पासवर्ड</label><input id="authPassword" type="password" required minlength="6" autocomplete="current-password"><p id="authMessage" role="status"></p><button type="submit" id="authSubmit">लॉगिन करें</button><button type="button" id="authGoogle">🌐 Google से लॉगिन करें</button><button type="button" id="authRegister">नया खाता बनाएँ</button><button type="button" id="authClose">बंद करें</button></form></dialog>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="app.js"></script>
+</body></html>
