@@ -8,24 +8,45 @@ const SUBTYPES = {
   "पद्य":["कविता","गीत","मुक्तक","छंद","नई कविता"],
   "चंपू काव्य":[]
 };
-const STORAGE = "sahityaGram.v1";
+const STORAGE = "sahityaSutradhar.account.v2";
 const seed = [];
 let state = loadState();
 let activeCategory = "सभी";
 let activeTab = "home";
 let currentReaderId = null;
+let editingWorkId = null;
 let currentUserId = null;
+let authSyncVersion = 0;
 let readingStartedAt = 0;
 let toastTimer;
 
+function emptyAccountState(){
+  return {stories:[], profile:{name:"अनाम पाठक",intro:"",wordsRead:0,bookmarks:[],avatarUrl:"",readingLanguage:"hi",preferredCategories:[]}, theme:"light", drafts:{title:"",body:"",type:"",subtype:"",categories:[]}};
+}
+function accountStorageKey(userId=currentUserId){ return STORAGE + "." + (userId || "guest"); }
 function loadState(){
   try{
-    const saved = JSON.parse(localStorage.getItem(STORAGE));
-    if(saved) return {...saved, stories: []};
+    const saved = JSON.parse(localStorage.getItem(accountStorageKey(null)));
+    if(saved) return {...emptyAccountState(), ...saved, stories:[], profile:{...emptyAccountState().profile,...(saved.profile||{})}};
   }catch(e){}
-  return {stories:[], profile:{name:"अनाम पाठक",intro:"",wordsRead:0,bookmarks:[]}, theme:"light", drafts:{title:"",body:"",type:"",subtype:"",categories:[]}};
+  return emptyAccountState();
 }
-function saveState(){ localStorage.setItem(STORAGE, JSON.stringify(state)); }
+function saveState(){
+  try{ localStorage.setItem(accountStorageKey(), JSON.stringify({...state, stories:[]})); }
+  catch(e){ console.warn("स्थानीय खाता डेटा सुरक्षित नहीं हुआ:",e); }
+}
+function switchAccountState(userId){
+  currentUserId = userId || null;
+  try{
+    const saved = JSON.parse(localStorage.getItem(accountStorageKey(currentUserId)) || "null");
+    state = saved ? {...emptyAccountState(),...saved,stories:[],profile:{...emptyAccountState().profile,...(saved.profile||{})}} : emptyAccountState();
+  }catch(e){ state=emptyAccountState(); }
+  state.stories=[];
+  applyTheme();
+  renderProfile();
+  renderLibrary();
+  renderStories();
+}
 function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function wordCount(s=""){return (s.trim().match(/\S+/g)||[]).length;}
 function minutesFor(s=""){return Math.max(1,Math.ceil(wordCount(s)/200));}
@@ -44,6 +65,8 @@ function renderStories(){
   let list=[...state.stories].filter(s=>s.status!=="draft").sort((a,b)=>(b.created||0)-(a.created||0));
   const readingLang=state.profile.readingLanguage||"hi";
   list=list.filter(s=>(s.language||"hi")===readingLang);
+  const preferred=state.profile.preferredCategories||[];
+  if(preferred.length)list.sort((a,b)=>Number((b.categories||[]).some(c=>preferred.includes(c)))-Number((a.categories||[]).some(c=>preferred.includes(c))));
   if(activeCategory!=="सभी")list=list.filter(s=>(s.categories||[]).includes(activeCategory));
   document.getElementById("storyCount").textContent=`${list.length} रचनाएँ`;
   document.getElementById("storyList").innerHTML=list.map(storyCard).join("");
@@ -53,6 +76,62 @@ function renderStories(){
   bindReadButtons();
 }
 function bindReadButtons(){document.querySelectorAll("[data-read]").forEach(b=>b.addEventListener("click",()=>openReader(b.dataset.read)));}
+function formatMarkup(value=""){
+  let safe=escapeHtml(value);
+  safe=safe.replace(/\[\[font:(serif|sans|devotional|poetic|mono)\]\]([\s\S]*?)\[\[\/font\]\]/g,'<span class="font-$1">$2</span>');
+  safe=safe.replace(/\[\[color:(royal-red|dark-red|saffron|black|blue|green|white|yellow)\]\]([\s\S]*?)\[\[\/color\]\]/g,'<span class="color-$1">$2</span>');
+  safe=safe.replace(/\[\[highlight\]\]([\s\S]*?)\[\[\/highlight\]\]/g,'<mark>$1</mark>');
+  safe=safe.replace(/\*\*([\s\S]*?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+  return safe.replace(/\n/g,'<br>');
+}
+function wrapEditorSelection(open,close){
+  const el=document.getElementById("storyBody"),a=el.selectionStart,b=el.selectionEnd;
+  if(a===b){toast("पहले जिस पाठ को सजाना है उसे चुनें।");return;}
+  const selected=el.value.slice(a,b);el.setRangeText(open+selected+close,a,b,"select");el.focus();saveDraftFromForm();
+}
+function renderWriters(){
+  const published=state.stories.filter(s=>s.status==="published"&&s.authorId);
+  const grouped=new Map();
+  for(const s of published){let w=grouped.get(s.authorId);if(!w){w={id:s.authorId,name:s.author||"रचनाकार",avatar:s.authorAvatar||"",works:0,reads:0,latest:s.created||0};grouped.set(s.authorId,w);}w.works++;w.reads+=Number(s.reads||0);w.latest=Math.max(w.latest,s.created||0);}
+  const writers=[...grouped.values()];
+  const render=(list)=>list.map(w=>`<button class="writer-card" type="button" data-writer="${escapeHtml(w.id)}"><span class="mini-avatar">${w.avatar?`<img src="${escapeHtml(w.avatar)}" alt="">`:escapeHtml(w.name.slice(0,1))}</span><span class="writer-card-main"><strong>${escapeHtml(w.name)}</strong><small>${w.works} प्रकाशित रचनाएँ</small></span><span class="tag">प्रोफ़ाइल ↗</span></button>`).join("")||'<p class="muted">अभी लेखक सूची उपलब्ध नहीं है।</p>';
+  document.getElementById("newWritersList").innerHTML=render([...writers].sort((a,b)=>b.latest-a.latest).slice(0,8));
+  const sort=document.getElementById("writerSort")?.value||"reads";
+  document.getElementById("activeWritersList").innerHTML=render([...writers].sort((a,b)=>sort==="works"?b.works-a.works:sort==="followers"?Number(b.followers||0)-Number(a.followers||0):b.reads-a.reads).slice(0,12));
+  document.querySelectorAll("[data-writer]").forEach(b=>b.addEventListener("click",()=>openWriterProfile(b.dataset.writer)));
+}
+async function openWriterProfile(authorId){
+  const story=state.stories.find(s=>s.authorId===authorId);if(story)currentReaderId=story.id;await openAuthorProfile(authorId);
+}
+async function loadHomepageStats(){
+  const latest=state.stories.filter(s=>s.status==="published").sort((a,b)=>b.created-a.created).slice(0,20);
+  const box=document.getElementById("latestWorksList");if(box){box.innerHTML=latest.map(storyCard).join("")||'<p class="muted">अभी कोई प्रकाशित रचना नहीं।</p>';bindReadButtons();}
+  renderWriters();
+  if(!supabaseClient)return;
+  const {data:stats,error}=await supabaseClient.rpc("get_public_author_stats");
+  if(!error&&Array.isArray(stats)){
+    const map=new Map(stats.map(x=>[x.author_id,x]));
+    for(const s of state.stories){const x=map.get(s.authorId);if(x)s.reads=Number(x.total_reads||0);}
+    const followMap=new Map(stats.map(x=>[x.author_id,Number(x.total_followers||0)]));
+    const latestBox=document.getElementById("latestWorksList");if(latestBox){latestBox.innerHTML=state.stories.filter(x=>x.status==="published").sort((a,b)=>b.created-a.created).slice(0,20).map(storyCard).join("");bindReadButtons();}
+    renderStories();
+    const grouped=new Map();for(const s of state.stories.filter(x=>x.status==="published"&&x.authorId)){const w=grouped.get(s.authorId)||{id:s.authorId,name:s.author,avatar:s.authorAvatar,works:0,reads:0,followers:followMap.get(s.authorId)||0,latest:s.created};w.works++;w.reads+=Number(s.reads||0);w.latest=Math.max(w.latest,s.created||0);grouped.set(s.authorId,w);}
+    const writers=[...grouped.values()];const sort=document.getElementById("writerSort")?.value||"reads";
+    const render=list=>list.map(w=>`<button class="writer-card" type="button" data-writer="${escapeHtml(w.id)}"><span class="mini-avatar">${w.avatar?`<img src="${escapeHtml(w.avatar)}" alt="">`:escapeHtml((w.name||"अ").slice(0,1))}</span><span class="writer-card-main"><strong>${escapeHtml(w.name)}</strong><small>${w.works} रचनाएँ · ${w.reads} पाठक · ${w.followers} फ़ॉलोअर</small></span></button>`).join("")||'<p class="muted">अभी लेखक सूची उपलब्ध नहीं है।</p>';
+    document.getElementById("newWritersList").innerHTML=render([...writers].sort((a,b)=>b.latest-a.latest).slice(0,8));
+    document.getElementById("activeWritersList").innerHTML=render([...writers].sort((a,b)=>sort==="works"?b.works-a.works:sort==="followers"?b.followers-a.followers:b.reads-a.reads).slice(0,12));
+    document.querySelectorAll("[data-writer]").forEach(b=>b.addEventListener("click",()=>openWriterProfile(b.dataset.writer)));
+  }
+}
+function renderPreferredCategories(){
+  const box=document.getElementById("preferredCategories");if(!box)return;
+  box.innerHTML=CATEGORIES.map(c=>`<label><input type="checkbox" value="${escapeHtml(c)}" ${(state.profile.preferredCategories||[]).includes(c)?"checked":""}>${escapeHtml(c)}</label>`).join("");
+  box.querySelectorAll("input").forEach(input=>input.addEventListener("change",async()=>{
+    const values=[...box.querySelectorAll("input:checked")].map(x=>x.value);state.profile.preferredCategories=values;saveState();renderStories();
+    if(!supabaseClient){toast("पसंद इस डिवाइस पर सुरक्षित हुई।");return;}
+    const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({preferred_categories:values}).eq("id",user.id);if(error)toast("पसंद सुरक्षित नहीं हुई: "+error.message);else toast("पसंदीदा श्रेणियाँ सुरक्षित हुईं।");}else toast("पसंद स्थानीय रूप से सुरक्षित हुई। लॉगिन के बाद क्लाउड में भी सहेजें।");
+  }));
+}
 function renderCategoriesForm(){
   document.getElementById("formCategories").innerHTML=CATEGORIES.map(c=>`<label><input type="checkbox" value="${escapeHtml(c)}"> ${escapeHtml(c)}</label>`).join("");
   document.querySelectorAll("#formCategories input").forEach(cb=>cb.addEventListener("change",()=>{
@@ -82,7 +161,33 @@ function restoreDraft(){
   document.getElementById("charCount").textContent=`${(d.body||"").length} अक्षर`;
 }
 function openWrite(){
-  restoreDraft();document.getElementById("writeDialog").showModal();
+  editingWorkId = null;
+  restoreDraft();
+  document.querySelector("#writeDialog .modal-heading h2").textContent = "नई रचना";
+  document.querySelector('#storyForm button[type="submit"]').textContent = "प्रकाशित करें";
+  document.getElementById("storyCover").value = "";
+  document.getElementById("writeDialog").showModal();
+}
+
+function openEditWork(id){
+  const s = state.stories.find(x => String(x.id) === String(id));
+  if(!s || s.source !== "supabase") return;
+  editingWorkId = s.id;
+  document.getElementById("storyTitle").value = s.title || "";
+  document.getElementById("storyBody").value = s.body || "";
+  document.getElementById("formType").value = s.type || "";
+  updateSubtypes();
+  document.getElementById("formSubType").value = s.subtype || "";
+  document.querySelectorAll("#formCategories input").forEach(cb => cb.checked = (s.categories || []).includes(cb.value));
+  document.getElementById("storyLanguage").value = s.language || "hi";
+  document.getElementById("storyCover").value = "";
+  document.getElementById("rightsCheck").checked = true;
+  document.getElementById("charCount").textContent = `${(s.body || "").length} अक्षर`;
+  document.getElementById("draftStatus").textContent = s.coverUrl ? "मौजूदा कवर सुरक्षित रहेगा; नया कवर चुनने पर बदलेगा" : "प्रकाशित रचना संपादन मोड";
+  document.querySelector("#writeDialog .modal-heading h2").textContent = "प्रकाशित रचना संपादित करें";
+  document.querySelector('#storyForm button[type="submit"]').textContent = "बदलाव सुरक्षित करें";
+  document.getElementById("readerDialog").close();
+  document.getElementById("writeDialog").showModal();
 }
 
 function getDatabaseWorkType(type, subtype) {
@@ -97,7 +202,7 @@ function getDatabaseWorkType(type, subtype) {
   return mapping[subtype] || "other";
 }
 
-  async function loadCloudWorks() {
+async function loadCloudWorks() {
   if (!supabaseClient) return;
 
   try {
@@ -141,8 +246,7 @@ function getDatabaseWorkType(type, subtype) {
         .in("id", authorIds);
       if (profilesError) throw profilesError;
       profiles = data || [];
-    }
-
+                                   }
     const cloudStories = (works || []).map(w => {
       const profile = profiles.find(p => p.id === w.author_id);
       const linkedCategoryIds = links
@@ -180,6 +284,7 @@ function getDatabaseWorkType(type, subtype) {
     renderStories();
     renderProfile();
     renderLibrary();
+    loadHomepageStats();
   } catch (error) {
     console.error("Supabase रचनाएँ लोड नहीं हुईं:", error);
     toast("Supabase से रचनाएँ लोड नहीं हुईं: " + error.message);
@@ -249,41 +354,56 @@ async function publishStory(e) {
 
     let coverUrl = null;
     if (coverFile) coverUrl = await uploadSutradharImage(coverFile, "covers");
-    const { data: work, error: workError } = await supabaseClient
-      .from("works")
-      .insert({
-        author_id: user.id,
+    let work;
+    if (editingWorkId) {
+      const existing = state.stories.find(x => String(x.id) === String(editingWorkId));
+      if (!existing || existing.authorId !== user.id) throw new Error("केवल अपनी रचना संपादित कर सकते हैं।");
+      const updateData = {
         title,
         content: body,
         work_type: getDatabaseWorkType(type, subtype),
         main_form: type,
         subtype: subtype || null,
-        status: "published",
-        content_language: contentLanguage,
-        cover_url: coverUrl
-      })
-      .select()
-      .single();
-    if (workError) throw workError;
+        content_language: contentLanguage
+      };
+      if (coverUrl) updateData.cover_url = coverUrl;
+      const { data, error: workError } = await supabaseClient
+        .from("works").update(updateData).eq("id", editingWorkId).eq("author_id", user.id).select().single();
+      if (workError) throw workError;
+      work = data;
+      const { error: deleteLinksError } = await supabaseClient.from("work_categories").delete().eq("work_id", editingWorkId);
+      if (deleteLinksError) throw deleteLinksError;
+    } else {
+      const { data, error: workError } = await supabaseClient
+        .from("works")
+        .insert({
+          author_id: user.id,
+          title,
+          content: body,
+          work_type: getDatabaseWorkType(type, subtype),
+          main_form: type,
+          subtype: subtype || null,
+          status: "published",
+          content_language: contentLanguage,
+          cover_url: coverUrl
+        })
+        .select()
+        .single();
+      if (workError) throw workError;
+      work = data;
+    }
 
-    const links = categoryNames.map(name => ({
-      work_id: work.id,
-      category_id: categoryMap.get(name)
-    }));
-    const { error: linkError } = await supabaseClient
-      .from("work_categories")
-      .insert(links);
+    const links = categoryNames.map(name => ({ work_id: work.id, category_id: categoryMap.get(name) }));
+    const { error: linkError } = await supabaseClient.from("work_categories").insert(links);
 
     if (linkError) {
       console.error("श्रेणी लिंक सेव नहीं हुए:", linkError);
-      toast(
-        "रचना Supabase में सेव हो गई, लेकिन श्रेणियाँ नहीं जुड़ीं: " +
-        linkError.message
-      );
+      toast("रचना सेव हुई, लेकिन श्रेणियाँ नहीं जुड़ीं: " + linkError.message);
     } else {
-      toast("रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!");
+      toast(editingWorkId ? "रचना के बदलाव सुरक्षित हो गए।" : "रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!");
     }
-
+    
+    editingWorkId = null;
     state.drafts = {
       title: "", body: "", type: "", subtype: "", categories: []
     };
@@ -296,7 +416,33 @@ async function publishStory(e) {
   } finally {
     if (submitButton) submitButton.disabled = false;
   }
-  }
+}
+
+async function shareExcerptAsImage(){
+  const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;
+  const selection=window.getSelection()?.toString().trim();
+  if(!selection){toast("पहले रचना में से कोई अंश चुनें, फिर यह बटन दबाएँ।");return;}
+  const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;
+  const ctx=canvas.getContext("2d");const g=ctx.createLinearGradient(0,0,1080,1350);g.addColorStop(0,"#5b1d28");g.addColorStop(1,"#9a7047");ctx.fillStyle=g;ctx.fillRect(0,0,1080,1350);
+  ctx.strokeStyle="#e8cf9d";ctx.lineWidth=4;ctx.strokeRect(42,42,996,1266);
+  ctx.fillStyle="#f6dfb5";ctx.textAlign="center";ctx.font="bold 38px Georgia, serif";ctx.fillText("साहित्य सूत्रधार",540,130);
+  ctx.fillStyle="#fff8e9";ctx.font="bold 48px sans-serif";wrapCanvasText(ctx,s.title,540,250,850,64,5);
+  ctx.strokeStyle="#d9b56e";ctx.beginPath();ctx.moveTo(160,390);ctx.lineTo(920,390);ctx.stroke();
+  ctx.textAlign="left";ctx.fillStyle="#fffaf0";ctx.font="36px sans-serif";wrapCanvasText(ctx,selection,140,480,800,58,11);
+  ctx.textAlign="center";ctx.fillStyle="#f5dcae";ctx.font="bold 32px sans-serif";ctx.fillText("— "+(s.author||"अनाम लेखक"),540,1160);
+  ctx.font="22px sans-serif";ctx.fillText(location.href.split("#")[0]+"#work-"+s.id,540,1220);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob){toast("चित्र तैयार नहीं हो सका।");return;}
+  const file=new File([blob],"sahitya-sutradhar-excerpt.png",{type:"image/png"});
+  if(navigator.canShare?.({files:[file]})&&navigator.share){try{await navigator.share({files:[file],title:s.title,text:"साहित्य सूत्रधार पर पढ़ें — "+s.author});return;}catch(e){if(e.name==="AbortError")return;}}
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sahitya-sutradhar-excerpt.png";a.click();URL.revokeObjectURL(url);toast("चुने हुए अंश का चित्र डाउनलोड हो गया।");
+}
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines){
+  const words=String(text).split(/\s+/);let line="",lines=[];
+  for(const word of words){const test=line?line+" "+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word;}else line=test;}
+  if(line)lines.push(line);if(lines.length>maxLines){lines=lines.slice(0,maxLines);lines[maxLines-1]=lines[maxLines-1].replace(/[.…]*$/,"…");}
+  lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));return lines.length;
+}
+
 async function openReader(id){
   const s=state.stories.find(x=>x.id===id);if(!s)return;
   currentReaderId=id;readingStartedAt=Date.now();
@@ -317,13 +463,15 @@ async function openReader(id){
   document.getElementById("readerAuthor").textContent=(s.author||"अनाम लेखक");
   document.getElementById("readerAuthorAvatar").innerHTML=s.authorAvatar?`<img src="${escapeHtml(s.authorAvatar)}" alt="">`:escapeHtml((s.author||"अ").trim().slice(0,1));
   const coverSlot=document.getElementById("readerCoverSlot"); coverSlot.innerHTML=s.coverUrl?`<img class="cover-thumb" src="${escapeHtml(s.coverUrl)}" alt="कवर">`:`<div class="cover-placeholder">कवर नहीं</div>`;
-  document.getElementById("readerBody").textContent=s.body;
+  document.getElementById("readerBody").innerHTML=formatMarkup(s.body);
   document.getElementById("readerMeta").textContent=`लगभग ${minutesFor(s.body)} मिनट`;
   document.getElementById("readerWords").textContent=`रचना में कुल ${wordCount(s.body)} शब्द`;
   document.getElementById("bookmarkButton").textContent=(state.profile.bookmarks||[]).includes(id)?"♥":"♧";
   const owner = !!s.authorId && (await supabaseClient?.auth.getUser())?.data?.user?.id === s.authorId;
   const action = document.getElementById("workOwnerAction");
   if(action){ action.classList.toggle("hidden",!owner); action.textContent=s.status==="draft"?"पुनः प्रकाशित करें":"अप्रकाशित करके ड्राफ्ट में रखें"; }
+  const editAction = document.getElementById("editWorkAction");
+  if(editAction) editAction.classList.toggle("hidden",!owner);
   const panel=document.getElementById("feedbackPanel");
   if(panel) panel.classList.toggle("hidden",s.source!=="supabase" || s.status==="draft");
   document.getElementById("readerDialog").showModal();
@@ -353,13 +501,14 @@ async function loadWorkFeedback(workId){
     const userIds=[...new Set([...(reviews||[]).map(x=>x.user_id),...rows.map(x=>x.user_id)])];
     let profiles=[];
     if(userIds.length){const q=await supabaseClient.from("profiles").select("id,display_name,username").in("id",userIds);if(!q.error)profiles=q.data||[];}
-    const ratingPeople=rows.map(r=>{const who=profiles.find(p=>p.id===r.user_id);return `<span class="tag">${escapeHtml(who?.display_name||who?.username||"पाठक")} · ${"★".repeat(Number(r.rating))}</span>`;}).join(" ");
+    const ratingPeople=rows.map(r=>{const who=profiles.find(p=>p.id===r.user_id);return `<button class="tag profile-link" type="button" data-person-profile="${escapeHtml(r.user_id)}">${escapeHtml(who?.display_name||who?.username||"पाठक")} · ${"★".repeat(Number(r.rating))}</button>`;}).join(" ");
     if(!(reviews||[]).length){reviewsBox.innerHTML=`<div><b>रेटिंग देने वाले:</b><p>${ratingPeople||"अभी कोई रेटिंग नहीं।"}</p></div><p class="muted">अभी कोई समीक्षा नहीं है। पहली समीक्षा आप लिख सकते हैं।</p>`;return;}
     reviewsBox.innerHTML=`<div><b>रेटिंग देने वाले:</b><p>${ratingPeople||"अभी कोई रेटिंग नहीं।"}</p></div>`;
     reviewsBox.innerHTML+= (reviews||[]).map(r=>{
       const who=profiles.find(p=>p.id===r.user_id);
-      return `<article class="review-card"><strong>${escapeHtml(who?.display_name||who?.username||"पाठक")}</strong><p>${escapeHtml(r.review_text)}</p><small>${new Date(r.created_at).toLocaleDateString("hi-IN")}</small><div class="review-comments" id="reviewComments-${r.id}">कमेंट लोड हो रहे हैं…</div><form class="review-comment-form" data-review-comment="${r.id}"><input name="comment" maxlength="1500" placeholder="इस समीक्षा पर टिप्पणी करें…" required><button type="submit">भेजें</button></form></article>`;
+      return `<article class="review-card"><button class="profile-link" type="button" data-person-profile="${escapeHtml(r.user_id)}"><strong>${escapeHtml(who?.display_name||who?.username||"पाठक")}</strong></button><p>${escapeHtml(r.review_text)}</p><small>${new Date(r.created_at).toLocaleDateString("hi-IN")}</small><div class="review-comments" id="reviewComments-${r.id}">कमेंट लोड हो रहे हैं…</div><form class="review-comment-form" data-review-comment="${r.id}"><input name="comment" maxlength="1500" placeholder="इस समीक्षा पर टिप्पणी करें…" required><button type="submit">भेजें</button></form></article>`;
     }).join("");
+    reviewsBox.querySelectorAll("[data-person-profile]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.personProfile)));
     for(const r of (reviews||[])) await loadReviewComments(r.id,workId);
   }catch(e){summary.textContent="फीडबैक लोड नहीं हुआ: "+e.message;}
 }
@@ -371,8 +520,7 @@ async function loadReviewComments(reviewId,workId){
   const ids=[...new Set((data||[]).map(x=>x.user_id))];let people=[];
   if(ids.length){const q=await supabaseClient.from("profiles").select("id,display_name,username").in("id",ids);if(!q.error)people=q.data||[];}
   box.innerHTML=(data||[]).length?(data||[]).map(c=>{const u=people.find(p=>p.id===c.user_id);return `<p class="review-comment"><b>${escapeHtml(u?.display_name||u?.username||"पाठक")}:</b> ${escapeHtml(c.comment_text)}</p>`;}).join(""):'<p class="muted">अभी कोई टिप्पणी नहीं।</p>';
-}
-
+    }
 async function submitRatingReview(){
   if(!supabaseClient||!currentReaderId)return;
   const {data:{user}}=await supabaseClient.auth.getUser();
@@ -396,7 +544,8 @@ async function setCurrentWorkStatus(){
   if(error){toast("स्थिति नहीं बदली: "+error.message);return;}
   s.status=next;saveState();document.getElementById("readerDialog").close();await loadCloudWorks();
   toast(next==="draft"?"रचना निजी ड्राफ्ट में चली गई।":"रचना पुनः प्रकाशित हो गई; पुराना फीडबैक सुरक्षित है।");
-                                                           }
+}
+
 async function submitReviewComment(form){
   const reviewId=Number(form.dataset.reviewComment), textValue=new FormData(form).get("comment")?.toString().trim();
   if(!textValue||!supabaseClient||!currentReaderId)return;
@@ -453,19 +602,20 @@ async function refreshReaderStats(work){
   const rr=ratings||[],avg=rr.length?rr.reduce((a,r)=>a+Number(r.rating),0)/rr.length:0;
   document.getElementById("readerStats").textContent=`रेटिंग ${avg?Math.round(avg*20):0}% (${rr.length}) · समीक्षाएँ ${reviewCount??0} · पाठक ${readCount??0}`;
 }
-async function openAuthorProfile(){
-  const s=state.stories.find(x=>x.id===currentReaderId);if(!s?.authorId)return;
-  const {data:works}=await supabaseClient.from("works").select("id,author_id,title,content,work_type,main_form,subtype,status,created_at,cover_url,content_language").eq("author_id",s.authorId).eq("status","published").order("created_at",{ascending:false});
-  const {data:profile}=await supabaseClient.from("profiles").select("id,display_name,username,avatar_url,bio").eq("id",s.authorId).maybeSingle();
+async function openAuthorProfile(authorId=null){
+  const currentStory=state.stories.find(x=>x.id===currentReaderId);const targetId=authorId||currentStory?.authorId;if(!targetId)return;
+  const {data:works}=await supabaseClient.from("works").select("id,author_id,title,content,work_type,main_form,subtype,status,created_at,cover_url,content_language").eq("author_id",targetId).eq("status","published").order("created_at",{ascending:false});
+  const {data:profile}=await supabaseClient.from("profiles").select("id,display_name,username,avatar_url,bio").eq("id",targetId).maybeSingle();
   const {data:{user}}=await supabaseClient.auth.getUser();
-  const {count:followerCount}=await supabaseClient.from("author_follows").select("follower_id",{count:"exact",head:true}).eq("author_id",s.authorId);
-  const {data:follow}=user?await supabaseClient.from("author_follows").select("author_id").eq("follower_id",user.id).eq("author_id",s.authorId).maybeSingle():{data:null};
+  const {count:followerCount}=await supabaseClient.from("author_follows").select("follower_id",{count:"exact",head:true}).eq("author_id",targetId);
+  const {data:follow}=user?await supabaseClient.from("author_follows").select("author_id").eq("follower_id",user.id).eq("author_id",targetId).maybeSingle():{data:null};
   const name=profile?.display_name||profile?.username||"रचनाकार";
   const list=(works||[]).map(w=>`<article class="story-card"><h3>${escapeHtml(w.title)}</h3><p>${wordCount(w.content)} शब्द</p><button class="primary-button" data-read="${w.id}">पढ़ें</button></article>`).join("");
-  const d=document.createElement("dialog");d.className="modal";d.innerHTML=`<div class="reader-page"><button class="close-button" id="authorClose">×</button><div class="profile-card"><div class="profile-avatar">${profile?.avatar_url?`<img src="${escapeHtml(profile.avatar_url)}">`:escapeHtml(name.slice(0,1))}</div><div><h2>${escapeHtml(name)}</h2><p>${followerCount||0} फ़ॉलोअर</p></div></div><p>${escapeHtml(profile?.bio||"")}</p>${user&&user.id!==s.authorId?`<button class="primary-button" id="followAuthor">${follow?"अनफ़ॉलो":"फ़ॉलो करें"}</button>`:""}<h3>प्रकाशित रचनाएँ (${(works||[]).length})</h3><div class="story-list">${list||"<p>अभी कोई प्रकाशित रचना नहीं।</p>"}</div></div>`;
+  const d=document.createElement("dialog");d.className="modal";d.innerHTML=`<div class="reader-page"><button class="close-button" id="authorClose">×</button><div class="profile-card"><div class="profile-avatar">${profile?.avatar_url?`<img src="${escapeHtml(profile.avatar_url)}">`:escapeHtml(name.slice(0,1))}</div><div><h2>${escapeHtml(name)}</h2><p>${followerCount||0} फ़ॉलोअर</p></div></div><p>${escapeHtml(profile?.bio||"")}</p>${user&&user.id!==targetId?`<button class="primary-button" id="followAuthor">${follow?"अनफ़ॉलो":"फ़ॉलो करें"}</button><button class="secondary-button" id="reportAuthor">प्रोफ़ाइल रिपोर्ट करें</button>`:""}<h3>प्रकाशित रचनाएँ (${(works||[]).length})</h3><div class="story-list">${list||"<p>अभी कोई प्रकाशित रचना नहीं।</p>"}</div></div>`;
   document.body.appendChild(d);d.showModal();d.querySelector("#authorClose").onclick=()=>{d.close();d.remove();};
   d.querySelectorAll("[data-read]").forEach(b=>b.onclick=()=>{d.close();d.remove();openReader(b.dataset.read);});
-  d.querySelector("#followAuthor")?.addEventListener("click",async()=>{if(follow){await supabaseClient.from("author_follows").delete().eq("follower_id",user.id).eq("author_id",s.authorId);}else{await supabaseClient.from("author_follows").insert({follower_id:user.id,author_id:s.authorId});}d.close();d.remove();toast(follow?"फ़ॉलो हटाया गया":"रचनाकार को फ़ॉलो किया गया");});
+  d.querySelector("#followAuthor")?.addEventListener("click",async()=>{if(follow){await supabaseClient.from("author_follows").delete().eq("follower_id",user.id).eq("author_id",targetId);}else{await supabaseClient.from("author_follows").insert({follower_id:user.id,author_id:targetId});}d.close();d.remove();toast(follow?"फ़ॉलो हटाया गया":"रचनाकार को फ़ॉलो किया गया");});
+  d.querySelector("#reportAuthor")?.addEventListener("click",async()=>{const reason=prompt("प्रोफ़ाइल रिपोर्ट का कारण लिखें:");if(!reason)return;const details=prompt("विवरण अधिकतम 100 शब्दों में लिखें:");if(!details)return;if(wordCount(details)>100){toast("रिपोर्ट अधिकतम 100 शब्दों की हो सकती है।");return;}const {error}=await supabaseClient.from("content_reports").insert({reporter_id:user.id,target_type:"profile",target_profile_id:targetId,reason:reason.slice(0,100),details});toast(error?"रिपोर्ट नहीं भेजी: "+error.message:"प्रोफ़ाइल रिपोर्ट भेज दी गई।");});
 }
 
 async function loadCloudProfile() {
@@ -474,7 +624,14 @@ async function loadCloudProfile() {
   const { data: { user }, error: userError } =
     await supabaseClient.auth.getUser();
 
-  if (userError || !user) return;
+  if (userError || !user) {
+    state.profile = emptyAccountState().profile;
+    currentUserId = null;
+    saveState();
+    renderProfile();
+    return;
+  }
+  if (currentUserId !== user.id) switchAccountState(user.id);
 
   const { data, error } = await supabaseClient
     .from("profiles")
@@ -485,17 +642,19 @@ async function loadCloudProfile() {
   if (error) {
     console.error("प्रोफ़ाइल लोड नहीं हुई:", error.message);
     return;
-  }
-
+                                 }
+  
   if (data) {
     state.profile.name =
       data.display_name || "अनाम पाठक";
     state.profile.avatarUrl = data.avatar_url || "";
     state.profile.intro = data.bio || "";
     state.profile.readingLanguage = data.reading_language || "hi";
+    state.profile.preferredCategories = data.preferred_categories || [];
     const langSel=document.getElementById("readingLanguage"); if(langSel)langSel.value=state.profile.readingLanguage;
     saveState();
     renderProfile();
+    renderPreferredCategories();
   }
 }
 function renderProfile(){
@@ -510,6 +669,8 @@ function renderProfile(){
   const mine=state.stories.filter(s=>s.source==="supabase" && s.authorId===currentUserId && s.status!=="draft");
   const drafts=state.stories.filter(s=>s.source==="supabase" && s.authorId===currentUserId && s.status==="draft");
   document.getElementById("publishedCount").textContent=mine.length;
+  const followerEl=document.getElementById("myFollowerCount");
+  if(followerEl&&currentUserId&&supabaseClient)supabaseClient.from("author_follows").select("follower_id",{count:"exact",head:true}).eq("author_id",currentUserId).then(({count,error})=>{if(!error)followerEl.textContent=count||0;});
   document.getElementById("myStoryList").innerHTML=mine.length?mine.map(storyCard).join(""):'<p class="muted">अभी आपने कोई रचना प्रकाशित नहीं की है।</p>';
   const draftBox=document.getElementById("myDraftList");
   if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><button data-republish="${escapeHtml(d.id)}">पुनः प्रकाशित करें</button></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
@@ -518,11 +679,12 @@ function renderProfile(){
 }
 function switchTab(tab){
   activeTab=tab;
-   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   document.querySelector(".app-shell").classList.toggle("hidden",tab!=="home");
   ["library","profile","settings"].forEach(t=>document.getElementById(t+"View").classList.toggle("hidden",tab!==t));
   if(tab==="write"){openWrite();document.querySelector('[data-tab="home"]').classList.remove("active");}
   if(tab==="library")renderLibrary();
+  if(tab==="settings")renderPreferredCategories();
   if(tab==="profile")renderProfile();
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -536,10 +698,15 @@ function init(){
   document.getElementById("readerAuthorLink")?.addEventListener("click",openAuthorProfile);
   document.getElementById("reportWork")?.addEventListener("click",async()=>{const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;const reason=prompt("समस्या का प्रकार लिखें (आपत्तिजनक/कॉपीराइट/अन्य):");if(!reason)return;const details=prompt("अपनी समस्या अधिकतम 100 शब्दों में लिखें:");if(!details)return;if(wordCount(details)>100){toast("रिपोर्ट अधिकतम 100 शब्दों की हो सकती है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("रिपोर्ट के लिए लॉगिन करें।");return;}const {error}=await supabaseClient.from("content_reports").insert({reporter_id:user.id,target_type:"work",target_work_id:s.id,reason:reason.slice(0,100),details});toast(error?"रिपोर्ट नहीं भेजी: "+error.message:"रिपोर्ट भेज दी गई।");});
   document.getElementById("shareWork")?.addEventListener("click",async()=>{const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;const url=location.href.split("#")[0]+"#work-"+s.id;const share={title:s.title,text:`${s.title} — ${s.author}`,url};if(navigator.share){try{await navigator.share(share);}catch(e){}}else{await navigator.clipboard?.writeText(url);toast("रचना लिंक कॉपी हुई।");}});
+  document.getElementById("shareExcerptImage")?.addEventListener("click",shareExcerptAsImage);
   document.getElementById("authShortcut")?.addEventListener("click",()=>document.getElementById("openAuthButton")?.click());
   document.getElementById("avatarUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const url=await uploadSutradharImage(f,"avatars");const {data:{user}}=await supabaseClient.auth.getUser();const {error}=await supabaseClient.from("profiles").update({avatar_url:url}).eq("id",user.id);if(error)throw error;state.profile.avatarUrl=url;saveState();renderProfile();toast("प्रोफ़ाइल DP अपडेट हो गई।");}catch(err){toast("DP अपडेट नहीं हुई: "+err.message);}});
   document.getElementById("readingLanguage")?.addEventListener("change",async e=>{if(!supabaseClient)return;const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({reading_language:e.target.value}).eq("id",user.id);if(error)toast(error.message);else{state.profile.readingLanguage=e.target.value;saveState();renderStories();toast("पठन भाषा सुरक्षित हुई।");}}});
   document.getElementById("themeToggle").addEventListener("click",toggleTheme);
+  document.getElementById("writerSort")?.addEventListener("change",loadHomepageStats);
+  renderPreferredCategories();
+  document.getElementById("editorToolbar")?.querySelectorAll("[data-format]").forEach(b=>b.addEventListener("click",()=>{const m={bold:["**","**"],italic:["*","*"],highlight:["[[highlight]]","[[/highlight]]"]}[b.dataset.format];wrapEditorSelection(...m);}));
+  document.getElementById("applyEditorStyle")?.addEventListener("click",()=>{const font=document.getElementById("editorFont").value,color=document.getElementById("editorColor").value;if(color)wrapEditorSelection(`[[color:${color}]]`,`[[/color]]`);else wrapEditorSelection(`[[font:${font}]]`,`[[/font]]`);});
   document.getElementById("themeToggle2").addEventListener("click",toggleTheme);
   document.getElementById("formType").addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
   document.getElementById("storyForm").addEventListener("submit",publishStory);
@@ -553,6 +720,7 @@ function init(){
   document.getElementById("bookmarkButton").addEventListener("click",toggleBookmark);
   document.getElementById("submitFeedback")?.addEventListener("click",submitRatingReview);
   document.getElementById("workOwnerAction")?.addEventListener("click",setCurrentWorkStatus);
+  document.getElementById("editWorkAction")?.addEventListener("click",()=>openEditWork(currentReaderId));
   document.getElementById("reviewsList")?.addEventListener("submit",e=>{if(e.target.matches("[data-review-comment]")){e.preventDefault();submitReviewComment(e.target);}});
   document.getElementById("clearCategory").addEventListener("click",()=>{activeCategory="सभी";renderChips();renderStories();});
   document.getElementById("introInput").addEventListener("input",e=>document.getElementById("introCount").textContent=`${e.target.value.length}/1000 अक्षर`);
@@ -572,6 +740,7 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
     toast("पहले लॉगिन करें।");
     return;
   }
+
   const { error } = await supabaseClient
     .from("profiles")
     .update({ bio: intro })
@@ -587,16 +756,17 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
   renderProfile();
   toast("परिचय डेटाबेस में सुरक्षित हो गया।");
 });
-  
+
   document.getElementById("editProfile").addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
   document.getElementById("resetData").addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
   document.getElementById("writeDialog").addEventListener("close",saveDraftFromForm);
-  if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  // पुराने Service Worker की cached JS/HTML फ़ाइलें account बदलने पर पुराना डेटा दिखा सकती हैं।
+  if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+    navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(reg=>reg.unregister())).catch(()=>{});
+  }
 }
 function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState();applyTheme();}
 init();
-loadCloudWorks();
-loadCloudProfile();
 /* साहित्य सूत्रधार: Supabase लॉगिन */
 
 (function setupSahityaGramAuth() {
@@ -739,9 +909,9 @@ google.addEventListener("click", async () => {
     } else {
   showMessage("लॉगिन सफल हुआ!");
   await refreshAuth();
-  await loadCloudProfile();
-  await loadCloudWorks();
-  setTimeout(() => dialog.close(), 1000);
+  const {data: sessionData}=await supabaseClient.auth.getSession();
+  await syncCurrentAccount(sessionData?.session?.user || null);
+  setTimeout(() => dialog.close(), 700);
       }
     } catch (error) {
       showMessage("त्रुटि: " + error.message);
@@ -749,16 +919,34 @@ google.addEventListener("click", async () => {
       submit.disabled = false;
     }
   });
+    
+  async function syncCurrentAccount(sessionUser){
+    const version = ++authSyncVersion;
+    const nextId = sessionUser?.id || null;
+    if (currentUserId !== nextId) switchAccountState(nextId);
+    if (!nextId) {
+      state = emptyAccountState();
+      currentUserId = null;
+      saveState();
+      renderProfile(); renderStories(); renderLibrary();
+      return;
+    }
+    // खाते की प्रोफ़ाइल पहले, फिर उसी खाते की रचनाएँ लोड हों।
+    await loadCloudProfile();
+    if (version !== authSyncVersion) return;
+    await loadCloudWorks();
+    if (version !== authSyncVersion) return;
+    renderProfile();
+  }
 
-  supabaseClient.auth.onAuthStateChange(() => {
+  supabaseClient.auth.onAuthStateChange((event, session) => {
     refreshAuth();
     // Auth callback के भीतर सीधे Supabase query न चलाएँ।
-    setTimeout(() => {
-      loadCloudWorks();
-      loadCloudProfile();
-    }, 0);
+    setTimeout(() => syncCurrentAccount(session?.user || null), 0);
   });
 
-  refreshAuth();
+  supabaseClient.auth.getSession().then(({data,error})=>{
+    if(error) console.error("सेशन लोड नहीं हुआ:",error.message);
+    syncCurrentAccount(data?.session?.user || null);
+  });
 })();
-      
