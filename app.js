@@ -19,7 +19,8 @@ let state = loadState();
 let activeCategory = "सभी";
 let activeTab = "home";
 let currentReaderId = null;
-let currentUserId = null;
+let currentDraftId = null;
+let cloudDrafts = [];
 let readingStartedAt = 0;
 let toastTimer;
 
@@ -46,7 +47,7 @@ function storyCard(s){
   return `<article class="story-card"><div>${cats}</div><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.author||"अनाम लेखक")} · ${escapeHtml(s.type||"रचना")}${s.subtype?" / "+escapeHtml(s.subtype):""}</p><p class="excerpt">${escapeHtml(excerpt)}${excerpt.length>=150?"…":""}</p><div class="story-meta"><span>◉ ${s.reads||0} पाठक · लगभग ${minutesFor(s.body)} मिनट</span><button data-read="${escapeHtml(s.id)}">पढ़ें ↗</button></div></article>`;
 }
 function renderStories(){
-  let list=[...state.stories].filter(s=>s.status!=="draft").sort((a,b)=>(b.created||0)-(a.created||0));
+  let list=[...state.stories].sort((a,b)=>(b.created||0)-(a.created||0));
   if(activeCategory!=="सभी")list=list.filter(s=>(s.categories||[]).includes(activeCategory));
   document.getElementById("storyCount").textContent=`${list.length} रचनाएँ`;
   document.getElementById("storyList").innerHTML=list.map(storyCard).join("");
@@ -85,6 +86,7 @@ function restoreDraft(){
   document.getElementById("charCount").textContent=`${(d.body||"").length} अक्षर`;
 }
 function openWrite(){
+  currentDraftId=null;
   restoreDraft();document.getElementById("writeDialog").showModal();
 }
 
@@ -100,16 +102,102 @@ function getDatabaseWorkType(type, subtype) {
   return mapping[subtype] || "other";
 }
 
+function getStoryFormValues() {
+  return {
+    title: document.getElementById("storyTitle").value.trim(),
+    body: document.getElementById("storyBody").value.trim(),
+    type: document.getElementById("formType").value,
+    subtype: document.getElementById("formSubType").value,
+    categoryNames: [...document.querySelectorAll("#formCategories input:checked")].map(x => x.value)
+  };
+}
+async function getCategoryMap(names) {
+  if (!names.length) return new Map();
+  const { data, error } = await supabaseClient.from("categories").select("id,name").in("name", names);
+  if (error) throw error;
+  const map = new Map((data || []).map(row => [row.name, row.id]));
+  const missing = names.filter(name => !map.has(name));
+  if (missing.length) throw new Error("Supabase में ये श्रेणियाँ नहीं मिलीं: " + missing.join(", "));
+  return map;
+}
+async function saveCloudDraft() {
+  if (!supabaseClient) return toast("Supabase कनेक्शन उपलब्ध नहीं है।");
+  const { title, body, type, subtype, categoryNames } = getStoryFormValues();
+  if (!title || !body || !type || (type !== "चंपू काव्य" && !subtype)) return toast("ड्राफ्ट सेव करने के लिए शीर्षक, सामग्री और रचना का रूप भरें।");
+  const button = document.getElementById("saveDraftCloud"); button.disabled = true;
+  try {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError) throw authError;
+    if (!user) return toast("ड्राफ्ट Supabase में सेव करने के लिए पहले लॉगिन करें।");
+    const categoryMap = await getCategoryMap(categoryNames);
+    const payload = { author_id:user.id, title, content:body, work_type:getDatabaseWorkType(type,subtype), main_form:type, subtype:subtype||null, status:"draft", content_language:"hi" };
+    if (currentDraftId) {
+      const { error } = await supabaseClient.from("works").update(payload).eq("id",currentDraftId).eq("author_id",user.id);
+      if (error) throw error;
+      if (categoryNames.length) {
+        const { data: existingLinks, error: existingError } = await supabaseClient.from("work_categories").select("category_id").eq("work_id",currentDraftId);
+        if (existingError) throw existingError;
+        const already = new Set((existingLinks || []).map(x => x.category_id));
+        const newLinks = categoryNames.map(name => categoryMap.get(name)).filter(id => !already.has(id)).map(id => ({work_id:currentDraftId,category_id:id}));
+        if (newLinks.length) { const { error: addError } = await supabaseClient.from("work_categories").insert(newLinks); if (addError) throw addError; }
+      }
+    } else {
+      const { data, error } = await supabaseClient.from("works").insert(payload).select("id").single();
+      if (error) throw error;
+      currentDraftId = data.id;
+      if (categoryNames.length) {
+        const links = categoryNames.map(name => ({work_id:data.id,category_id:categoryMap.get(name)}));
+        const { error: linkError } = await supabaseClient.from("work_categories").insert(links);
+        if (linkError) throw new Error("ड्राफ्ट सेव हुआ, लेकिन श्रेणियाँ नहीं जुड़ीं: " + linkError.message);
+      }
+    }
+    saveDraftFromForm();
+    document.getElementById("draftStatus").textContent = "Supabase में ड्राफ्ट सुरक्षित है";
+    toast("ड्राफ्ट Supabase में सुरक्षित हो गया।");
+    await loadCloudDrafts();
+  } catch (error) { console.error("ड्राफ्ट सेव नहीं हुआ:",error); toast("ड्राफ्ट सेव नहीं हुआ: "+(error.message||String(error))); }
+  finally { button.disabled = false; }
+}
+async function loadCloudDrafts() {
+  if (!supabaseClient) return;
+  try {
+    const { data:{user}, error:authError } = await supabaseClient.auth.getUser();
+    if (authError) throw authError;
+    if (!user) { cloudDrafts=[]; renderProfile(); return; }
+    const { data:rows, error } = await supabaseClient.from("works").select("id,author_id,title,content,work_type,main_form,subtype,created_at").eq("author_id",user.id).eq("status","draft").order("created_at",{ascending:false});
+    if (error) throw error;
+    const ids=(rows||[]).map(row=>row.id); let links=[], categories=[];
+    if (ids.length) {
+      const {data,error:linkError}=await supabaseClient.from("work_categories").select("work_id,category_id").in("work_id",ids);
+      if(linkError) throw linkError; links=data||[];
+      const categoryIds=[...new Set(links.map(x=>x.category_id))];
+      if(categoryIds.length){const {data:cats,error:catError}=await supabaseClient.from("categories").select("id,name").in("id",categoryIds);if(catError)throw catError;categories=cats||[];}
+    }
+    cloudDrafts=(rows||[]).map(row=>({id:row.id,title:row.title,body:row.content,type:row.main_form||(row.work_type==="poem"?"पद्य":"गद्य"),subtype:row.subtype||"",categories:categories.filter(c=>links.some(l=>l.work_id===row.id&&l.category_id===c.id)).map(c=>c.name),created:new Date(row.created_at).getTime()}));
+    renderProfile();
+  } catch(error){console.error("ड्राफ्ट लोड नहीं हुए:",error);toast("ड्राफ्ट लोड नहीं हुए: "+(error.message||String(error)));}
+}
+function editCloudDraft(id) {
+  const d=cloudDrafts.find(x=>String(x.id)===String(id)); if(!d)return;
+  currentDraftId=d.id;
+  document.getElementById("storyTitle").value=d.title||"";
+  document.getElementById("storyBody").value=d.body||"";
+  document.getElementById("formType").value=d.type||""; updateSubtypes();
+  document.getElementById("formSubType").value=d.subtype||"";
+  document.querySelectorAll("#formCategories input").forEach(cb=>cb.checked=(d.categories||[]).includes(cb.value));
+  document.getElementById("draftStatus").textContent="Supabase का ड्राफ्ट संपादन में है";
+  document.getElementById("charCount").textContent=`${(d.body||"").length} अक्षर`;
+  document.getElementById("writeDialog").showModal();
+}
+
 async function loadCloudWorks() {
   if (!supabaseClient) return;
 
   try {
-    const authResult = await supabaseClient.auth.getUser();
-    currentUserId = authResult.data?.user?.id || null;
     const { data: works, error } = await supabaseClient
       .from("works")
-      .select("id,author_id,title,content,work_type,main_form,subtype,status,created_at")
-      .in("status", ["published", "draft"])
+      .select("id,author_id,title,content,work_type,main_form,subtype,created_at")
+      .eq("status", "published")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -166,8 +254,7 @@ async function loadCloudWorks() {
         created: new Date(w.created_at).getTime(),
         reads: 0,
         minutes: minutesFor(w.content),
-        source: "supabase",
-        status: w.status || "published"
+        source: "supabase"
       };
     });
 
@@ -190,111 +277,41 @@ async function loadCloudWorks() {
 
 async function publishStory(e) {
   e.preventDefault();
-
-  const title = document.getElementById("storyTitle").value.trim();
-  const body = document.getElementById("storyBody").value.trim();
-  const type = document.getElementById("formType").value;
-  const subtype = document.getElementById("formSubType").value;
-  const categoryNames = [
-    ...document.querySelectorAll("#formCategories input:checked")
-  ].map(x => x.value);
-
-  if (!title || !body || !type || !categoryNames.length) {
-    toast("शीर्षक, सामग्री, विधा और कम-से-कम एक श्रेणी भरें।");
-    return;
-  }
-  if (type !== "चंपू काव्य" && !subtype) {
-    toast("कृपया रचना का उपप्रकार चुनें।");
-    return;
-  }
-  if (!supabaseClient) {
-    toast("Supabase कनेक्शन उपलब्ध नहीं है।");
-    return;
-  }
-
-  const submitButton = document.querySelector(
-    '#storyForm button[type="submit"]'
-  );
-  if (submitButton) submitButton.disabled = true;
-
-  try {
-    const { data: authData, error: authError } =
-      await supabaseClient.auth.getUser();
-    if (authError) throw authError;
-
-    const user = authData?.user;
-    if (!user) {
-      toast("रचना प्रकाशित करने के लिए पहले लॉगिन करें।");
-      return;
+  const {title,body,type,subtype,categoryNames}=getStoryFormValues();
+  if(!title||!body||!type||!categoryNames.length)return toast("शीर्षक, सामग्री, विधा और कम-से-कम एक श्रेणी भरें।");
+  if(type!=="चंपू काव्य"&&!subtype)return toast("कृपया रचना का उपप्रकार चुनें।");
+  if(!supabaseClient)return toast("Supabase कनेक्शन उपलब्ध नहीं है।");
+  const submitButton=document.querySelector('#storyForm button[type="submit"]'); if(submitButton)submitButton.disabled=true;
+  try{
+    const {data:{user},error:authError}=await supabaseClient.auth.getUser(); if(authError)throw authError;
+    if(!user)return toast("रचना प्रकाशित करने के लिए पहले लॉगिन करें।");
+    const categoryMap=await getCategoryMap(categoryNames);
+    const payload={title,content:body,work_type:getDatabaseWorkType(type,subtype),main_form:type,subtype:subtype||null,status:"published",content_language:"hi"};
+    if(currentDraftId){
+      if(categoryNames.length){
+        const {data:existingLinks,error:existingError}=await supabaseClient.from("work_categories").select("category_id").eq("work_id",currentDraftId);
+        if(existingError)throw existingError;
+        const already=new Set((existingLinks||[]).map(x=>x.category_id));
+        const newLinks=categoryNames.map(name=>categoryMap.get(name)).filter(id=>!already.has(id)).map(id=>({work_id:currentDraftId,category_id:id}));
+        if(newLinks.length){const {error:addError}=await supabaseClient.from("work_categories").insert(newLinks);if(addError)throw addError;}
+      }
+      const {error}=await supabaseClient.from("works").update(payload).eq("id",currentDraftId).eq("author_id",user.id);
+      if(error)throw error;
+    }else{
+      const {data,error}=await supabaseClient.from("works").insert({...payload,author_id:user.id}).select("id").single();
+      if(error)throw error;
+      const links=categoryNames.map(name=>({work_id:data.id,category_id:categoryMap.get(name)}));
+      const {error:linkError}=await supabaseClient.from("work_categories").insert(links);
+      if(linkError)throw new Error("रचना सेव हुई, लेकिन श्रेणियाँ नहीं जुड़ीं: "+linkError.message);
     }
-
-    // श्रेणियों की ID पहले जाँचें ताकि गलत श्रेणी पर रचना insert न हो।
-    const { data: categoryRows, error: categoryError } =
-      await supabaseClient
-        .from("categories")
-        .select("id,name")
-        .in("name", categoryNames);
-    if (categoryError) throw categoryError;
-
-    const categoryMap = new Map(
-      (categoryRows || []).map(row => [row.name, row.id])
-    );
-    const missing = categoryNames.filter(name => !categoryMap.has(name));
-    if (missing.length) {
-      throw new Error(
-        "ये श्रेणियाँ Supabase की categories टेबल में नहीं मिलीं: " +
-        missing.join(", ")
-      );
-    }
-
-    const { data: work, error: workError } = await supabaseClient
-      .from("works")
-      .insert({
-        author_id: user.id,
-        title,
-        content: body,
-        work_type: getDatabaseWorkType(type, subtype),
-        main_form: type,
-        subtype: subtype || null,
-        status: "published",
-        content_language: "hi"
-      })
-      .select()
-      .single();
-    if (workError) throw workError;
-
-    const links = categoryNames.map(name => ({
-      work_id: work.id,
-      category_id: categoryMap.get(name)
-    }));
-    const { error: linkError } = await supabaseClient
-      .from("work_categories")
-      .insert(links);
-
-    if (linkError) {
-      console.error("श्रेणी लिंक सेव नहीं हुए:", linkError);
-      toast(
-        "रचना Supabase में सेव हो गई, लेकिन श्रेणियाँ नहीं जुड़ीं: " +
-        linkError.message
-      );
-    } else {
-      toast("रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!");
-    }
-
-    state.drafts = {
-      title: "", body: "", type: "", subtype: "", categories: []
-    };
-    saveState();
-    document.getElementById("writeDialog").close();
-    await loadCloudWorks();
-  } catch (error) {
-    console.error("रचना प्रकाशित करने में समस्या:", error);
-    toast("रचना प्रकाशित नहीं हुई: " + (error.message || String(error)));
-  } finally {
-    if (submitButton) submitButton.disabled = false;
-  }
+    currentDraftId=null; state.drafts={title:"",body:"",type:"",subtype:"",categories:[]}; saveState();
+    document.getElementById("writeDialog").close(); toast("रचना Supabase में प्रकाशित हो गई!");
+    await Promise.all([loadCloudWorks(),loadCloudDrafts()]);
+  }catch(error){console.error("रचना प्रकाशित करने में समस्या:",error);toast("रचना प्रकाशित नहीं हुई: "+(error.message||String(error)));}
+  finally{if(submitButton)submitButton.disabled=false;}
 }
-async function openReader(id){
+
+function openReader(id){
   const s=state.stories.find(x=>x.id===id);if(!s)return;
   currentReaderId=id;readingStartedAt=Date.now();
   document.getElementById("readerTitle").textContent=s.title;
@@ -304,89 +321,8 @@ async function openReader(id){
   document.getElementById("readerMeta").textContent=`लगभग ${minutesFor(s.body)} मिनट`;
   document.getElementById("readerWords").textContent=`${wordCount(s.body)} शब्द`;
   document.getElementById("bookmarkButton").textContent=(state.profile.bookmarks||[]).includes(id)?"♥":"♧";
-  const owner = !!s.authorId && (await supabaseClient?.auth.getUser())?.data?.user?.id === s.authorId;
-  const action = document.getElementById("workOwnerAction");
-  if(action){ action.classList.toggle("hidden",!owner); action.textContent=s.status==="draft"?"पुनः प्रकाशित करें":"अप्रकाशित करके ड्राफ्ट में रखें"; }
-  const panel=document.getElementById("feedbackPanel");
-  if(panel) panel.classList.toggle("hidden",s.source!=="supabase" || s.status==="draft");
   document.getElementById("readerDialog").showModal();
-  if(s.source==="supabase" && s.status!=="draft") await loadWorkFeedback(id);
 }
-
-async function loadWorkFeedback(workId){
-  const summary=document.getElementById("ratingSummary");
-  const reviewsBox=document.getElementById("reviewsList");
-  if(!summary||!reviewsBox||!supabaseClient)return;
-  summary.textContent="रेटिंग और समीक्षाएँ लोड हो रही हैं…";
-  reviewsBox.innerHTML="";
-  try{
-    const [{data:ratings,error:re}, {data:reviews,error:ve}] = await Promise.all([
-      supabaseClient.from("ratings").select("id,user_id,rating,created_at").eq("work_id",workId),
-      supabaseClient.from("reviews").select("id,user_id,review_text,created_at,updated_at").eq("work_id",workId).order("created_at",{ascending:false})
-    ]);
-    if(re)throw re;if(ve)throw ve;
-    const rows=ratings||[], avg=rows.length?rows.reduce((a,x)=>a+Number(x.rating),0)/rows.length:0;
-    summary.textContent=`★ ${avg?avg.toFixed(1):"—"} / 5 · ${rows.length} रेटिंग · ${(reviews||[]).length} समीक्षाएँ`;
-    const {data:{user}}=await supabaseClient.auth.getUser();
-    const myRating=rows.find(x=>x.user_id===user?.id);
-    const myReview=(reviews||[]).find(x=>x.user_id===user?.id);
-    document.getElementById("ratingInput").value=myRating?.rating||"";
-    document.getElementById("reviewInput").value=myReview?.review_text||"";
-    const userIds=[...new Set((reviews||[]).map(x=>x.user_id))];
-    let profiles=[];
-    if(userIds.length){const q=await supabaseClient.from("profiles").select("id,display_name,username").in("id",userIds);if(!q.error)profiles=q.data||[];}
-    if(!(reviews||[]).length){reviewsBox.innerHTML='<p class="muted">अभी कोई समीक्षा नहीं है। पहली समीक्षा आप लिख सकते हैं।</p>';return;}
-    reviewsBox.innerHTML=(reviews||[]).map(r=>{
-      const who=profiles.find(p=>p.id===r.user_id);
-      return `<article class="review-card"><strong>${escapeHtml(who?.display_name||who?.username||"पाठक")}</strong><p>${escapeHtml(r.review_text)}</p><small>${new Date(r.created_at).toLocaleDateString("hi-IN")}</small><div class="review-comments" id="reviewComments-${r.id}">कमेंट लोड हो रहे हैं…</div><form class="review-comment-form" data-review-comment="${r.id}"><input name="comment" maxlength="1500" placeholder="इस समीक्षा पर टिप्पणी करें…" required><button type="submit">भेजें</button></form></article>`;
-    }).join("");
-    for(const r of (reviews||[])) await loadReviewComments(r.id,workId);
-  }catch(e){summary.textContent="फीडबैक लोड नहीं हुआ: "+e.message;}
-}
-
-async function loadReviewComments(reviewId,workId){
-  const box=document.getElementById(`reviewComments-${reviewId}`);if(!box)return;
-  const {data,error}=await supabaseClient.from("comments").select("id,user_id,comment_text,created_at").eq("review_id",reviewId).eq("work_id",workId).order("created_at");
-  if(error){box.textContent="कमेंट लोड नहीं हुए: "+error.message;return;}
-  const ids=[...new Set((data||[]).map(x=>x.user_id))];let people=[];
-  if(ids.length){const q=await supabaseClient.from("profiles").select("id,display_name,username").in("id",ids);if(!q.error)people=q.data||[];}
-  box.innerHTML=(data||[]).length?(data||[]).map(c=>{const u=people.find(p=>p.id===c.user_id);return `<p class="review-comment"><b>${escapeHtml(u?.display_name||u?.username||"पाठक")}:</b> ${escapeHtml(c.comment_text)}</p>`;}).join(""):'<p class="muted">अभी कोई टिप्पणी नहीं।</p>';
-}
-
-async function submitRatingReview(){
-  if(!supabaseClient||!currentReaderId)return;
-  const {data:{user}}=await supabaseClient.auth.getUser();
-  if(!user){toast("रेटिंग या समीक्षा देने के लिए लॉगिन करें।");return;}
-  const rating=Number(document.getElementById("ratingInput").value);
-  const review=document.getElementById("reviewInput").value.trim();
-  try{
-    if(rating){const q=await supabaseClient.from("ratings").upsert({user_id:user.id,work_id:currentReaderId,rating},{onConflict:"user_id,work_id"});if(q.error)throw q.error;}
-    if(review){const q=await supabaseClient.from("reviews").upsert({user_id:user.id,work_id:currentReaderId,review_text:review},{onConflict:"user_id,work_id"});if(q.error)throw q.error;}
-    toast("आपकी रेटिंग और समीक्षा सुरक्षित हो गई।");await loadWorkFeedback(currentReaderId);
-  }catch(e){toast("सुरक्षित नहीं हुआ: "+e.message);}
-}
-
-async function setCurrentWorkStatus(){
-  const s=state.stories.find(x=>x.id===currentReaderId);if(!s||!s.authorId||!supabaseClient)return;
-  const next=s.status==="draft"?"published":"draft";
-  const msg=next==="draft"?"क्या इस रचना को अप्रकाशित करके निजी ड्राफ्ट में रखना चाहते हैं?":"क्या इसी रचना को फिर से प्रकाशित करना चाहते हैं?";
-  if(!confirm(msg))return;
-  const {data:{user}}=await supabaseClient.auth.getUser();if(!user||user.id!==s.authorId){toast("केवल रचनाकार यह बदलाव कर सकता है।");return;}
-  const {error}=await supabaseClient.from("works").update({status:next,updated_at:new Date().toISOString()}).eq("id",s.id).eq("author_id",user.id);
-  if(error){toast("स्थिति नहीं बदली: "+error.message);return;}
-  s.status=next;saveState();document.getElementById("readerDialog").close();await loadCloudWorks();
-  toast(next==="draft"?"रचना निजी ड्राफ्ट में चली गई।":"रचना पुनः प्रकाशित हो गई; पुराना फीडबैक सुरक्षित है।");
-}
-
-async function submitReviewComment(form){
-  const reviewId=Number(form.dataset.reviewComment), textValue=new FormData(form).get("comment")?.toString().trim();
-  if(!textValue||!supabaseClient||!currentReaderId)return;
-  const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("कमेंट करने के लिए लॉगिन करें।");return;}
-  const {error}=await supabaseClient.from("comments").insert({user_id:user.id,work_id:currentReaderId,review_id:reviewId,comment_text:textValue});
-  if(error){toast("कमेंट सुरक्षित नहीं हुआ: "+error.message);return;}
-  form.reset();await loadReviewComments(reviewId,currentReaderId);toast("टिप्पणी प्रकाशित हो गई।");
-}
-
 function finishReading(){
   const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;
   s.reads=(s.reads||0)+1;
@@ -444,14 +380,15 @@ function renderProfile(){
   document.getElementById("introInput").value=p.intro||"";
   document.getElementById("introCount").textContent=`${(p.intro||"").length}/1000 अक्षर`;
   document.getElementById("wordsRead").textContent=(p.wordsRead||0).toLocaleString("hi-IN");
-  const mine=state.stories.filter(s=>s.source==="supabase" && s.authorId===currentUserId && s.status!=="draft");
-  const drafts=state.stories.filter(s=>s.source==="supabase" && s.authorId===currentUserId && s.status==="draft");
+  const mine=state.stories.filter(s=>s.author===p.name);
   document.getElementById("publishedCount").textContent=mine.length;
   document.getElementById("myStoryList").innerHTML=mine.length?mine.map(storyCard).join(""):'<p class="muted">अभी आपने कोई रचना प्रकाशित नहीं की है।</p>';
-  const draftBox=document.getElementById("myDraftList");
-  if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><button data-republish="${escapeHtml(d.id)}">पुनः प्रकाशित करें</button></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
+  const draftHost=document.getElementById("myDraftList");
+  if(draftHost){
+    draftHost.innerHTML=cloudDrafts.length?cloudDrafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title||"बिना शीर्षक")}</h3><p>${escapeHtml(d.type||"ड्राफ्ट")}${d.subtype?" / "+escapeHtml(d.subtype):""}</p><p class="excerpt">${escapeHtml((d.body||"").replace(/\s+/g," ").slice(0,130))}</p><div class="story-meta"><button type="button" data-edit-draft="${escapeHtml(d.id)}">संपादित करें / प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">अभी Supabase में कोई निजी ड्राफ्ट नहीं है।</p>';
+    draftHost.querySelectorAll("[data-edit-draft]").forEach(b=>b.addEventListener("click",()=>editCloudDraft(b.dataset.editDraft)));
+  }
   bindReadButtons();
-  document.querySelectorAll("[data-republish]").forEach(b=>b.addEventListener("click",()=>{currentReaderId=b.dataset.republish;setCurrentWorkStatus();}));
 }
 function switchTab(tab){
   activeTab=tab;
@@ -473,6 +410,7 @@ function init(){
   document.getElementById("themeToggle2").addEventListener("click",toggleTheme);
   document.getElementById("formType").addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
   document.getElementById("storyForm").addEventListener("submit",publishStory);
+  document.getElementById("saveDraftCloud").addEventListener("click",saveCloudDraft);
   document.getElementById("storyTitle").addEventListener("input",saveDraftFromForm);
   document.getElementById("storyBody").addEventListener("input",saveDraftFromForm);
   document.getElementById("formSubType").addEventListener("change",saveDraftFromForm);
@@ -481,9 +419,6 @@ function init(){
   document.getElementById("closeReader").addEventListener("click",()=>document.getElementById("readerDialog").close());
   document.getElementById("finishReading").addEventListener("click",finishReading);
   document.getElementById("bookmarkButton").addEventListener("click",toggleBookmark);
-  document.getElementById("submitFeedback")?.addEventListener("click",submitRatingReview);
-  document.getElementById("workOwnerAction")?.addEventListener("click",setCurrentWorkStatus);
-  document.getElementById("reviewsList")?.addEventListener("submit",e=>{if(e.target.matches("[data-review-comment]")){e.preventDefault();submitReviewComment(e.target);}});
   document.getElementById("clearCategory").addEventListener("click",()=>{activeCategory="सभी";renderChips();renderStories();});
   document.getElementById("introInput").addEventListener("input",e=>document.getElementById("introCount").textContent=`${e.target.value.length}/1000 अक्षर`);
   
@@ -493,7 +428,8 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
   if (!supabaseClient) {
     toast("डेटाबेस से कनेक्शन उपलब्ध नहीं है।");
     return;
-}
+  }
+
   const { data: { user }, error: userError } =
     await supabaseClient.auth.getUser();
 
@@ -527,6 +463,7 @@ function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState
 init();
 loadCloudWorks();
 loadCloudProfile();
+loadCloudDrafts();
 /* साहित्य सूत्रधार: Supabase लॉगिन */
 
 (function setupSahityaGramAuth() {
@@ -662,8 +599,8 @@ google.addEventListener("click", async () => {
             }
           }
         });
-  }
-      
+      }
+
       if (result.error) {
         showMessage("समस्या: " + result.error.message);
       } else if (mode === "register" && !result.data.session) {
