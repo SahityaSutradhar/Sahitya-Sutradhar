@@ -1,3 +1,4 @@
+
 const supabaseClient = window.supabase?.createClient(
   window.SUPABASE_URL,
   window.SUPABASE_ANON_KEY
@@ -19,16 +20,20 @@ let activeCategory = "सभी";
 let activeTab = "home";
 let currentReaderId = null;
 let currentDraftId = null;
+let currentLocalDraftId = null;
 let cloudDrafts = [];
 let readingStartedAt = 0;
 let toastTimer;
+let cloudSaveTimer = null;
+let cloudSyncRunning = false;
+let lastCloudSaveError = "";
 
 function loadState(){
   try{
     const saved = JSON.parse(localStorage.getItem(STORAGE));
-    if(saved) return {...saved, stories: Array.isArray(saved.stories) ? saved.stories : seed};
+    if(saved) return {...saved, stories: Array.isArray(saved.stories) ? saved.stories : seed, localDrafts: Array.isArray(saved.localDrafts) ? saved.localDrafts : []};
   }catch(e){}
-  return {stories:seed, profile:{name:"अनाम पाठक",intro:"",wordsRead:0,bookmarks:[]}, theme:"light", drafts:{title:"",body:"",type:"",subtype:"",categories:[]}};
+  return {stories:seed, profile:{name:"अनाम पाठक",intro:"",wordsRead:0,bookmarks:[]}, theme:"light", drafts:{title:"",body:"",type:"",subtype:"",categories:[]}, localDrafts:[]};
 }
 function saveState(){ localStorage.setItem(STORAGE, JSON.stringify(state)); }
 function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -69,24 +74,122 @@ function updateSubtypes(){
   sel.innerHTML=type==="चंपू काव्य"?'<option value="">उपप्रकार आवश्यक नहीं</option>':type?'<option value="">उपप्रकार चुनें</option>'+SUBTYPES[type].map(s=>`<option>${escapeHtml(s)}</option>`).join(""):'<option value="">पहले रूप चुनें</option>';
   sel.required=!!type&&type!=="चंपू काव्य";
 }
-function saveDraftFromForm(){
-  state.drafts={title:document.getElementById("storyTitle").value,body:document.getElementById("storyBody").value,type:document.getElementById("formType").value,subtype:document.getElementById("formSubType").value,categories:[...document.querySelectorAll("#formCategories input:checked")].map(x=>x.value)};
-  saveState();document.getElementById("draftStatus").textContent="मसौदा इसी डिवाइस पर सुरक्षित";
-  document.getElementById("charCount").textContent=`${document.getElementById("storyBody").value.length} अक्षर`;
+function readFormDraft(){
+  return {title:document.getElementById("storyTitle").value,body:document.getElementById("storyBody").value,type:document.getElementById("formType").value,subtype:document.getElementById("formSubType").value,categories:[...document.querySelectorAll("#formCategories input:checked")].map(x=>x.value),updated:Date.now()};
 }
-function restoreDraft(){
-  const d=state.drafts||{};
+function saveDraftFromForm(){
+  const draft=readFormDraft();
+  state.drafts=draft;
+  if(draft.title.trim() || draft.body.trim()){
+    if(!currentLocalDraftId) currentLocalDraftId="offline-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
+    const item={...draft,id:currentLocalDraftId||("cloud-"+currentDraftId),cloudId:currentDraftId||null,updated:Date.now()};
+    if(currentLocalDraftId){
+      const index=(state.localDrafts||[]).findIndex(x=>x.id===currentLocalDraftId);
+      if(index>=0) state.localDrafts[index]=item; else (state.localDrafts||(state.localDrafts=[])).unshift(item);
+    }
+    document.getElementById("draftStatus").textContent = navigator.onLine ? "ऑटो-सेव: डेटाबेस से सिंक हो रहा है…" : "ऑफलाइन: बदलाव सुरक्षित कतार में हैं; इंटरनेट लौटते ही डेटाबेस में सिंक होंगे";
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer=setTimeout(()=>syncCurrentDraftToCloud(),900);
+  } else {
+    document.getElementById("draftStatus").textContent="लिखना शुरू करते ही ड्राफ्ट अपने-आप सेव होगा";
+  }
+  saveState();
+  document.getElementById("charCount").textContent=`${draft.body.length} अक्षर`;
+  renderProfile();
+}
+async function syncCurrentDraftToCloud(){
+  if(!supabaseClient || !navigator.onLine || cloudSyncRunning) return;
+  const values=getStoryFormValues();
+  if(!values.title && !values.body) return;
+  const localId=currentLocalDraftId;
+  const cloudId=currentDraftId;
+  await persistDraftToCloud(values, cloudId, localId);
+}
+async function persistDraftToCloud(values, cloudId=null, localId=null){
+  if(!supabaseClient || !navigator.onLine || cloudSyncRunning) return false;
+  cloudSyncRunning=true;
+  const queuedVersion=localId?(state.localDrafts||[]).find(d=>d.id===localId)?.updated:null;
+  try{
+    const {data:{session},error:authError}=await supabaseClient.auth.getSession();
+    if(authError) throw authError;
+    const user=session?.user;
+    if(!user) return false;
+    if(!values.title.trim() && !values.body.trim()) return false;
+    const categoryNames=values.categoryNames||[];
+    const categoryMap=await getCategoryMap(categoryNames);
+    const payload={author_id:user.id,title:values.title.trim()||"बिना शीर्षक",content:values.body||"",work_type:getDatabaseWorkType(values.type,values.subtype),main_form:values.type||"गद्य",subtype:values.subtype||null,status:"draft",content_language:"hi"};
+    let id=cloudId;
+    if(id){
+      const {error}=await supabaseClient.from("works").update(payload).eq("id",id).eq("author_id",user.id);
+      if(error) throw error;
+    }else{
+      const {data,error}=await supabaseClient.from("works").insert(payload).select("id").single();
+      if(error) throw error;
+      id=data.id;
+    }
+    const {data:oldLinks,error:oldErr}=await supabaseClient.from("work_categories").select("category_id").eq("work_id",id);
+    if(oldErr) throw oldErr;
+    const wanted=categoryNames.map(n=>categoryMap.get(n)).filter(Boolean);
+    const oldIds=(oldLinks||[]).map(x=>x.category_id);
+    const removeIds=oldIds.filter(x=>!wanted.includes(x));
+    const addIds=wanted.filter(x=>!oldIds.includes(x));
+    if(removeIds.length){const {error}=await supabaseClient.from("work_categories").delete().eq("work_id",id).in("category_id",removeIds);if(error)throw error;}
+    if(addIds.length){const {error}=await supabaseClient.from("work_categories").insert(addIds.map(category_id=>({work_id:id,category_id})));if(error)throw error;}
+    if(localId){const queued=(state.localDrafts||[]).find(d=>d.id===localId);if(queued){if((queued.updated||0)<= (queuedVersion||0)){state.localDrafts=state.localDrafts.filter(d=>d.id!==localId);if(currentLocalDraftId===localId)currentLocalDraftId=null;}else{queued.cloudId=id;}}if(currentLocalDraftId===localId)currentDraftId=id;}
+    else if(cloudId && currentDraftId===cloudId){currentDraftId=id;}
+    saveState();
+    document.getElementById("draftStatus").textContent="✓ Supabase डेटाबेस में ऑटो-सेव हो गया";
+    lastCloudSaveError="";
+    await loadCloudDrafts();
+    return true;
+  }catch(error){
+    console.error("क्लाउड ऑटो-सेव:",error);
+    lastCloudSaveError=error.message||String(error);
+    document.getElementById("draftStatus").textContent="सिंक लंबित — डिवाइस पर सुरक्षित; डेटाबेस में भेजने का प्रयास फिर होगा";
+    return false;
+  }finally{cloudSyncRunning=false;}
+}
+async function syncOfflineDraftQueue(){
+  if(!supabaseClient || !navigator.onLine || cloudSyncRunning) return;
+  const queue=[...(state.localDrafts||[])].sort((a,b)=>(a.updated||0)-(b.updated||0));
+  for(const d of queue){
+    if(!navigator.onLine) break;
+    await persistDraftToCloud({title:d.title||"",body:d.body||"",type:d.type||"गद्य",subtype:d.subtype||"",categoryNames:d.categories||[]},d.cloudId||null,d.id);
+  }
+}
+function deleteCloudDraft(id){
+  if(!confirm("क्या यह ड्राफ्ट हमेशा के लिए हटाना चाहते हैं?")) return;
+  (async()=>{try{const {data:{session},error:authError}=await supabaseClient.auth.getSession();if(authError)throw authError;if(!session?.user)throw new Error("पहले लॉगिन करें।");const {error}=await supabaseClient.from("works").delete().eq("id",id).eq("author_id",session.user.id);if(error)throw error;cloudDrafts=cloudDrafts.filter(d=>String(d.id)!==String(id));renderProfile();toast("ड्राफ्ट डेटाबेस से हटा दिया गया।");}catch(e){toast("ड्राफ्ट नहीं हटाया: "+(e.message||e));}})();
+}
+function fillDraftForm(d){
   document.getElementById("storyTitle").value=d.title||"";
   document.getElementById("storyBody").value=d.body||"";
-  document.getElementById("formType").value=d.type||"";
-  updateSubtypes();
+  document.getElementById("formType").value=d.type||""; updateSubtypes();
   document.getElementById("formSubType").value=d.subtype||"";
   document.querySelectorAll("#formCategories input").forEach(cb=>cb.checked=(d.categories||[]).includes(cb.value));
   document.getElementById("charCount").textContent=`${(d.body||"").length} अक्षर`;
 }
+function restoreDraft(){
+  const d=state.drafts||{};
+  fillDraftForm(d);
+}
+
 function openWrite(){
-  currentDraftId=null;
-  restoreDraft();document.getElementById("writeDialog").showModal();
+  currentDraftId=null; currentLocalDraftId=null;
+  fillDraftForm({title:"",body:"",type:"",subtype:"",categories:[]});
+  document.getElementById("draftStatus").textContent="ऑटो-सेव चालू — ऑनलाइन डेटाबेस में, ऑफलाइन होने पर सिंक कतार में";
+  document.getElementById("writeDialog").showModal();
+}
+function startNewDraft(){
+  saveDraftFromForm(); currentDraftId=null; currentLocalDraftId=null;
+  fillDraftForm({title:"",body:"",type:"",subtype:"",categories:[]});
+  document.getElementById("draftStatus").textContent="नया ड्राफ्ट — लिखते ही डेटाबेस में ऑटो-सेव होगा";
+} 
+function editLocalDraft(id){
+  const d=(state.localDrafts||[]).find(x=>x.id===id); if(!d)return;
+  currentDraftId=null; currentLocalDraftId=id; fillDraftForm(d);
+  document.getElementById("draftStatus").textContent="ऑफलाइन ड्राफ्ट संपादन में — इंटरनेट मिलते ही डेटाबेस में सिंक होगा";
+  document.getElementById("writeDialog").showModal();
 }
 
 function getDatabaseWorkType(type, subtype) {
@@ -120,51 +223,23 @@ async function getCategoryMap(names) {
   return map;
 }
 async function saveCloudDraft() {
-  if (!supabaseClient) return toast("Supabase कनेक्शन उपलब्ध नहीं है।");
-  const { title, body, type, subtype, categoryNames } = getStoryFormValues();
-  if (!title || !body || !type || (type !== "चंपू काव्य" && !subtype)) return toast("ड्राफ्ट सेव करने के लिए शीर्षक, सामग्री और रचना का रूप भरें।");
-  const button = document.getElementById("saveDraftCloud"); button.disabled = true;
-  try {
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError) throw authError;
-    if (!user) return toast("ड्राफ्ट Supabase में सेव करने के लिए पहले लॉगिन करें।");
-    const categoryMap = await getCategoryMap(categoryNames);
-    const payload = { author_id:user.id, title, content:body, work_type:getDatabaseWorkType(type,subtype), main_form:type, subtype:subtype||null, status:"draft", content_language:"hi" };
-    if (currentDraftId) {
-      const { error } = await supabaseClient.from("works").update(payload).eq("id",currentDraftId).eq("author_id",user.id);
-      if (error) throw error;
-      if (categoryNames.length) {
-        const { data: existingLinks, error: existingError } = await supabaseClient.from("work_categories").select("category_id").eq("work_id",currentDraftId);
-        if (existingError) throw existingError;
-        const already = new Set((existingLinks || []).map(x => x.category_id));
-        const newLinks = categoryNames.map(name => categoryMap.get(name)).filter(id => !already.has(id)).map(id => ({work_id:currentDraftId,category_id:id}));
-        if (newLinks.length) { const { error: addError } = await supabaseClient.from("work_categories").insert(newLinks); if (addError) throw addError; }
-      }
-    } else {
-      const { data, error } = await supabaseClient.from("works").insert(payload).select("id").single();
-      if (error) throw error;
-      currentDraftId = data.id;
-      if (categoryNames.length) {
-        const links = categoryNames.map(name => ({work_id:data.id,category_id:categoryMap.get(name)}));
-        const { error: linkError } = await supabaseClient.from("work_categories").insert(links);
-        if (linkError) throw new Error("ड्राफ्ट सेव हुआ, लेकिन श्रेणियाँ नहीं जुड़ीं: " + linkError.message);
-      }
-    }
-    saveDraftFromForm();
-    document.getElementById("draftStatus").textContent = "Supabase में ड्राफ्ट सुरक्षित है";
-    toast("ड्राफ्ट Supabase में सुरक्षित हो गया।");
-    await loadCloudDrafts();
-  } catch (error) { console.error("ड्राफ्ट सेव नहीं हुआ:",error); toast("ड्राफ्ट सेव नहीं हुआ: "+(error.message||String(error))); }
-  finally { button.disabled = false; }
+  clearTimeout(cloudSaveTimer);
+  const values=getStoryFormValues();
+  if(!values.title.trim() && !values.body.trim()) return toast("पहले रचना लिखें।");
+  if(!currentDraftId && !currentLocalDraftId) currentLocalDraftId="offline-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
+  saveDraftFromForm();
+  const ok=await persistDraftToCloud(values,currentDraftId,currentLocalDraftId);
+  if(ok) toast("ड्राफ्ट Supabase डेटाबेस में सुरक्षित है।");
+  else if(!navigator.onLine) toast("ऑफलाइन बदलाव सुरक्षित हैं; इंटरनेट लौटते ही डेटाबेस में सिंक होंगे।");
+  else if(!lastCloudSaveError) toast("क्लाउड सेव के लिए लॉगिन करें।");
+  else toast("डेटाबेस में सेव नहीं हुआ: "+lastCloudSaveError);
 }
 async function loadCloudDrafts() {
   if (!supabaseClient) return;
   try {
-    // getSession() restores the persisted login before draft loading; getUser()
-    // can throw AuthSessionMissingError during the initial page-load race.
     const { data:{session}, error:authError } = await supabaseClient.auth.getSession();
+    const user=session?.user||null;
     if (authError) throw authError;
-    const user = session?.user;
     if (!user) { cloudDrafts=[]; renderProfile(); return; }
     const { data:rows, error } = await supabaseClient.from("works").select("id,author_id,title,content,work_type,main_form,subtype,created_at").eq("author_id",user.id).eq("status","draft").order("created_at",{ascending:false});
     if (error) throw error;
@@ -181,7 +256,7 @@ async function loadCloudDrafts() {
 }
 function editCloudDraft(id) {
   const d=cloudDrafts.find(x=>String(x.id)===String(id)); if(!d)return;
-  currentDraftId=d.id;
+  currentDraftId=d.id; currentLocalDraftId=null;
   document.getElementById("storyTitle").value=d.title||"";
   document.getElementById("storyBody").value=d.body||"";
   document.getElementById("formType").value=d.type||""; updateSubtypes();
@@ -216,7 +291,7 @@ async function loadCloudWorks() {
       if (linksError) throw linksError;
       links = data || [];
     }
-
+    
     const categoryIds = [...new Set(links.map(x => x.category_id))];
     if (categoryIds.length) {
       const { data, error: categoriesError } = await supabaseClient
@@ -261,7 +336,7 @@ async function loadCloudWorks() {
     });
 
     // पुराने LocalStorage रिकॉर्ड मिटाए बिना क्लाउड रिकॉर्ड ताज़ा करें।
-  const cloudIds = new Set(cloudStories.map(s => s.id));
+    const cloudIds = new Set(cloudStories.map(s => s.id));
     const localStories = (state.stories || []).filter(
       s => !cloudIds.has(s.id) && s.source !== "supabase"
     );
@@ -306,7 +381,8 @@ async function publishStory(e) {
       const {error:linkError}=await supabaseClient.from("work_categories").insert(links);
       if(linkError)throw new Error("रचना सेव हुई, लेकिन श्रेणियाँ नहीं जुड़ीं: "+linkError.message);
     }
-    currentDraftId=null; state.drafts={title:"",body:"",type:"",subtype:"",categories:[]}; saveState();
+    if(currentLocalDraftId) state.localDrafts=(state.localDrafts||[]).filter(d=>d.id!==currentLocalDraftId);
+    currentDraftId=null; currentLocalDraftId=null; state.drafts={title:"",body:"",type:"",subtype:"",categories:[]}; saveState();
     document.getElementById("writeDialog").close(); toast("रचना Supabase में प्रकाशित हो गई!");
     await Promise.all([loadCloudWorks(),loadCloudDrafts()]);
   }catch(error){console.error("रचना प्रकाशित करने में समस्या:",error);toast("रचना प्रकाशित नहीं हुई: "+(error.message||String(error)));}
@@ -363,8 +439,8 @@ async function loadCloudProfile() {
   if (error) {
     console.error("प्रोफ़ाइल लोड नहीं हुई:", error.message);
     return;
-  }
-
+                  }
+  
   if (data) {
     state.profile.name =
       data.display_name || "अनाम पाठक";
@@ -387,8 +463,12 @@ function renderProfile(){
   document.getElementById("myStoryList").innerHTML=mine.length?mine.map(storyCard).join(""):'<p class="muted">अभी आपने कोई रचना प्रकाशित नहीं की है।</p>';
   const draftHost=document.getElementById("myDraftList");
   if(draftHost){
-    draftHost.innerHTML=cloudDrafts.length?cloudDrafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title||"बिना शीर्षक")}</h3><p>${escapeHtml(d.type||"ड्राफ्ट")}${d.subtype?" / "+escapeHtml(d.subtype):""}</p><p class="excerpt">${escapeHtml((d.body||"").replace(/\s+/g," ").slice(0,130))}</p><div class="story-meta"><button type="button" data-edit-draft="${escapeHtml(d.id)}">संपादित करें / प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">अभी Supabase में कोई निजी ड्राफ्ट नहीं है।</p>';
-   draftHost.querySelectorAll("[data-edit-draft]").forEach(b=>b.addEventListener("click",()=>editCloudDraft(b.dataset.editDraft)));
+    const local=(state.localDrafts||[]).map(d=>({...d,local:true}));
+    const allDrafts=[...local,...cloudDrafts.map(d=>({...d,local:false}))];
+    draftHost.innerHTML=allDrafts.length?allDrafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title||"बिना शीर्षक")}</h3><p>${d.local?"सिंक लंबित — इंटरनेट मिलते ही डेटाबेस में जाएगा":"Supabase डेटाबेस · सभी डिवाइस पर उपलब्ध"} · ${escapeHtml(d.type||"ड्राफ्ट")}${d.subtype?" / "+escapeHtml(d.subtype):""}</p><p class="excerpt">${escapeHtml((d.body||"").replace(/\s+/g," ").slice(0,130))}</p><div class="story-meta"><button type="button" data-edit-local="${d.local?escapeHtml(d.id):""}" data-edit-cloud="${d.local?"":escapeHtml(d.id)}">संपादित करें / प्रकाशित करें</button>${d.local?"":`<button type="button" class="danger-button" data-delete-cloud="${escapeHtml(d.id)}">डिलीट</button>`}</div></article>`).join(""):'<p class="muted">अभी कोई ड्राफ्ट नहीं है। लिखना शुरू करते ही ऑटो-सेव होगा।</p>';
+    draftHost.querySelectorAll("[data-edit-local]").forEach(b=>{if(b.dataset.editLocal)b.addEventListener("click",()=>editLocalDraft(b.dataset.editLocal));});
+    draftHost.querySelectorAll("[data-edit-cloud]").forEach(b=>{if(b.dataset.editCloud)b.addEventListener("click",()=>editCloudDraft(b.dataset.editCloud));});
+    draftHost.querySelectorAll("[data-delete-cloud]").forEach(b=>b.addEventListener("click",()=>deleteCloudDraft(b.dataset.deleteCloud)));
   }
   bindReadButtons();
 }
@@ -413,6 +493,9 @@ function init(){
   document.getElementById("formType").addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
   document.getElementById("storyForm").addEventListener("submit",publishStory);
   document.getElementById("saveDraftCloud").addEventListener("click",saveCloudDraft);
+  const newDraftButton=document.createElement("button"); newDraftButton.type="button"; newDraftButton.id="newDraftButton"; newDraftButton.className="secondary-button"; newDraftButton.textContent="＋ नया ड्राफ्ट";
+  document.getElementById("saveDraftCloud").insertAdjacentElement("afterend",newDraftButton);
+  newDraftButton.addEventListener("click",startNewDraft);
   document.getElementById("storyTitle").addEventListener("input",saveDraftFromForm);
   document.getElementById("storyBody").addEventListener("input",saveDraftFromForm);
   document.getElementById("formSubType").addEventListener("change",saveDraftFromForm);
@@ -438,8 +521,8 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
   if (userError || !user) {
     toast("पहले लॉगिन करें।");
     return;
-  }
-
+    }
+  
   const { error } = await supabaseClient
     .from("profiles")
     .update({ bio: intro })
@@ -459,13 +542,17 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
   document.getElementById("editProfile").addEventListener("click",()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
   document.getElementById("resetData").addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
   document.getElementById("writeDialog").addEventListener("close",saveDraftFromForm);
+  window.addEventListener("pagehide",()=>{if(document.getElementById("writeDialog").open){saveDraftFromForm();syncCurrentDraftToCloud();}});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden" && document.getElementById("writeDialog").open){saveDraftFromForm();syncCurrentDraftToCloud();}});
+  window.addEventListener("online",()=>{toast("इंटरनेट वापस आ गया — ड्राफ्ट डेटाबेस में सिंक हो रहे हैं।");syncOfflineDraftQueue();syncCurrentDraftToCloud();});
+  window.addEventListener("offline",()=>{if(document.getElementById("writeDialog").open)document.getElementById("draftStatus").textContent="ऑफलाइन — बदलाव सुरक्षित कतार में हैं; कनेक्शन लौटते ही सिंक होंगे";});
   if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 }
 function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState();applyTheme();}
 init();
 loadCloudWorks();
 loadCloudProfile();
-loadCloudDrafts();
+/* ड्राफ्ट की क्लाउड लोडिंग auth state मिलने पर होगी। */
 /* साहित्य सूत्रधार: Supabase लॉगिन */
 
 (function setupSahityaGramAuth() {
@@ -511,7 +598,8 @@ loadCloudDrafts();
       mode === "login" ? "नया खाता बनाएँ" : "पहले से खाता है? लॉगिन करें";
     passwordInput.autocomplete =
       mode === "login" ? "current-password" : "new-password";
-                          }
+  }
+
   async function refreshAuth() {
     const { data, error } = await supabaseClient.auth.getUser();
 
@@ -611,6 +699,8 @@ google.addEventListener("click", async () => {
   await refreshAuth();
   await loadCloudProfile();
   await loadCloudWorks();
+  await loadCloudDrafts();
+  syncOfflineDraftQueue();
   setTimeout(() => dialog.close(), 1000);
       }
     } catch (error) {
@@ -627,8 +717,9 @@ google.addEventListener("click", async () => {
       loadCloudWorks();
       loadCloudProfile();
       loadCloudDrafts();
+      syncOfflineDraftQueue();
     }, 0);
   });
 
-  refreshAuth();
+  refreshAuth().then(()=>{loadCloudDrafts();syncOfflineDraftQueue();});
 })();
