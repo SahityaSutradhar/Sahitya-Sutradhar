@@ -2563,7 +2563,9 @@ google.addEventListener("click", async () => {
       await loadCommunityPosts();
       if (version !== authSyncVersion) return;
 
-      openWorkFromHash();
+      if (location.hash.startsWith("#work-")) {
+  history.replaceState(null, "", location.pathname + location.search);
+      }
       return;
     }
 
@@ -2578,7 +2580,9 @@ google.addEventListener("click", async () => {
     await loadCommunityPosts();
     if (version !== authSyncVersion) return;
 
-    openWorkFromHash();
+    if (location.hash.startsWith("#work-")) {
+  history.replaceState(null, "", location.pathname + location.search);
+    }
 
   } catch (error) {
     console.error("शुरुआती डेटा लोड नहीं हुआ:", error);
