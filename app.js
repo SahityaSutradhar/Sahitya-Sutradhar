@@ -1251,8 +1251,9 @@ google.addEventListener("click", async () => {
   });
     
   async function syncCurrentAccount(sessionUser){
+  const version = ++authSyncVersion;
+
   try {
-    const version = ++authSyncVersion;
     const nextId = sessionUser?.id || null;
 
     if (currentUserId !== nextId) switchAccountState(nextId);
@@ -1264,13 +1265,17 @@ google.addEventListener("click", async () => {
       renderProfile();
       renderStories();
       renderLibrary();
+
       await loadCloudWorks();
+      if (version !== authSyncVersion) return;
+
       await loadCommunityPosts();
+      if (version !== authSyncVersion) return;
+
       openWorkFromHash();
       return;
     }
 
-    // खाते की प्रोफ़ाइल पहले, फिर उसी खाते की रचनाएँ लोड हों।
     await loadCloudProfile();
     if (version !== authSyncVersion) return;
 
@@ -1278,13 +1283,18 @@ google.addEventListener("click", async () => {
     if (version !== authSyncVersion) return;
 
     renderProfile();
+
     await loadCommunityPosts();
+    if (version !== authSyncVersion) return;
+
     openWorkFromHash();
 
   } catch (error) {
     console.error("शुरुआती डेटा लोड नहीं हुआ:", error);
   } finally {
-    hideAppLoader();
+    if (version === authSyncVersion) {
+      hideAppLoader();
+    }
   }
   }
 
