@@ -340,3 +340,81 @@
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
 }
+/* Profile DP Crop Editor */
+#avatarCropDialog {
+  width: min(440px, calc(100vw - 24px));
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+#avatarCropDialog::backdrop {
+  background: rgba(20, 10, 10, .78);
+  backdrop-filter: blur(4px);
+}
+
+.crop-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.crop-editor .modal-heading {
+  margin: 0;
+}
+
+.crop-editor .modal-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.crop-preview {
+  width: min(100%, 340px);
+  aspect-ratio: 1 / 1;
+  margin: 8px auto;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #211a18;
+  touch-action: none;
+}
+
+#avatarCropCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+#avatarCropCanvas:active {
+  cursor: grabbing;
+}
+
+.crop-editor input[type="range"] {
+  padding: 0;
+  accent-color: var(--maroon);
+}
+
+.crop-actions,
+.crop-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.crop-actions button,
+.crop-footer button {
+  flex: 1;
+}
+
+@media(max-width:420px) {
+  #avatarCropDialog {
+    padding: 15px;
+  }
+
+  .crop-preview {
+    width: min(100%, 300px);
+  }
+}
