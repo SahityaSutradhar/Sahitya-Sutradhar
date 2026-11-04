@@ -1434,7 +1434,7 @@ async function openAuthorProfile(authorId=null){
     };
 
     return `
-      <article class="community-post">
+      <article class="community-post" data-community-post-id="${escapeHtml(p.id)}">
         ${p.body ? `<p>${escapeHtml(p.body)}</p>` : ""}
 
         ${p.image_url ? `
