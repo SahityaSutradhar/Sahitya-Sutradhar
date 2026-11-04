@@ -1432,6 +1432,7 @@ loaderQuoteTimer = setInterval(writeLoaderQuote, 8500);
 loaderFallbackTimer = setTimeout(hideAppLoader, 15000);
 
 function init(){
+  alert("INIT शुरू हुआ!");
   applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
   document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
   document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
