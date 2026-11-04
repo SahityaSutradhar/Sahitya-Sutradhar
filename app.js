@@ -1090,7 +1090,8 @@ async function loadCommunityPostComments(postId, container){
     const name = who?.display_name || who?.username || "पाठक";
 
     return `
-      <div class="community-comment ${isReply ? "community-reply" : ""}">
+      <div class="community-comment ${isReply ? "community-reply" : ""}"
+     data-community-comment-id="${escapeHtml(c.id)}">
         <strong>${escapeHtml(name)}</strong>
         <p>${escapeHtml(c.comment_text)}</p>
         ${!isReply ? `
@@ -1425,7 +1426,8 @@ async function openAuthorProfile(authorId=null){
       const commenterName = commenter?.display_name || commenter?.username || "पाठक";
 
       return `
-        <div class="community-comment ${isReply ? "community-reply" : ""}">
+     <div class="community-comment ${isReply ? "community-reply" : ""}"
+     data-community-comment-id="${escapeHtml(c.id)}">
           <strong>${escapeHtml(commenterName)}</strong>
           <p>${escapeHtml(c.comment_text)}</p>
           <small>${new Date(c.created_at).toLocaleDateString("hi-IN")}</small>
