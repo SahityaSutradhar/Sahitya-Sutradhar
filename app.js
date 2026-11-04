@@ -2047,7 +2047,7 @@ async function openNotifications(){
 
   const {data:notifications,error} = await supabaseClient
     .from("notifications")
-    .select("id,actor_id,notification_type,message,related_work_id,related_post_id,related_community_comment_id,related_work_comment_id,is_read,created_at")
+    .select("id,actor_id,notification_type,message,related_work_id,related_post_id,related_community_comment_id,related_work_comment_id,related_review_id,is_read,created_at")
     .eq("recipient_id",user.id)
     .order("created_at",{ascending:false})
     .limit(50);
