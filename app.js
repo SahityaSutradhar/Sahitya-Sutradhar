@@ -1781,3 +1781,224 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   });
 })();
 
+/* =====================================
+   SAHITYA SUTRADHAR — DP CROP EDITOR
+===================================== */
+
+let avatarCropImage = null;
+let avatarCropObjectURL = null;
+let avatarCropZoom = 1;
+let avatarCropRotation = 0;
+let avatarCropX = 0;
+let avatarCropY = 0;
+let avatarCropDragging = false;
+let avatarCropLastX = 0;
+let avatarCropLastY = 0;
+
+function renderAvatarCrop() {
+  const canvas = document.getElementById("avatarCropCanvas");
+  if (!canvas || !avatarCropImage) return;
+
+  const ctx = canvas.getContext("2d");
+  const size = 400;
+  const img = avatarCropImage;
+
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = "#211a18";
+  ctx.fillRect(0, 0, size, size);
+
+  const rad = avatarCropRotation * Math.PI / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+
+  const rotatedWidth = img.width * cos + img.height * sin;
+  const rotatedHeight = img.width * sin + img.height * cos;
+
+  const baseScale = Math.max(
+    size / rotatedWidth,
+    size / rotatedHeight
+  );
+
+  const scale = baseScale * avatarCropZoom;
+
+  ctx.save();
+  ctx.translate(size / 2 + avatarCropX, size / 2 + avatarCropY);
+  ctx.rotate(rad);
+  ctx.scale(scale, scale);
+
+  ctx.drawImage(
+    img,
+    -img.width / 2,
+    -img.height / 2
+  );
+
+  ctx.restore();
+}
+
+function closeAvatarCropEditor() {
+  const dialog = document.getElementById("avatarCropDialog");
+
+  if (dialog?.open) dialog.close();
+
+  avatarCropImage = null;
+
+  if (avatarCropObjectURL) {
+    URL.revokeObjectURL(avatarCropObjectURL);
+    avatarCropObjectURL = null;
+  }
+}
+
+async function openAvatarCropEditor(file) {
+  if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    toast("केवल JPG, PNG या WebP चित्र चुनें।");
+    return;
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    toast("चित्र 8 MB से छोटा होना चाहिए।");
+    return;
+  }
+
+  const dialog = document.getElementById("avatarCropDialog");
+
+  if (!dialog) {
+    toast("DP क्रॉप एडिटर नहीं मिला।");
+    return;
+  }
+
+  try {
+    if (avatarCropObjectURL) {
+      URL.revokeObjectURL(avatarCropObjectURL);
+    }
+
+    avatarCropObjectURL = URL.createObjectURL(file);
+
+    const img = new Image();
+    img.src = avatarCropObjectURL;
+    await img.decode();
+
+    avatarCropImage = img;
+    avatarCropZoom = 1;
+    avatarCropRotation = 0;
+    avatarCropX = 0;
+    avatarCropY = 0;
+
+    document.getElementById("avatarZoom").value = 1;
+
+    renderAvatarCrop();
+
+    if (!dialog.dataset.bound) {
+      dialog.dataset.bound = "true";
+
+      document.getElementById("avatarZoom").addEventListener("input", e => {
+        avatarCropZoom = Number(e.target.value);
+        renderAvatarCrop();
+      });
+
+      document.getElementById("cropRotateLeft").addEventListener("click", () => {
+        avatarCropRotation = (avatarCropRotation - 90 + 360) % 360;
+        renderAvatarCrop();
+      });
+
+      document.getElementById("cropRotateRight").addEventListener("click", () => {
+        avatarCropRotation = (avatarCropRotation + 90) % 360;
+        renderAvatarCrop();
+      });
+
+      document.getElementById("cropClose").addEventListener("click", closeAvatarCropEditor);
+      document.getElementById("cropCancel").addEventListener("click", closeAvatarCropEditor);
+
+      const canvas = document.getElementById("avatarCropCanvas");
+
+      canvas.addEventListener("pointerdown", e => {
+        if (!avatarCropImage) return;
+
+        avatarCropDragging = true;
+        avatarCropLastX = e.clientX;
+        avatarCropLastY = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+
+      canvas.addEventListener("pointermove", e => {
+        if (!avatarCropDragging) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const factor = 400 / rect.width;
+
+        avatarCropX += (e.clientX - avatarCropLastX) * factor;
+        avatarCropY += (e.clientY - avatarCropLastY) * factor;
+
+        avatarCropLastX = e.clientX;
+        avatarCropLastY = e.clientY;
+
+        renderAvatarCrop();
+      });
+
+      canvas.addEventListener("pointerup", () => {
+        avatarCropDragging = false;
+      });
+
+      canvas.addEventListener("pointercancel", () => {
+        avatarCropDragging = false;
+      });
+
+      document.getElementById("cropSave").addEventListener("click", async () => {
+        if (!avatarCropImage) return;
+
+        const button = document.getElementById("cropSave");
+        button.disabled = true;
+        button.textContent = "सुरक्षित हो रहा है…";
+
+        try {
+          if (!supabaseClient) throw new Error("Supabase कनेक्शन उपलब्ध नहीं है।");
+
+          const canvas = document.getElementById("avatarCropCanvas");
+
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(result => {
+              if (result) resolve(result);
+              else reject(new Error("चित्र तैयार नहीं हो पाया।"));
+            }, "image/jpeg", 0.92);
+          });
+
+          const croppedFile = new File(
+            [blob],
+            "profile-avatar.jpg",
+            { type: "image/jpeg" }
+          );
+
+          const url = await uploadSutradharImage(croppedFile, "avatars");
+
+          const { data: { user } } = await supabaseClient.auth.getUser();
+
+          if (!user) throw new Error("पहले लॉगिन करें।");
+
+          const { error } = await supabaseClient
+            .from("profiles")
+            .update({ avatar_url: url })
+            .eq("id", user.id);
+
+          if (error) throw error;
+
+          state.profile.avatarUrl = url;
+          saveState();
+          renderProfile();
+
+          closeAvatarCropEditor();
+          toast("प्रोफ़ाइल DP अपडेट हो गई।");
+
+        } catch (err) {
+          toast("DP अपडेट नहीं हुई: " + err.message);
+        } finally {
+          button.disabled = false;
+          button.textContent = "DP सुरक्षित करें";
+        }
+      });
+    }
+
+    dialog.showModal();
+
+  } catch (err) {
+    toast("तस्वीर नहीं खुली: " + err.message);
+  }
+}
