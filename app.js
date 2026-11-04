@@ -2091,6 +2091,7 @@ async function openNotifications(){
       data-work-id="${escapeHtml(n.related_work_id||"")}"
       data-post-id="${escapeHtml(n.related_post_id||"")}"
       data-community-comment-id="${escapeHtml(n.related_community_comment_id||"")}"
+      data-review-id="${escapeHtml(n.related_review_id||"")}"
       data-work-comment-id="${escapeHtml(n.related_work_comment_id||"")}">
       <strong>${escapeHtml(actorName)}</strong>
       <p>${escapeHtml(n.message)}</p>
