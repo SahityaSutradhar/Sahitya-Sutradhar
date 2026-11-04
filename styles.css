@@ -583,3 +583,30 @@
   color: var(--muted);
   font-size: 12px;
 }
+
+/* नोटिफिकेशन घंटी */
+.notification-button {
+  position: relative;
+}
+
+#notificationBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50px;
+  background: #b32635;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border: 2px solid var(--surface);
+}
+
+#notificationBadge[hidden] {
+  display: none;
+}
