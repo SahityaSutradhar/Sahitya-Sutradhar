@@ -2153,10 +2153,24 @@ async function openNotifications(){
     }
 
     // रचना से संबंधित नोटिफिकेशन
-    if(["new_work","rating","review","work_comment"].includes(type) && workId){
-      openReader(workId);
-      return;
-    }
+if(["new_work","rating","review","work_comment","review_comment"].includes(type) && workId){
+  await openReader(workId);
+
+  if(type === "review_comment" && commentId){
+    const target = [...document.querySelectorAll("#readerDialog [data-work-comment-id]")]
+      .find(el => el.dataset.workCommentId === commentId);
+
+    target?.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  else if(type === "review" && reviewId){
+    const target = [...document.querySelectorAll("#readerDialog [data-review-id]")]
+      .find(el => el.dataset.reviewId === reviewId);
+
+    target?.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+
+  return;
+}
 
     // नई संगोष्ठी पोस्ट
     if(type === "new_post" && actorId){
