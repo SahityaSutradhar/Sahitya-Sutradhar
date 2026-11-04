@@ -932,11 +932,82 @@ async function togglePostLike(postId,liked){
   if(q.error){toast("पसंद सुरक्षित नहीं हुई: "+q.error.message);return;}await loadCommunityPosts();
 }
 async function publishCommunityPost(){
-  const field=document.getElementById("communityPostText"),body=field?.value.trim();if(!body)return;
-  if(wordCount(body)>2000){toast("पोस्ट अधिकतम 2,000 शब्दों की हो सकती है।");return;}
-  const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पोस्ट लिखने के लिए लॉगिन करें।");return;}
-  const {error}=await supabaseClient.from("community_posts").insert({author_id:user.id,body,status:"published"});
-  if(error){toast("पोस्ट प्रकाशित नहीं हुई: "+error.message);return;}field.value="";await loadCommunityPosts();toast("आपकी पोस्ट प्रकाशित हो गई।");
+  const field = document.getElementById("communityPostText");
+  const imageInput = document.getElementById("communityPostImage");
+  const body = field?.value.trim() || "";
+  const file = imageInput?.files?.[0] || null;
+
+  if (!body && !file) {
+    toast("पोस्ट में कुछ लिखें या तस्वीर चुनें।");
+    return;
+  }
+
+  if (wordCount(body) > 2000) {
+    toast("पोस्ट अधिकतम 2,000 शब्दों की हो सकती है।");
+    return;
+  }
+
+  if (!supabaseClient) {
+    toast("सर्वर से कनेक्शन उपलब्ध नहीं है।");
+    return;
+  }
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    toast("पोस्ट प्रकाशित करने के लिए लॉगिन करें।");
+    return;
+  }
+
+  let imageUrl = null;
+
+  if (file) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast("केवल JPG, PNG या WebP तस्वीर चुनें।");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      toast("तस्वीर अधिकतम 8 MB की हो सकती है।");
+      return;
+    }
+
+    try {
+      imageUrl = await uploadSutradharImage(file, "community");
+    } catch (error) {
+      toast("तस्वीर अपलोड नहीं हुई: " + error.message);
+      return;
+    }
+
+    if (!imageUrl) {
+      toast("तस्वीर अपलोड नहीं हो सकी।");
+      return;
+    }
+  }
+
+  const { error } = await supabaseClient
+    .from("community_posts")
+    .insert({
+      author_id: user.id,
+      body: body || " ",
+      image_url: imageUrl,
+      status: "published"
+    });
+
+  if (error) {
+    toast("पोस्ट प्रकाशित नहीं हुई: " + error.message);
+    return;
+  }
+
+  field.value = "";
+
+  if (imageInput) imageInput.value = "";
+
+  const preview = document.getElementById("communityImagePreview");
+  if (preview) preview.innerHTML = "";
+
+  await loadCommunityPosts();
+  toast("आपकी पोस्ट प्रकाशित हो गई।");
 }
 
 async function refreshReaderStats(work){
