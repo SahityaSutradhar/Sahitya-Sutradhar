@@ -798,9 +798,9 @@ async function deleteMyFeedback(type) {
       x => String(x.id) === String(currentReaderId)
     );
 
-    if (!currentWork || currentWork.authorId === user.id) {
-      toast("रचनाकार अपनी ही रचना की प्रतिक्रिया नहीं हटा सकता।");
-      return;
+    if (!currentWork) {
+  toast("रचना उपलब्ध नहीं है।");
+  return;
     }
 
     const button = document.getElementById(
