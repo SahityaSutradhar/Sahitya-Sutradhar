@@ -938,12 +938,10 @@ async function loadCommunityPosts(){
       .from("profiles")
       .select("id,display_name,username,avatar_url")
       .in("id", ids);
-
     profiles = q.data || [];
   }
 
   const { data: { user } } = await supabaseClient.auth.getUser();
-
   const postIds = (posts || []).map(p => p.id);
   let likes = [];
 
@@ -952,7 +950,6 @@ async function loadCommunityPosts(){
       .from("post_likes")
       .select("post_id,user_id")
       .in("post_id", postIds);
-
     likes = q.data || [];
   }
 
@@ -1005,12 +1002,30 @@ async function loadCommunityPosts(){
           ${mine ? "♥ पसंद किया" : "♡ पसंद करें"} · ${count}
         </button>
 
+        <div class="community-post-comments">
+          <form data-comment-form="${escapeHtml(p.id)}">
+            <input
+              name="comment"
+              maxlength="1000"
+              placeholder="अपना कमेंट लिखें…"
+              required
+            >
+            <button type="submit">भेजें</button>
+          </form>
+
+          <div id="community-comments-${escapeHtml(p.id)}">
+            <p class="muted">कमेंट लोड हो रहे हैं…</p>
+          </div>
+        </div>
+
       </article>
     `;
   }).join("") || '<p class="muted">अभी कोई पोस्ट नहीं है। पहली पोस्ट आप लिख सकते हैं।</p>';
 
   box.querySelectorAll("[data-writer]").forEach(b => {
-    b.addEventListener("click", () => openAuthorProfile(b.dataset.writer));
+    b.addEventListener("click", () =>
+      openAuthorProfile(b.dataset.writer)
+    );
   });
 
   box.querySelectorAll("[data-post-like]").forEach(b => {
@@ -1018,6 +1033,27 @@ async function loadCommunityPosts(){
       togglePostLike(b.dataset.postLike, b.dataset.liked === "1")
     );
   });
+
+  box.querySelectorAll("[data-comment-form]").forEach(form => {
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+
+      await publishCommunityPostComment(
+        form.dataset.commentForm,
+        form.elements.comment.value
+      );
+    });
+  });
+
+  for (const p of posts || []) {
+    const container = document.getElementById(
+      `community-comments-${p.id}`
+    );
+
+    if (container) {
+      await loadCommunityPostComments(p.id, container);
+    }
+  }
 }
 async function togglePostLike(postId,liked){
   const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पोस्ट पसंद करने के लिए लॉगिन करें।");return;}
