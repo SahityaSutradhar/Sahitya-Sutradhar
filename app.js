@@ -2141,6 +2141,7 @@ async function openNotifications(){
     const workId = item.dataset.workId;
     const postId = item.dataset.postId;
     const commentId = item.dataset.communityCommentId;
+    const reviewId = item.dataset.reviewId;
 
     dialog.close();
     dialog.remove();
