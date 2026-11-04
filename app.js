@@ -1431,22 +1431,17 @@ loaderQuoteTimer = setInterval(writeLoaderQuote, 8500);
 
 loaderFallbackTimer = setTimeout(hideAppLoader, 15000);
 
+
 function init(){
-  alert("INIT शुरू हुआ!");
   applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
+
   document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
   document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
+
   document.getElementById("profileShortcut").addEventListener("click",()=>switchTab("profile"));
-    alert("फ़ॉलो बटन खोजे जा रहे हैं!");
 
-const followButtons = document.querySelectorAll("[data-follow-list]");
-
-alert("कुल फ़ॉलो बटन: " + followButtons.length);
-
-followButtons.forEach(button=>{
+  document.querySelectorAll("[data-follow-list]").forEach(button=>{
     button.addEventListener("click",()=>{
-      alert("फ़ॉलो बटन क्लिक हुआ!");
-
       if(!currentUserId){
         toast("पहले लॉगिन करें।");
         return;
@@ -1454,7 +1449,8 @@ followButtons.forEach(button=>{
 
       openFollowList(currentUserId,button.dataset.followList);
     });
-});
+  });
+  
   
   document.getElementById("settingsShortcut")?.addEventListener("click",()=>switchTab("settings"));
   document.getElementById("readerAuthorLink")?.addEventListener("click",()=>openAuthorProfile());
