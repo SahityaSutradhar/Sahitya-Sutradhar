@@ -975,7 +975,7 @@ function hideAppLoader() {
   clearTimeout(loaderHideTimer);
 
   const elapsed = Date.now() - loaderStartedAt;
-  const minimumDisplay = 1400;
+  const minimumDisplay = 2500;
 
   loaderHideTimer = setTimeout(() => {
     loader.classList.add("loader-hidden");
