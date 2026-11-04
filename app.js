@@ -1530,6 +1530,37 @@ function init(){
   document.getElementById("shareExcerptImage")?.addEventListener("click",shareExcerptAsImage);
   document.getElementById("workLikeButton")?.addEventListener("click",toggleWorkLike);
   document.getElementById("publishCommunityPost")?.addEventListener("click",publishCommunityPost);
+  document.getElementById("communityPostImage")?.addEventListener("change", e => {
+  const file = e.target.files?.[0];
+  const preview = document.getElementById("communityImagePreview");
+
+  if (!preview) return;
+
+  preview.innerHTML = "";
+
+  if (!file) return;
+
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    toast("केवल JPG, PNG या WebP तस्वीर चुनें।");
+    e.target.value = "";
+    return;
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    toast("तस्वीर अधिकतम 8 MB की हो सकती है।");
+    e.target.value = "";
+    return;
+  }
+
+  const img = document.createElement("img");
+  img.src = URL.createObjectURL(file);
+  img.alt = "पोस्ट की तस्वीर का प्रीव्यू";
+  img.style.maxWidth = "100%";
+  img.style.maxHeight = "260px";
+  img.style.borderRadius = "12px";
+
+  preview.appendChild(img);
+});
   loadCommunityPosts();
   document.getElementById("authShortcut")?.addEventListener("click",()=>document.getElementById("openAuthButton")?.click());
   document.getElementById("avatarUpload")?.addEventListener("change", async e => {
