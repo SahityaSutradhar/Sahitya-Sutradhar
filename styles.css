@@ -610,3 +610,38 @@
 #notificationBadge[hidden] {
   display: none;
 }
+/* नोटिफिकेशन सूची */
+.notifications-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.notification-item.unread {
+  border-left: 4px solid var(--maroon);
+}
+
+.notification-item strong {
+  display: block;
+  color: var(--maroon);
+}
+
+.notification-item p {
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+}
+
+.notification-item small {
+  color: var(--muted);
+  font-size: 12px;
+}
