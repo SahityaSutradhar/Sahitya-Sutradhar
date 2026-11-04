@@ -918,8 +918,9 @@ function switchTab(tab){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function applyTheme(){document.body.classList.toggle("dark",state.theme==="dark");}
+
 /* =========================================
-   SAHITYA SUTRADHAR — LOADER CONTROLLER
+   SAHITYA SUTRADHAR — REUSABLE LOADER
 ========================================= */
 
 const loaderQuotes = [
@@ -937,10 +938,12 @@ const loaderQuotes = [
   }
 ];
 
-const loaderStartedAt = Date.now();
+let loaderStartedAt = Date.now();
 let loaderQuoteIndex = 0;
 let loaderQuoteTimer = null;
+let loaderTypingTimer = null;
 let loaderHideTimer = null;
+let loaderFallbackTimer = null;
 
 function writeLoaderQuote() {
   const quote = loaderQuotes[loaderQuoteIndex];
@@ -949,30 +952,54 @@ function writeLoaderQuote() {
 
   if (!quoteEl || !authorEl) return;
 
+  clearInterval(loaderTypingTimer);
+
   quoteEl.textContent = "";
   authorEl.textContent = "";
 
   let position = 0;
 
-  const typing = setInterval(() => {
+  loaderTypingTimer = setInterval(() => {
     quoteEl.textContent = quote.text.slice(0, position + 1);
     position++;
 
     if (position >= quote.text.length) {
-      clearInterval(typing);
+      clearInterval(loaderTypingTimer);
       authorEl.textContent = quote.author;
     }
   }, 65);
 
-  loaderQuoteIndex = (loaderQuoteIndex + 1) % loaderQuotes.length;
+  loaderQuoteIndex =
+    (loaderQuoteIndex + 1) % loaderQuotes.length;
+}
+
+function showAppLoader() {
+  const loader = document.getElementById("appLoader");
+  if (!loader) return;
+
+  clearTimeout(loaderHideTimer);
+  clearTimeout(loaderFallbackTimer);
+
+  loader.classList.remove("loader-hidden");
+
+  loaderStartedAt = Date.now();
+
+  writeLoaderQuote();
+
+  clearInterval(loaderQuoteTimer);
+  loaderQuoteTimer = setInterval(writeLoaderQuote, 8500);
+
+  // किसी असामान्य नेटवर्क समस्या में Loader हमेशा अटका न रहे।
+  loaderFallbackTimer = setTimeout(hideAppLoader, 15000);
 }
 
 function hideAppLoader() {
   const loader = document.getElementById("appLoader");
+
   if (!loader || loader.classList.contains("loader-hidden")) return;
 
-  clearInterval(loaderQuoteTimer);
   clearTimeout(loaderHideTimer);
+  clearTimeout(loaderFallbackTimer);
 
   const elapsed = Date.now() - loaderStartedAt;
   const minimumDisplay = 2500;
@@ -980,20 +1007,18 @@ function hideAppLoader() {
   loaderHideTimer = setTimeout(() => {
     loader.classList.add("loader-hidden");
 
-    setTimeout(() => {
-      loader.remove();
-    }, 750);
+    clearInterval(loaderQuoteTimer);
+    clearInterval(loaderTypingTimer);
   }, Math.max(0, minimumDisplay - elapsed));
 }
 
+// पहली बार वेबसाइट खुलने पर Loader पहले से दिखाई देगा।
 writeLoaderQuote();
 
-loaderQuoteTimer = setInterval(() => {
-  writeLoaderQuote();
-}, 8500);
+loaderQuoteTimer = setInterval(writeLoaderQuote, 8500);
 
-// किसी असामान्य नेटवर्क समस्या में Loader हमेशा अटका न रहे।
-setTimeout(hideAppLoader, 15000);
+loaderFallbackTimer = setTimeout(hideAppLoader, 15000);
+
 function init(){
   applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
   document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
