@@ -311,6 +311,7 @@
   .app-loader *,
   .app-loader *::before,
   .app-loader *::after {
-    animation-duration: 5s !important;
+    animation: none !important;
+    transition: none !important;
   }
 }
