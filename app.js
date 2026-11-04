@@ -1260,6 +1260,37 @@ async function refreshReaderStats(work){
   document.getElementById("readerStats").textContent=`रेटिंग ${avg?Math.round(avg*20):0}% (${rr.length}) · समीक्षाएँ ${reviewCount??0} · पाठक ${readCount??0}`;
 }
 
+async function toggleAuthorBlock(authorId, isBlocked){
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if(!user){
+    toast("ब्लॉक करने के लिए पहले लॉगिन करें।");
+    return;
+  }
+
+  const result = isBlocked
+    ? await supabaseClient
+        .from("author_blocks")
+        .delete()
+        .eq("blocker_id", user.id)
+        .eq("blocked_user_id", authorId)
+    : await supabaseClient
+        .from("author_blocks")
+        .insert({
+          blocker_id: user.id,
+          blocked_user_id: authorId
+        });
+
+  if(result.error){
+    toast("ब्लॉक सेटिंग अपडेट नहीं हुई: " + result.error.message);
+    return;
+  }
+
+  toast(isBlocked ? "ब्लॉक हटा दिया गया।" : "रचनाकार ब्लॉक कर दिया गया।");
+
+  await openAuthorProfile(authorId);
+}
+
 async function openAuthorProfile(authorId=null){
   const currentStory=state.stories.find(x=>x.id===currentReaderId);
   const targetId=authorId||currentStory?.authorId;
