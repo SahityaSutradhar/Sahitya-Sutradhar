@@ -1127,6 +1127,126 @@ async function openAuthorProfile(authorId=null){
 }
 
 
+async function openFollowList(profileId, type){
+  if(!supabaseClient||!profileId)return;
+
+  const isFollowers=type==="followers";
+  const title=isFollowers?"फ़ॉलोअर्स":"फ़ॉलोइंग";
+
+  const d=document.createElement("dialog");
+  d.className="modal";
+  d.innerHTML=`
+    <div class="reader-page">
+      <button class="close-button" id="followListClose">×</button>
+      <h2>${title}</h2>
+      <div id="followListContent">
+        <p class="muted">सूची लोड हो रही है…</p>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(d);
+  d.showModal();
+
+  d.querySelector("#followListClose").onclick=()=>{
+    d.close();
+    d.remove();
+  };
+
+  const content=d.querySelector("#followListContent");
+
+  try{
+    const {data:rows,error}=await supabaseClient
+      .from("author_follows")
+      .select(isFollowers?"follower_id":"author_id")
+      .eq(isFollowers?"author_id":"follower_id",profileId);
+
+    if(error)throw error;
+
+    const ids=[...new Set((rows||[]).map(x=>
+      isFollowers?x.follower_id:x.author_id
+    ).filter(Boolean))];
+
+    if(!ids.length){
+      content.innerHTML=`<p class="muted">अभी कोई ${title.toLowerCase()} नहीं हैं।</p>`;
+      return;
+    }
+
+    const {data:profiles,error:profileError}=await supabaseClient
+      .from("profiles")
+      .select("id,display_name,username,avatar_url,bio")
+      .in("id",ids);
+
+    if(profileError)throw profileError;
+
+    const ordered=ids.map(id=>(profiles||[]).find(p=>p.id===id)).filter(Boolean);
+
+    content.innerHTML=ordered.map(p=>{
+      const name=p.display_name||p.username||"रचनाकार";
+      return `
+        <button type="button" class="writer-card"
+          data-follow-profile="${escapeHtml(p.id)}">
+          <span class="mini-avatar">
+            ${p.avatar_url
+              ?`<img src="${escapeHtml(p.avatar_url)}" alt="">`
+              :escapeHtml(name.slice(0,1))}
+          </span>
+          <span class="writer-card-main">
+            <strong>${escapeHtml(name)}</strong>
+            <small>${escapeHtml(p.bio||"साहित्य सूत्रधार के सदस्य")}</small>
+          </span>
+          <span class="tag">प्रोफ़ाइल ↗</span>
+        </button>
+      `;
+    }).join("")||`<p class="muted">प्रोफ़ाइल उपलब्ध नहीं हैं।</p>`;
+
+    content.querySelectorAll("[data-follow-profile]").forEach(b=>{
+      b.onclick=()=>{
+        const id=b.dataset.followProfile;
+        d.close();
+        d.remove();
+        openAuthorProfile(id);
+      };
+    });
+
+  }catch(error){
+    console.error("फ़ॉलो सूची लोड नहीं हुई:",error);
+    content.innerHTML=`
+      <p class="muted">सूची लोड नहीं हो सकी। ${escapeHtml(error.message||"")}</p>
+    `;
+  }
+}
+
+async function refreshFollowCounts(profileId){
+  if(!supabaseClient||!profileId)return;
+
+  const [
+    {count:followerCount,error:followerError},
+    {count:followingCount,error:followingError}
+  ]=await Promise.all([
+    supabaseClient.from("author_follows")
+      .select("follower_id",{count:"exact",head:true})
+      .eq("author_id",profileId),
+
+    supabaseClient.from("author_follows")
+      .select("author_id",{count:"exact",head:true})
+      .eq("follower_id",profileId)
+  ]);
+
+  if(followerError||followingError){
+    console.error("फ़ॉलो आँकड़े अपडेट नहीं हुए:",followerError||followingError);
+    return;
+  }
+
+  if(profileId===currentUserId){
+    const followers=document.getElementById("myFollowerCount");
+    const following=document.getElementById("myFollowingCount");
+
+    if(followers)followers.textContent=(followerCount||0).toLocaleString("hi-IN");
+    if(following)following.textContent=(followingCount||0).toLocaleString("hi-IN");
+  }
+}
+
 async function loadCloudProfile() {
   if (!supabaseClient) return;
 
