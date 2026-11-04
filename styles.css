@@ -526,3 +526,60 @@
     padding-left: 8px;
   }
 }
+
+/* सार्वजनिक लेखक प्रोफ़ाइल में रेटिंग और समीक्षाएँ */
+
+.work-rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.work-rating-summary strong {
+  color: var(--maroon);
+  font-size: 16px;
+}
+
+.work-rating-summary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.work-public-reviews {
+  margin: 12px 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.work-public-reviews > strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.work-public-review {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.work-public-review strong {
+  color: var(--maroon);
+  font-size: 14px;
+}
+
+.work-public-review p {
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.work-public-review small {
+  color: var(--muted);
+  font-size: 12px;
+}
