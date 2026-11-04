@@ -35,6 +35,63 @@
   <section class="view hidden" id="libraryView"><p class="eyebrow">आपकी किताबें</p><h1>पुस्तकालय</h1><p class="muted">आपकी सेव की गई और बुकमार्क की गई रचनाएँ यहाँ दिखेंगी।</p><div class="story-list" id="libraryList"></div></section>
   <section class="view hidden" id="profileView"><p class="eyebrow">आपका साहित्यिक परिचय</p><h1>प्रोफ़ाइल</h1><div class="profile-card"><div class="profile-avatar" id="profileAvatar">अ</div><div><h2 id="profileName">अनाम पाठक</h2><p id="profileRole">पाठक</p></div><button class="text-button" id="editProfile">बदलें</button></div><label for="avatarUpload">प्रोफ़ाइल DP बदलें</label><input id="avatarUpload" type="file" accept="image/png,image/jpeg,image/webp"><label for="introInput">परिचय (अधिकतम 1,000 अक्षर)</label><textarea id="introInput" rows="4" maxlength="1000" placeholder="अपने बारे में लिखें…"></textarea><div class="editor-foot"><span id="introCount">0/1000 अक्षर</span><button class="primary-button" id="saveProfile">परिचय सुरक्षित करें</button></div><div class="stats-grid"><div><strong id="wordsRead">0</strong><span>पढ़े गए कुल शब्द</span></div><div><strong id="publishedCount">0</strong><span>मेरी रचनाएँ</span></div><div><strong id="myFollowerCount">0</strong><span>फ़ॉलोअर</span></div></div><h2>मेरी प्रकाशित रचनाएँ</h2><div class="story-list" id="myStoryList"></div><h2 class="draft-heading">मेरे निजी ड्राफ्ट</h2><p class="muted">ये रचनाएँ केवल आपको दिखाई देती हैं।</p><div class="story-list" id="myDraftList"></div></section>
   <section class="view hidden" id="settingsView"><p class="eyebrow">अपनी पसंद</p><h1>सेटिंग्स</h1><div class="setting-row"><div><strong>डार्क मोड</strong><p>रात में पढ़ने के लिए रंग बदलें।</p></div><button class="secondary-button" id="themeToggle2">थीम बदलें</button></div><div class="setting-row"><div><strong>पठन भाषा</strong><p>इसी भाषा की रचनाएँ प्राथमिकता से दिखेंगी।</p></div><select id="readingLanguage"><option value="hi">हिंदी</option><option value="sa">संस्कृत</option><option value="en">English</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="pa">ਪੰਜਾਬੀ</option><option value="kn">ಕನ್ನಡ</option><option value="ta">தமிழ்</option><option value="ur">اردو</option></select></div><div class="setting-row"><div><strong>पसंदीदा श्रेणियाँ</strong><p>इन श्रेणियों की रचनाएँ प्राथमिकता से दिखेंगी।</p></div><div id="preferredCategories" class="category-checks"></div></div><div class="setting-row"><div><strong>डेमो डेटा मिटाएँ</strong><p>इस डिवाइस पर सुरक्षित स्थानीय रचनाएँ और प्रोफ़ाइल हटेंगी।</p></div><button class="danger-button" id="resetData">रीसेट</button></div><p class="tiny-note">लॉगिन और क्लाउड सिंक Supabase से जुड़े हैं।</p></section>
+  <!-- साहित्य सूत्रधार: शास्त्रीय राजसी Loading Animation -->
+<div id="appLoader" class="app-loader" role="status" aria-live="polite">
+  <div class="loader-content">
+
+    <div class="manuscript-scene">
+      <div class="manuscript-glow"></div>
+
+      <div class="manuscript-book">
+        <div class="book-spine"></div>
+
+        <div class="book-page page-left">
+          <div class="page-border">
+            <span>ॐ</span>
+            <i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+
+        <div class="book-page page-right">
+          <div class="page-border">
+            <span>श्री</span>
+            <i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+
+        <div class="turning-page">
+          <div class="page-border">
+            <span>विद्या</span>
+            <i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="book-shadow"></div>
+    </div>
+
+    <div class="loader-brand">
+      <span class="loader-brand-title">साहित्य सूत्रधार</span>
+      <span class="loader-brand-subtitle">शब्दों का अपना संसार</span>
+    </div>
+
+    <div class="quill-writing">
+      <div class="quill-line">
+        <span class="quill-feather">🪶</span>
+        <span class="quill-ink"></span>
+      </div>
+
+      <p id="loaderQuote" class="loader-quote"></p>
+      <span id="loaderAuthor" class="loader-author"></span>
+    </div>
+
+    <div class="loader-status">
+      <span class="loader-dot"></span>
+      साहित्य का संसार सज रहा है…
+    </div>
+
+  </div>
+</div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <dialog id="authDialog"><form id="authForm"><h2 id="authHeading">साहित्य सूत्रधार में प्रवेश</h2><label for="authEmail">ईमेल</label><input id="authEmail" type="email" required autocomplete="email"><label for="authPassword">पासवर्ड</label><input id="authPassword" type="password" required minlength="6" autocomplete="current-password"><p id="authMessage" role="status"></p><button type="submit" id="authSubmit">लॉगिन करें</button><button type="button" id="authGoogle">🌐 Google से लॉगिन करें</button><button type="button" id="authRegister">नया खाता बनाएँ</button><button type="button" id="authClose">बंद करें</button></form></dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="app.js?v=20261103-complete-2"></script>
