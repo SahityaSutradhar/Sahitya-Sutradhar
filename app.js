@@ -971,7 +971,7 @@ function hideAppLoader() {
   const loader = document.getElementById("appLoader");
   if (!loader || loader.classList.contains("loader-hidden")) return;
 
-  clearTimeout(loaderQuoteTimer);
+  clearInterval(loaderQuoteTimer);
   clearTimeout(loaderHideTimer);
 
   const elapsed = Date.now() - loaderStartedAt;
