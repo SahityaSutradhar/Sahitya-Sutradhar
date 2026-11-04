@@ -448,3 +448,81 @@
   object-fit: contain;
   border-radius: 12px;
 }
+
+/* संगोष्ठी कमेंट और जवाब */
+.community-post-comments {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.community-post-comments form {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.community-post-comments input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.community-post-comments button {
+  cursor: pointer;
+}
+
+.community-comment {
+  padding: 10px 12px;
+  margin-top: 9px;
+  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+.community-comment strong {
+  color: var(--maroon);
+  font-size: 14px;
+}
+
+.community-comment p {
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+}
+
+.community-comment > button {
+  border: 0;
+  padding: 4px 0;
+  background: transparent;
+  color: var(--maroon);
+  font-weight: 700;
+}
+
+.community-replies {
+  margin-left: 22px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+
+.community-reply {
+  background: var(--surface, var(--paper));
+}
+
+.community-post-comments form[hidden] {
+  display: none;
+}
+
+@media(max-width:480px) {
+  .community-post-comments form {
+    gap: 6px;
+  }
+
+  .community-replies {
+    margin-left: 12px;
+    padding-left: 8px;
+  }
+}
