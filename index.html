@@ -428,7 +428,34 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<!-- प्रोफ़ाइल DP क्रॉप एडिटर -->
+<dialog id="avatarCropDialog" class="modal">
+  <div class="crop-editor">
+    <div class="modal-heading">
+      <h2>प्रोफ़ाइल DP तैयार करें</h2>
+      <button type="button" class="close-button" id="cropClose">×</button>
+    </div>
 
+    <p class="muted">तस्वीर को खिसकाकर सही जगह रखें।</p>
+
+    <div class="crop-preview">
+      <canvas id="avatarCropCanvas" width="400" height="400"></canvas>
+    </div>
+
+    <label for="avatarZoom">ज़ूम करें</label>
+    <input id="avatarZoom" type="range" min="1" max="3" step="0.01" value="1">
+
+    <div class="crop-actions">
+      <button type="button" class="secondary-button" id="cropRotateLeft">↶ घुमाएँ</button>
+      <button type="button" class="secondary-button" id="cropRotateRight">↷ घुमाएँ</button>
+    </div>
+
+    <div class="crop-footer">
+      <button type="button" class="secondary-button" id="cropCancel">रद्द करें</button>
+      <button type="button" class="primary-button" id="cropSave">DP सुरक्षित करें</button>
+    </div>
+  </div>
+</dialog>
   <dialog id="authDialog">
     <form id="authForm">
       <h2 id="authHeading">साहित्य सूत्रधार में प्रवेश</h2>
