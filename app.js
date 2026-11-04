@@ -1465,6 +1465,54 @@ async function openAuthorProfile(authorId=null){
       </article>
     `;
   }).join("");
+
+  
+  const workIds = (works || []).map(w => w.id);
+
+  let authorRatings = [];
+  let authorReviews = [];
+  let reviewerProfiles = [];
+
+  if(workIds.length){
+    const [ratingsResult, reviewsResult] = await Promise.all([
+      supabaseClient.from("ratings")
+        .select("id,work_id,user_id,rating,created_at")
+        .in("work_id", workIds),
+
+      supabaseClient.from("reviews")
+        .select("id,work_id,user_id,review_text,created_at")
+        .in("work_id", workIds)
+        .order("created_at", { ascending: false })
+    ]);
+
+    if(ratingsResult.error || reviewsResult.error){
+      toast("रेटिंग और समीक्षाएँ लोड नहीं हो सकीं।");
+      return;
+    }
+
+    authorRatings = ratingsResult.data || [];
+    authorReviews = reviewsResult.data || [];
+
+    const reviewerIds = [
+      ...new Set([
+        ...authorRatings.map(r => r.user_id),
+        ...authorReviews.map(r => r.user_id)
+      ])
+    ];
+
+    if(reviewerIds.length){
+      const result = await supabaseClient.from("profiles")
+        .select("id,display_name,username")
+        .in("id", reviewerIds);
+
+      if(result.error){
+        toast("पाठकों की जानकारी लोड नहीं हो सकी।");
+        return;
+      }
+
+      reviewerProfiles = result.data || [];
+    }
+  }
   
   
   const name=profile?.display_name||profile?.username||"रचनाकार";
