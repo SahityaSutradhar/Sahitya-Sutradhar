@@ -1449,6 +1449,10 @@ async function openAuthorProfile(authorId=null){
       <div class="story-list">
         ${list||"<p>अभी कोई प्रकाशित रचना नहीं।</p>"}
       </div>
+            <h3>संगोष्ठी पोस्ट (${(communityPosts||[]).length})</h3>
+      <div class="community-posts">
+        ${communityPostList || "<p>अभी कोई संगोष्ठी पोस्ट नहीं है।</p>"}
+      </div>
     </div>
   `;
 
