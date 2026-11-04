@@ -2133,16 +2133,62 @@ async function openNotifications(){
     }
   }
 
-  dialog.querySelectorAll("[data-work-id]").forEach(item=>{
-    item.addEventListener("click",()=>{
-      const workId = item.dataset.workId;
-      if(!workId) return;
+  dialog.querySelectorAll(".notification-item").forEach(item=>{
+  item.addEventListener("click",async()=>{
+    const type = item.dataset.notificationType;
+    const actorId = item.dataset.actorId;
+    const workId = item.dataset.workId;
+    const postId = item.dataset.postId;
+    const commentId = item.dataset.communityCommentId;
 
-      dialog.close();
-      dialog.remove();
+    dialog.close();
+    dialog.remove();
+
+    // नई फ़ॉलो रिक्वेस्ट / फ़ॉलोअर
+    if(type === "follow" && actorId){
+      await openAuthorProfile(actorId);
+      return;
+    }
+
+    // रचना से संबंधित नोटिफिकेशन
+    if(["new_work","rating","review","work_comment"].includes(type) && workId){
       openReader(workId);
-    });
+      return;
+    }
+
+    // नई संगोष्ठी पोस्ट
+    if(type === "new_post" && actorId){
+      await openAuthorProfile(actorId);
+
+      if(postId){
+        const post = [...document.querySelectorAll("[data-community-post-id]")]
+          .find(el=>el.dataset.communityPostId === postId);
+
+        post?.scrollIntoView({behavior:"smooth",block:"center"});
+      }
+      return;
+    }
+
+    // संगोष्ठी पोस्ट पर पसंद या कमेंट
+    if(["post_like","post_comment"].includes(type)){
+      await openAuthorProfile(user.id);
+
+      if(postId){
+        const post = [...document.querySelectorAll("[data-community-post-id]")]
+          .find(el=>el.dataset.communityPostId === postId);
+
+        post?.scrollIntoView({behavior:"smooth",block:"center"});
+      }
+
+      if(commentId){
+        const comment = [...document.querySelectorAll("[data-community-comment-id]")]
+          .find(el=>el.dataset.communityCommentId === commentId);
+
+        comment?.scrollIntoView({behavior:"smooth",block:"center"});
+      }
+    }
   });
+});
 
   dialog.addEventListener("close",()=>dialog.remove());
 }
