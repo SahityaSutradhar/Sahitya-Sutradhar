@@ -1461,11 +1461,18 @@ function init(){
   document.getElementById("publishCommunityPost")?.addEventListener("click",publishCommunityPost);
   loadCommunityPosts();
   document.getElementById("authShortcut")?.addEventListener("click",()=>document.getElementById("openAuthButton")?.click());
-  document.getElementById("avatarUpload")?.addEventListener("change", e => {
+  document.getElementById("avatarUpload")?.addEventListener("change", async e => {
   const file = e.target.files?.[0];
   if (!file) return;
 
-  openAvatarCropEditor(file);
+  toast("तस्वीर चुनी गई: " + file.name);
+
+  try {
+    await openAvatarCropEditor(file);
+  } catch (error) {
+    toast("DP Editor Error: " + error.message);
+  }
+
   e.target.value = "";
 });
   document.getElementById("readingLanguage")?.addEventListener("change",async e=>{if(!supabaseClient)return;const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({reading_language:e.target.value}).eq("id",user.id);if(error)toast(error.message);else{state.profile.readingLanguage=e.target.value;saveState();renderStories();toast("पठन भाषा सुरक्षित हुई।");}}});
