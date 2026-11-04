@@ -2378,8 +2378,15 @@ document.getElementById("editProfile").addEventListener("click",async()=>{const 
   }
 }
 function openWorkFromHash(){
-  const match=location.hash.match(/^#work-(.+)$/);if(!match)return;
-  const id=decodeURIComponent(match[1]);if(state.stories.some(x=>String(x.id)===String(id)))openReader(id);
+  const match=location.hash.match(/^#work-(.+)$/);
+if(!match)return;
+
+const id=decodeURIComponent(match[1]);
+
+if(state.stories.some(x=>String(x.id)===String(id))){
+  history.replaceState(null,"",location.pathname+location.search);
+  openReader(id);
+}
 }
 function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState();applyTheme();}
 init();
