@@ -661,55 +661,92 @@ async function openReader(id){
   if(s.source==="supabase" && s.status==="published") await refreshWorkLikes(id);
 }
 
+
 async function loadWorkFeedback(workId){
   const summary=document.getElementById("ratingSummary");
   const reviewsBox=document.getElementById("reviewsList");
   if(!summary||!reviewsBox||!supabaseClient)return;
+
   summary.textContent="रेटिंग और समीक्षाएँ लोड हो रही हैं…";
   reviewsBox.innerHTML="";
+
   try{
-    const [{data:ratings,error:re}, {data:reviews,error:ve}] = await Promise.all([
+    const [{data:ratings,error:re},{data:reviews,error:ve}] = await Promise.all([
       supabaseClient.from("ratings").select("id,user_id,rating,created_at").eq("work_id",workId),
       supabaseClient.from("reviews").select("id,user_id,review_text,created_at,updated_at").eq("work_id",workId).order("created_at",{ascending:false})
     ]);
-    if(re)throw re;if(ve)throw ve;
-    const rows=ratings||[], avg=rows.length?rows.reduce((a,x)=>a+Number(x.rating),0)/rows.length:0;
-    summary.textContent=`★ ${avg?avg.toFixed(1):"—"} / 5 (${avg?Math.round(avg*20):0}%) · ${rows.length} रेटिंग · ${(reviews||[]).length} समीक्षाएँ`;
+
+    if(re)throw re;
+    if(ve)throw ve;
+
+    const rows=ratings||[];
+    const allReviews=reviews||[];
+    const avg=rows.length?rows.reduce((a,x)=>a+Number(x.rating),0)/rows.length:0;
+
+    summary.textContent=`★ ${avg?avg.toFixed(1):"—"} / 5 (${avg?Math.round(avg*20):0}%) · ${rows.length} रेटिंग · ${allReviews.length} समीक्षाएँ`;
+
     const {data:{user}}=await supabaseClient.auth.getUser();
+
     const myRating=rows.find(x=>x.user_id===user?.id);
-    const myReview=(reviews||[]).find(x=>x.user_id===user?.id);
+    const myReview=allReviews.find(x=>x.user_id===user?.id);
+
     document.getElementById("ratingInput").value=myRating?.rating||"";
     document.getElementById("reviewInput").value=myReview?.review_text||"";
-    const feedbackForm = document.querySelector("#feedbackPanel .feedback-form");
-const currentWork = state.stories.find(x => String(x.id) === String(workId));
-const isWorkOwner = currentWork?.authorId === user?.id;
 
-if (feedbackForm) feedbackForm.classList.toggle("hidden", isWorkOwner);
+    const feedbackForm=document.querySelector("#feedbackPanel .feedback-form");
+    const currentWork=state.stories.find(x=>String(x.id)===String(workId));
+    const isWorkOwner=!!user && currentWork?.authorId===user.id;
 
-const deleteRatingButton = document.getElementById("deleteMyRating");
-const deleteReviewButton = document.getElementById("deleteMyReview");
+    if(feedbackForm){
+      feedbackForm.classList.toggle("hidden",isWorkOwner);
+    }
 
-if (deleteRatingButton) {
-  deleteRatingButton.classList.toggle("hidden", isWorkOwner || !myRating);
-}
-if (deleteReviewButton) {
-  deleteReviewButton.classList.toggle("hidden", isWorkOwner || !myReview);
-}
-    const userIds=[...new Set([...(reviews||[]).map(x=>x.user_id),...rows.map(x=>x.user_id)])];
+    const deleteRatingButton=document.getElementById("deleteMyRating");
+    const deleteReviewButton=document.getElementById("deleteMyReview");
+
+    if(deleteRatingButton){
+      deleteRatingButton.classList.toggle("hidden",isWorkOwner||!myRating);
+    }
+
+    if(deleteReviewButton){
+      deleteReviewButton.classList.toggle("hidden",isWorkOwner||!myReview);
+    }
+
+    const userIds=[...new Set([...allReviews.map(x=>x.user_id),...rows.map(x=>x.user_id)])];
     let profiles=[];
-    if(userIds.length){const q=await supabaseClient.from("profiles").select("id,display_name,username,avatar_url").in("id",userIds);if(!q.error)profiles=q.data||[];}
-    const ratingPeople=rows.map(r=>{const who=profiles.find(p=>p.id===r.user_id);return `<button class="tag profile-link" type="button" data-person-profile="${escapeHtml(r.user_id)}"><span class="mini-avatar">${who?.avatar_url?`<img src="${escapeHtml(who.avatar_url)}" alt="">`:escapeHtml((who?.display_name||who?.username||"प").slice(0,1))}</span>${escapeHtml(who?.display_name||who?.username||"पाठक")} · ${"★".repeat(Number(r.rating))}</button>`;}).join(" ");
-    if(!(reviews||[]).length){reviewsBox.innerHTML=`<div><b>रेटिंग देने वाले:</b><p>${ratingPeople||"अभी कोई रेटिंग नहीं।"}</p></div><p class="muted">अभी कोई समीक्षा नहीं है। पहली समीक्षा आप लिख सकते हैं।</p>`;reviewsBox.querySelectorAll("[data-person-profile]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.personProfile)));return;}
+
+    if(userIds.length){
+      const q=await supabaseClient.from("profiles").select("id,display_name,username,avatar_url").in("id",userIds);
+      if(!q.error)profiles=q.data||[];
+    }
+
+    const ratingPeople=rows.map(r=>{
+      const who=profiles.find(p=>p.id===r.user_id);
+      return `<button class="tag profile-link" type="button" data-person-profile="${escapeHtml(r.user_id)}"><span class="mini-avatar">${who?.avatar_url?`<img src="${escapeHtml(who.avatar_url)}" alt="">`:escapeHtml((who?.display_name||who?.username||"प").slice(0,1))}</span>${escapeHtml(who?.display_name||who?.username||"पाठक")} · ${"★".repeat(Number(r.rating))}</button>`;
+    }).join(" ");
+
+    if(!allReviews.length){
+      reviewsBox.innerHTML=`<div><b>रेटिंग देने वाले:</b><p>${ratingPeople||"अभी कोई रेटिंग नहीं।"}</p></div><p class="muted">अभी कोई समीक्षा नहीं है।</p>`;
+      reviewsBox.querySelectorAll("[data-person-profile]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.personProfile)));
+      return;
+    }
+
     reviewsBox.innerHTML=`<div><b>रेटिंग देने वाले:</b><p>${ratingPeople||"अभी कोई रेटिंग नहीं।"}</p></div>`;
-    reviewsBox.innerHTML+= (reviews||[]).map(r=>{
+
+    reviewsBox.innerHTML+=(allReviews).map(r=>{
       const who=profiles.find(p=>p.id===r.user_id);
       return `<article class="review-card"><button class="profile-link" type="button" data-person-profile="${escapeHtml(r.user_id)}"><span class="mini-avatar">${who?.avatar_url?`<img src="${escapeHtml(who.avatar_url)}" alt="">`:escapeHtml((who?.display_name||who?.username||"प").slice(0,1))}</span><strong>${escapeHtml(who?.display_name||who?.username||"पाठक")}</strong></button><p>${escapeHtml(r.review_text)}</p><small>${new Date(r.created_at).toLocaleDateString("hi-IN")}</small><div class="review-comments" id="reviewComments-${r.id}">कमेंट लोड हो रहे हैं…</div><form class="review-comment-form" data-review-comment="${r.id}"><input name="comment" maxlength="1500" placeholder="इस समीक्षा पर टिप्पणी करें…" required><button type="submit">भेजें</button></form></article>`;
     }).join("");
 
-      reviewsBox.querySelectorAll("[data-person-profile]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.personProfile)));
-    for(const r of (reviews||[])) await loadReviewComments(r.id,workId);
-  }catch(e){summary.textContent="फीडबैक लोड नहीं हुआ: "+e.message;}
+    reviewsBox.querySelectorAll("[data-person-profile]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.personProfile)));
+
+    for(const r of allReviews) await loadReviewComments(r.id,workId);
+
+  }catch(e){
+    summary.textContent="फीडबैक लोड नहीं हुआ: "+e.message;
+  }
 }
+
 
 async function loadReviewComments(reviewId,workId){
   const box=document.getElementById(`reviewComments-${reviewId}`);if(!box)return;
