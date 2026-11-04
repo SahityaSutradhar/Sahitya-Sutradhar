@@ -1253,27 +1253,41 @@ google.addEventListener("click", async () => {
   });
     
   async function syncCurrentAccount(sessionUser){
+  try {
     const version = ++authSyncVersion;
     const nextId = sessionUser?.id || null;
+
     if (currentUserId !== nextId) switchAccountState(nextId);
+
     if (!nextId) {
       state = emptyAccountState();
       currentUserId = null;
       saveState();
-      renderProfile(); renderStories(); renderLibrary();
+      renderProfile();
+      renderStories();
+      renderLibrary();
       await loadCloudWorks();
       await loadCommunityPosts();
       openWorkFromHash();
       return;
     }
+
     // खाते की प्रोफ़ाइल पहले, फिर उसी खाते की रचनाएँ लोड हों।
     await loadCloudProfile();
     if (version !== authSyncVersion) return;
+
     await loadCloudWorks();
     if (version !== authSyncVersion) return;
+
     renderProfile();
     await loadCommunityPosts();
     openWorkFromHash();
+
+  } catch (error) {
+    console.error("शुरुआती डेटा लोड नहीं हुआ:", error);
+  } finally {
+    hideAppLoader();
+  }
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
