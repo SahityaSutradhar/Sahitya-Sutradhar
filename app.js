@@ -1461,7 +1461,13 @@ function init(){
   document.getElementById("publishCommunityPost")?.addEventListener("click",publishCommunityPost);
   loadCommunityPosts();
   document.getElementById("authShortcut")?.addEventListener("click",()=>document.getElementById("openAuthButton")?.click());
-  document.getElementById("avatarUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const url=await uploadSutradharImage(f,"avatars");const {data:{user}}=await supabaseClient.auth.getUser();const {error}=await supabaseClient.from("profiles").update({avatar_url:url}).eq("id",user.id);if(error)throw error;state.profile.avatarUrl=url;saveState();renderProfile();toast("प्रोफ़ाइल DP अपडेट हो गई।");}catch(err){toast("DP अपडेट नहीं हुई: "+err.message);}});
+  document.getElementById("avatarUpload")?.addEventListener("change", e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  openAvatarCropEditor(file);
+  e.target.value = "";
+});
   document.getElementById("readingLanguage")?.addEventListener("change",async e=>{if(!supabaseClient)return;const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({reading_language:e.target.value}).eq("id",user.id);if(error)toast(error.message);else{state.profile.readingLanguage=e.target.value;saveState();renderStories();toast("पठन भाषा सुरक्षित हुई।");}}});
   document.getElementById("themeToggle").addEventListener("click",toggleTheme);
   document.getElementById("writerSort")?.addEventListener("change",loadHomepageStats);
