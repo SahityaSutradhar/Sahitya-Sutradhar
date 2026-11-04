@@ -707,7 +707,12 @@ async function loadWorkFeedback(workId){
     const deleteReviewButton=document.getElementById("deleteMyReview");
 
     if(deleteRatingButton){
-      deleteRatingButton.classList.toggle("hidden",isWorkOwner||!myRating);
+  deleteRatingButton.classList.remove("hidden");
+  deleteRatingButton.textContent = isWorkOwner
+    ? "लेखक की अपनी रचना"
+    : myRating
+      ? "रेटिंग हटाएँ"
+      : "रेटिंग नहीं मिली";
     }
 
     if(deleteReviewButton){
