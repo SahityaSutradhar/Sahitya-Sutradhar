@@ -1313,6 +1313,22 @@ async function openAuthorProfile(authorId=null){
     supabaseClient.auth.getUser()
   ]);
 
+    const { data: blockRecord, error: blockError } =
+    user && user.id !== targetId
+      ? await supabaseClient
+          .from("author_blocks")
+          .select("id")
+          .eq("blocker_id", user.id)
+          .eq("blocked_user_id", targetId)
+          .maybeSingle()
+      : { data: null, error: null };
+
+  if(blockError){
+    toast("ब्लॉक स्थिति लोड नहीं हो सकी।");
+    return;
+  }
+
+  const isBlocked = !!blockRecord;
   if(worksError||profileError){
     toast("रचनाकार की प्रोफ़ाइल लोड नहीं हो सकी।");
     return;
