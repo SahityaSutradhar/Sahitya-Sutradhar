@@ -918,6 +918,82 @@ function switchTab(tab){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function applyTheme(){document.body.classList.toggle("dark",state.theme==="dark");}
+/* =========================================
+   SAHITYA SUTRADHAR — LOADER CONTROLLER
+========================================= */
+
+const loaderQuotes = [
+  {
+    text: "ऐसी बानी बोलिए, मन का आपा खोय। औरन को शीतल करै, आपहुँ शीतल होय॥",
+    author: "— संत कबीरदास"
+  },
+  {
+    text: "गुरु गोविंद दोऊ खड़े, काके लागूं पाय। बलिहारी गुरु आपने, गोविंद दियो बताय॥",
+    author: "— संत कबीरदास"
+  },
+  {
+    text: "निंदक नियरे राखिए, आँगन कुटी छवाय। बिन पानी साबुन बिना, निर्मल करे सुभाय॥",
+    author: "— संत कबीरदास"
+  }
+];
+
+const loaderStartedAt = Date.now();
+let loaderQuoteIndex = 0;
+let loaderQuoteTimer = null;
+let loaderHideTimer = null;
+
+function writeLoaderQuote() {
+  const quote = loaderQuotes[loaderQuoteIndex];
+  const quoteEl = document.getElementById("loaderQuote");
+  const authorEl = document.getElementById("loaderAuthor");
+
+  if (!quoteEl || !authorEl) return;
+
+  quoteEl.textContent = "";
+  authorEl.textContent = "";
+
+  let position = 0;
+
+  const typing = setInterval(() => {
+    quoteEl.textContent = quote.text.slice(0, position + 1);
+    position++;
+
+    if (position >= quote.text.length) {
+      clearInterval(typing);
+      authorEl.textContent = quote.author;
+    }
+  }, 65);
+
+  loaderQuoteIndex = (loaderQuoteIndex + 1) % loaderQuotes.length;
+}
+
+function hideAppLoader() {
+  const loader = document.getElementById("appLoader");
+  if (!loader || loader.classList.contains("loader-hidden")) return;
+
+  clearTimeout(loaderQuoteTimer);
+  clearTimeout(loaderHideTimer);
+
+  const elapsed = Date.now() - loaderStartedAt;
+  const minimumDisplay = 1400;
+
+  loaderHideTimer = setTimeout(() => {
+    loader.classList.add("loader-hidden");
+
+    setTimeout(() => {
+      loader.remove();
+    }, 750);
+  }, Math.max(0, minimumDisplay - elapsed));
+}
+
+writeLoaderQuote();
+
+loaderQuoteTimer = setInterval(() => {
+  writeLoaderQuote();
+}, 8500);
+
+// किसी असामान्य नेटवर्क समस्या में Loader हमेशा अटका न रहे।
+setTimeout(hideAppLoader, 15000);
 function init(){
   applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
   document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
