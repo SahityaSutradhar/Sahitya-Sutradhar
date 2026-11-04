@@ -914,17 +914,110 @@ async function toggleWorkLike(){
   if(q.error){toast("पसंद सुरक्षित नहीं हुई: "+q.error.message);return;}await refreshWorkLikes(currentReaderId);
 }
 async function loadCommunityPosts(){
-  const box=document.getElementById("communityPostsList");if(!box||!supabaseClient)return;
-  const {data:posts,error}=await supabaseClient.from("community_posts").select("id,author_id,body,created_at").eq("status","published").order("created_at",{ascending:false}).limit(20);
-  if(error){box.innerHTML='<p class="muted">समुदाय पोस्ट लोड नहीं हो सकीं।</p>';console.warn(error);return;}
-  const ids=[...new Set((posts||[]).map(p=>p.author_id))];let profiles=[];
-  if(ids.length){const q=await supabaseClient.from("profiles").select("id,display_name,username,avatar_url").in("id",ids);profiles=q.data||[];}
-  const {data:{user}}=await supabaseClient.auth.getUser();
-  const postIds=(posts||[]).map(p=>p.id);let likes=[];
-  if(postIds.length){const q=await supabaseClient.from("post_likes").select("post_id,user_id").in("post_id",postIds);likes=q.data||[];}
-  box.innerHTML=(posts||[]).map(p=>{const who=profiles.find(x=>x.id===p.author_id),mine=likes.some(x=>x.post_id===p.id&&x.user_id===user?.id),count=likes.filter(x=>x.post_id===p.id).length;return `<article class="community-post"><div class="community-post-head"><span class="mini-avatar">${who?.avatar_url?`<img src="${escapeHtml(who.avatar_url)}" alt="">`:escapeHtml((who?.display_name||who?.username||"अ").slice(0,1))}</span><button class="story-author-link" type="button" data-writer="${escapeHtml(p.author_id)}">${escapeHtml(who?.display_name||who?.username||"लेखक")}</button><small>${new Date(p.created_at).toLocaleDateString("hi-IN")}</small></div><p>${escapeHtml(p.body)}</p><button type="button" data-post-like="${escapeHtml(p.id)}" data-liked="${mine?"1":"0"}">${mine?"♥ पसंद किया":"♡ पसंद करें"} · ${count}</button></article>`;}).join("")||'<p class="muted">अभी कोई पोस्ट नहीं है। पहली पोस्ट आप लिख सकते हैं।</p>';
-  box.querySelectorAll("[data-writer]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.writer)));
-  box.querySelectorAll("[data-post-like]").forEach(b=>b.addEventListener("click",()=>togglePostLike(b.dataset.postLike,b.dataset.liked==="1")));
+  const box = document.getElementById("communityPostsList");
+  if (!box || !supabaseClient) return;
+
+  const { data: posts, error } = await supabaseClient
+    .from("community_posts")
+    .select("id,author_id,body,image_url,created_at")
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    box.innerHTML = '<p class="muted">समुदाय पोस्ट लोड नहीं हो सकीं।</p>';
+    console.warn(error);
+    return;
+  }
+
+  const ids = [...new Set((posts || []).map(p => p.author_id))];
+  let profiles = [];
+
+  if (ids.length) {
+    const q = await supabaseClient
+      .from("profiles")
+      .select("id,display_name,username,avatar_url")
+      .in("id", ids);
+
+    profiles = q.data || [];
+  }
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  const postIds = (posts || []).map(p => p.id);
+  let likes = [];
+
+  if (postIds.length) {
+    const q = await supabaseClient
+      .from("post_likes")
+      .select("post_id,user_id")
+      .in("post_id", postIds);
+
+    likes = q.data || [];
+  }
+
+  box.innerHTML = (posts || []).map(p => {
+    const who = profiles.find(x => x.id === p.author_id);
+    const mine = likes.some(
+      x => x.post_id === p.id && x.user_id === user?.id
+    );
+    const count = likes.filter(x => x.post_id === p.id).length;
+
+    return `
+      <article class="community-post">
+
+        <div class="community-post-head">
+          <span class="mini-avatar">
+            ${who?.avatar_url
+              ? `<img src="${escapeHtml(who.avatar_url)}" alt="">`
+              : escapeHtml((who?.display_name || who?.username || "अ").slice(0,1))
+            }
+          </span>
+
+          <button
+            class="story-author-link"
+            type="button"
+            data-writer="${escapeHtml(p.author_id)}"
+          >
+            ${escapeHtml(who?.display_name || who?.username || "लेखक")}
+          </button>
+
+          <small>${new Date(p.created_at).toLocaleDateString("hi-IN")}</small>
+        </div>
+
+        ${p.body ? `<p>${escapeHtml(p.body)}</p>` : ""}
+
+        ${p.image_url ? `
+          <div class="community-post-image">
+            <img
+              src="${escapeHtml(p.image_url)}"
+              alt="समुदाय पोस्ट की तस्वीर"
+              loading="lazy"
+            >
+          </div>
+        ` : ""}
+
+        <button
+          type="button"
+          data-post-like="${escapeHtml(p.id)}"
+          data-liked="${mine ? "1" : "0"}"
+        >
+          ${mine ? "♥ पसंद किया" : "♡ पसंद करें"} · ${count}
+        </button>
+
+      </article>
+    `;
+  }).join("") || '<p class="muted">अभी कोई पोस्ट नहीं है। पहली पोस्ट आप लिख सकते हैं।</p>';
+
+  box.querySelectorAll("[data-writer]").forEach(b => {
+    b.addEventListener("click", () => openAuthorProfile(b.dataset.writer));
+  });
+
+  box.querySelectorAll("[data-post-like]").forEach(b => {
+    b.addEventListener("click", () =>
+      togglePostLike(b.dataset.postLike, b.dataset.liked === "1")
+    );
+  });
 }
 async function togglePostLike(postId,liked){
   const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पोस्ट पसंद करने के लिए लॉगिन करें।");return;}
