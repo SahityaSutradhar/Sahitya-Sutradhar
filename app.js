@@ -1438,6 +1438,7 @@ function init(){
   document.getElementById("profileShortcut").addEventListener("click",()=>switchTab("profile"));
     document.querySelectorAll("[data-follow-list]").forEach(button=>{
     button.addEventListener("click",()=>{
+            alert("फ़ॉलो बटन क्लिक हुआ!");
       if(!currentUserId){
         toast("पहले लॉगिन करें।");
         return;
