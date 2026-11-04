@@ -2080,19 +2080,24 @@ async function openNotifications(){
   dialog.className = "modal";
 
   const items = (notifications||[]).map(n=>{
-    const actor = profiles.find(p=>p.id===n.actor_id);
-    const actorName = actor?.display_name||actor?.username||"एक पाठक";
+  const actor = profiles.find(p=>p.id===n.actor_id);
+  const actorName = actor?.display_name||actor?.username||"एक पाठक";
 
-    return `
-      <article class="notification-item ${n.is_read?"":"unread"}"
-        data-notification-id="${n.id}"
-        data-work-id="${escapeHtml(n.related_work_id||"")}">
-        <strong>${escapeHtml(actorName)}</strong>
-        <p>${escapeHtml(n.message)}</p>
-        <small>${new Date(n.created_at).toLocaleString("hi-IN")}</small>
-      </article>
-    `;
-  }).join("");
+  return `
+    <article class="notification-item ${n.is_read?"":"unread"}"
+      data-notification-id="${n.id}"
+      data-notification-type="${escapeHtml(n.notification_type||"")}"
+      data-actor-id="${escapeHtml(n.actor_id||"")}"
+      data-work-id="${escapeHtml(n.related_work_id||"")}"
+      data-post-id="${escapeHtml(n.related_post_id||"")}"
+      data-community-comment-id="${escapeHtml(n.related_community_comment_id||"")}"
+      data-work-comment-id="${escapeHtml(n.related_work_comment_id||"")}">
+      <strong>${escapeHtml(actorName)}</strong>
+      <p>${escapeHtml(n.message)}</p>
+      <small>${new Date(n.created_at).toLocaleString("hi-IN")}</small>
+    </article>
+  `;
+}).join("");
 
   dialog.innerHTML = `
     <div class="reader-page">
