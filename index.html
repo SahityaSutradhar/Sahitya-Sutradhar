@@ -108,14 +108,42 @@
     </section>
 
     <section class="section-block" id="communitySection">
-      <div class="section-heading">
-        <div><p class="eyebrow">साहित्यिक संवाद</p><h2 id="communityTitle">समुदाय की पोस्ट</h2></div>
-      </div>
-      <div class="community-compose">
-        <textarea id="communityPostText" maxlength="2000" rows="3" placeholder="अपने विचार साझा करें…"></textarea>
-        <button class="primary-button" id="publishCommunityPost" type="button">पोस्ट प्रकाशित करें</button>
-      </div>
-      <div id="communityPostsList" class="community-posts"></div>
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">साहित्यिक संवाद</p>
+      <h2 id="communityTitle">समुदाय की पोस्ट</h2>
+    </div>
+  </div>
+
+  <div class="community-compose">
+    <textarea
+      id="communityPostText"
+      maxlength="2000"
+      rows="3"
+      placeholder="अपने विचार साझा करें…"
+    ></textarea>
+
+    <label for="communityPostImage" class="secondary-button">
+      📷 तस्वीर चुनें
+    </label>
+    <input
+      id="communityPostImage"
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+    >
+
+    <div id="communityImagePreview" class="community-image-preview"></div>
+
+    <button
+      class="primary-button"
+      id="publishCommunityPost"
+      type="button"
+    >
+      पोस्ट प्रकाशित करें
+    </button>
+  </div>
+
+  <div id="communityPostsList" class="community-posts"></div>
     </section>
 
     <section class="section-block">
