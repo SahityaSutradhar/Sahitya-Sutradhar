@@ -1372,25 +1372,100 @@ async function openAuthorProfile(authorId=null){
     return;
 }
 
-    const communityPostList = (communityPosts || []).map(p => `
-    <article class="community-post">
-      ${p.body ? `<p>${escapeHtml(p.body)}</p>` : ""}
+    
+  const communityPostIds = (communityPosts || []).map(p => p.id);
 
-      ${p.image_url ? `
-        <div class="community-post-image">
-          <img
-            src="${escapeHtml(p.image_url)}"
-            alt="रचनाकार की संगोष्ठी पोस्ट"
-            loading="lazy"
-          >
+  let communityLikes = [];
+  let communityComments = [];
+  let communityCommentProfiles = [];
+
+  if(communityPostIds.length){
+    const [likesResult, commentsResult] = await Promise.all([
+      supabaseClient.from("post_likes")
+        .select("post_id,user_id")
+        .in("post_id", communityPostIds),
+
+      supabaseClient.from("community_post_comments")
+        .select("id,post_id,user_id,parent_comment_id,comment_text,created_at")
+        .in("post_id", communityPostIds)
+        .order("created_at", { ascending: true })
+    ]);
+
+    if(likesResult.error || commentsResult.error){
+      toast("पोस्ट के लाइक या कमेंट लोड नहीं हो सके।");
+      return;
+    }
+
+    communityLikes = likesResult.data || [];
+    communityComments = commentsResult.data || [];
+
+    const commenterIds = [...new Set(communityComments.map(c => c.user_id))];
+
+    if(commenterIds.length){
+      const profilesResult = await supabaseClient.from("profiles")
+        .select("id,display_name,username")
+        .in("id", commenterIds);
+
+      if(profilesResult.error){
+        toast("कमेंट करने वालों की जानकारी लोड नहीं हो सकी।");
+        return;
+      }
+
+      communityCommentProfiles = profilesResult.data || [];
+    }
+  }
+
+  const communityPostList = (communityPosts || []).map(p => {
+    const postComments = communityComments.filter(c => c.post_id === p.id);
+    const rootComments = postComments.filter(c => !c.parent_comment_id);
+    const likeCount = communityLikes.filter(l => l.post_id === p.id).length;
+
+    const renderProfileComment = (c, isReply = false) => {
+      const commenter = communityCommentProfiles.find(x => x.id === c.user_id);
+      const commenterName = commenter?.display_name || commenter?.username || "पाठक";
+
+      return `
+        <div class="community-comment ${isReply ? "community-reply" : ""}">
+          <strong>${escapeHtml(commenterName)}</strong>
+          <p>${escapeHtml(c.comment_text)}</p>
+          <small>${new Date(c.created_at).toLocaleDateString("hi-IN")}</small>
         </div>
-      ` : ""}
+      `;
+    };
 
-      <small>
-        ${new Date(p.created_at).toLocaleDateString("hi-IN")}
-      </small>
-    </article>
-  `).join("");
+    return `
+      <article class="community-post">
+        ${p.body ? `<p>${escapeHtml(p.body)}</p>` : ""}
+
+        ${p.image_url ? `
+          <div class="community-post-image">
+            <img src="${escapeHtml(p.image_url)}"
+                 alt="रचनाकार की संगोष्ठी पोस्ट"
+                 loading="lazy">
+          </div>
+        ` : ""}
+
+        <div class="community-post-stats">
+          ♥ ${likeCount} पसंद · ${postComments.length} कमेंट
+        </div>
+
+        <div class="community-post-comments">
+          ${rootComments.map(c => `
+            ${renderProfileComment(c)}
+            <div class="community-replies">
+              ${postComments
+                .filter(r => r.parent_comment_id === c.id)
+                .map(r => renderProfileComment(r, true))
+                .join("")}
+            </div>
+          `).join("") || '<p class="muted">अभी कोई कमेंट नहीं है।</p>'}
+        </div>
+
+        <small>${new Date(p.created_at).toLocaleDateString("hi-IN")}</small>
+      </article>
+    `;
+  }).join("");
+  
   
   const name=profile?.display_name||profile?.username||"रचनाकार";
   const list=(works||[]).map(w=>`
