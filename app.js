@@ -1024,6 +1024,117 @@ async function togglePostLike(postId,liked){
   const q=liked?await supabaseClient.from("post_likes").delete().eq("post_id",postId).eq("user_id",user.id):await supabaseClient.from("post_likes").insert({post_id:postId,user_id:user.id});
   if(q.error){toast("पसंद सुरक्षित नहीं हुई: "+q.error.message);return;}await loadCommunityPosts();
 }
+async function loadCommunityPostComments(postId, container){
+  const { data: comments, error } = await supabaseClient
+    .from("community_post_comments")
+    .select("id,post_id,user_id,parent_comment_id,comment_text,created_at")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true });
+
+  if(error){
+    container.innerHTML = '<p class="muted">कमेंट लोड नहीं हो सके।</p>';
+    console.warn(error);
+    return;
+  }
+
+  const ids = [...new Set((comments || []).map(c => c.user_id))];
+  let profiles = [];
+
+  if(ids.length){
+    const q = await supabaseClient
+      .from("profiles")
+      .select("id,display_name,username,avatar_url")
+      .in("id", ids);
+
+    profiles = q.data || [];
+  }
+
+  const renderComment = (c, isReply = false) => {
+    const who = profiles.find(p => p.id === c.user_id);
+    const name = who?.display_name || who?.username || "पाठक";
+
+    return `
+      <div class="community-comment ${isReply ? "community-reply" : ""}">
+        <strong>${escapeHtml(name)}</strong>
+        <p>${escapeHtml(c.comment_text)}</p>
+        ${!isReply ? `
+          <button type="button" data-comment-reply="${escapeHtml(c.id)}">
+            जवाब दें
+          </button>
+        ` : ""}
+      </div>
+    `;
+  };
+
+  const roots = (comments || []).filter(c => !c.parent_comment_id);
+
+  container.innerHTML = roots.map(c => `
+    ${renderComment(c)}
+    <div class="community-replies">
+      ${(comments || [])
+        .filter(r => r.parent_comment_id === c.id)
+        .map(r => renderComment(r, true))
+        .join("")}
+      <form data-reply-form="${escapeHtml(c.id)}" hidden>
+        <input name="reply" maxlength="1000" placeholder="अपना जवाब लिखें…" required>
+        <button type="submit">जवाब भेजें</button>
+      </form>
+    </div>
+  `).join("") || '<p class="muted">अभी कोई कमेंट नहीं है।</p>';
+
+  container.querySelectorAll("[data-comment-reply]").forEach(button => {
+    button.addEventListener("click", () => {
+      const form = container.querySelector(
+        `[data-reply-form="${button.dataset.commentReply}"]`
+      );
+      if(form) form.hidden = !form.hidden;
+    });
+  });
+
+  container.querySelectorAll("[data-reply-form]").forEach(form => {
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      await publishCommunityPostComment(
+        postId,
+        form.elements.reply.value,
+        form.dataset.replyForm
+      );
+    });
+  });
+}
+
+async function publishCommunityPostComment(postId, text, parentCommentId = null){
+  const commentText = text.trim();
+
+  if(!commentText){
+    toast("कमेंट या जवाब लिखें।");
+    return;
+  }
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if(!user){
+    toast("कमेंट करने के लिए लॉगिन करें।");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("community_post_comments")
+    .insert({
+      post_id: postId,
+      user_id: user.id,
+      parent_comment_id: parentCommentId,
+      comment_text: commentText
+    });
+
+  if(error){
+    toast("कमेंट प्रकाशित नहीं हुआ: " + error.message);
+    return;
+  }
+
+  await loadCommunityPosts();
+  toast("आपका कमेंट प्रकाशित हो गया।");
+}
 async function publishCommunityPost(){
   const field = document.getElementById("communityPostText");
   const imageInput = document.getElementById("communityPostImage");
