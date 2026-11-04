@@ -948,21 +948,184 @@ async function refreshReaderStats(work){
   const rr=ratings||[],avg=rr.length?rr.reduce((a,r)=>a+Number(r.rating),0)/rr.length:0;
   document.getElementById("readerStats").textContent=`रेटिंग ${avg?Math.round(avg*20):0}% (${rr.length}) · समीक्षाएँ ${reviewCount??0} · पाठक ${readCount??0}`;
 }
+
 async function openAuthorProfile(authorId=null){
-  const currentStory=state.stories.find(x=>x.id===currentReaderId);const targetId=authorId||currentStory?.authorId;if(!targetId)return;
-  const {data:works}=await supabaseClient.from("works").select("id,author_id,title,content,work_type,main_form,subtype,status,created_at,cover_url,content_language").eq("author_id",targetId).eq("status","published").order("created_at",{ascending:false});
-  const {data:profile}=await supabaseClient.from("profiles").select("id,display_name,username,avatar_url,bio").eq("id",targetId).maybeSingle();
-  const {data:{user}}=await supabaseClient.auth.getUser();
-  const {count:followerCount}=await supabaseClient.from("author_follows").select("follower_id",{count:"exact",head:true}).eq("author_id",targetId);
-  const {data:follow}=user?await supabaseClient.from("author_follows").select("author_id").eq("follower_id",user.id).eq("author_id",targetId).maybeSingle():{data:null};
+  const currentStory=state.stories.find(x=>x.id===currentReaderId);
+  const targetId=authorId||currentStory?.authorId;
+  if(!targetId||!supabaseClient)return;
+
+  const [
+    {data:works,error:worksError},
+    {data:profile,error:profileError},
+    {data:{user}}
+  ]=await Promise.all([
+    supabaseClient.from("works")
+      .select("id,author_id,title,content,work_type,main_form,subtype,status,created_at,cover_url,content_language")
+      .eq("author_id",targetId)
+      .eq("status","published")
+      .order("created_at",{ascending:false}),
+    supabaseClient.from("profiles")
+      .select("id,display_name,username,avatar_url,bio")
+      .eq("id",targetId)
+      .maybeSingle(),
+    supabaseClient.auth.getUser()
+  ]);
+
+  if(worksError||profileError){
+    toast("रचनाकार की प्रोफ़ाइल लोड नहीं हो सकी।");
+    return;
+  }
+
+  const [
+    {count:followerCount,error:followerError},
+    {count:followingCount,error:followingError},
+    {data:follow,error:followError}
+  ]=await Promise.all([
+    supabaseClient.from("author_follows")
+      .select("follower_id",{count:"exact",head:true})
+      .eq("author_id",targetId),
+    supabaseClient.from("author_follows")
+      .select("author_id",{count:"exact",head:true})
+      .eq("follower_id",targetId),
+    user&&user.id!==targetId
+      ?supabaseClient.from("author_follows")
+        .select("author_id")
+        .eq("follower_id",user.id)
+        .eq("author_id",targetId)
+        .maybeSingle()
+      :Promise.resolve({data:null,error:null})
+  ]);
+
+  if(followerError||followingError||followError){
+    toast("फ़ॉलो आँकड़े लोड नहीं हो सके।");
+    return;
+  }
+
   const name=profile?.display_name||profile?.username||"रचनाकार";
-  const list=(works||[]).map(w=>`<article class="story-card"><h3>${escapeHtml(w.title)}</h3><p>${wordCount(w.content)} शब्द</p><button class="primary-button" data-read="${w.id}">पढ़ें</button></article>`).join("");
-  const d=document.createElement("dialog");d.className="modal";d.innerHTML=`<div class="reader-page"><button class="close-button" id="authorClose">×</button><div class="profile-card"><div class="profile-avatar">${profile?.avatar_url?`<img src="${escapeHtml(profile.avatar_url)}">`:escapeHtml(name.slice(0,1))}</div><div><h2>${escapeHtml(name)}</h2><p>${followerCount||0} फ़ॉलोअर</p></div></div><p>${escapeHtml(profile?.bio||"")}</p>${user&&user.id!==targetId?`<button class="primary-button" id="followAuthor">${follow?"अनफ़ॉलो":"फ़ॉलो करें"}</button><button class="secondary-button" id="reportAuthor">प्रोफ़ाइल रिपोर्ट करें</button>`:""}<h3>प्रकाशित रचनाएँ (${(works||[]).length})</h3><div class="story-list">${list||"<p>अभी कोई प्रकाशित रचना नहीं।</p>"}</div></div>`;
-  document.body.appendChild(d);d.showModal();d.querySelector("#authorClose").onclick=()=>{d.close();d.remove();};
-  d.querySelectorAll("[data-read]").forEach(b=>b.onclick=()=>{d.close();d.remove();openReader(b.dataset.read);});
-  d.querySelector("#followAuthor")?.addEventListener("click",async()=>{if(follow){await supabaseClient.from("author_follows").delete().eq("follower_id",user.id).eq("author_id",targetId);}else{await supabaseClient.from("author_follows").insert({follower_id:user.id,author_id:targetId});}d.close();d.remove();toast(follow?"फ़ॉलो हटाया गया":"रचनाकार को फ़ॉलो किया गया");});
-  d.querySelector("#reportAuthor")?.addEventListener("click",async()=>{const reason=prompt("प्रोफ़ाइल रिपोर्ट का कारण लिखें:");if(!reason)return;const details=prompt("विवरण अधिकतम 100 शब्दों में लिखें:");if(!details)return;if(wordCount(details)>100){toast("रिपोर्ट अधिकतम 100 शब्दों की हो सकती है।");return;}const {error}=await supabaseClient.from("content_reports").insert({reporter_id:user.id,target_type:"profile",target_profile_id:targetId,reason:reason.slice(0,100),details});toast(error?"रिपोर्ट नहीं भेजी: "+error.message:"प्रोफ़ाइल रिपोर्ट भेज दी गई।");});
+  const list=(works||[]).map(w=>`
+    <article class="story-card">
+      <h3>${escapeHtml(w.title)}</h3>
+      <p>${wordCount(w.content)} शब्द</p>
+      <button class="primary-button" data-read="${escapeHtml(w.id)}">पढ़ें</button>
+    </article>
+  `).join("");
+
+  const d=document.createElement("dialog");
+  d.className="modal";
+  d.innerHTML=`
+    <div class="reader-page">
+      <button class="close-button" id="authorClose">×</button>
+
+      <div class="profile-card">
+        <div class="profile-avatar">
+          ${profile?.avatar_url
+            ?`<img src="${escapeHtml(profile.avatar_url)}" alt="">`
+            :escapeHtml(name.slice(0,1))}
+        </div>
+        <div>
+          <h2>${escapeHtml(name)}</h2>
+          <p>
+            <button type="button" class="profile-stat-button" data-follow-list="followers">
+              ${followerCount||0}
+            </button>
+            फ़ॉलोअर्स
+            &nbsp; · &nbsp;
+            <button type="button" class="profile-stat-button" data-follow-list="following">
+              ${followingCount||0}
+            </button>
+            फ़ॉलोइंग
+          </p>
+        </div>
+      </div>
+
+      <p>${escapeHtml(profile?.bio||"")}</p>
+
+      ${user&&user.id!==targetId?`
+        <button class="primary-button" id="followAuthor">
+          ${follow?"अनफ़ॉलो":"फ़ॉलो करें"}
+        </button>
+        <button class="secondary-button" id="reportAuthor">
+          प्रोफ़ाइल रिपोर्ट करें
+        </button>
+      `:""}
+
+      <h3>प्रकाशित रचनाएँ (${(works||[]).length})</h3>
+      <div class="story-list">
+        ${list||"<p>अभी कोई प्रकाशित रचना नहीं।</p>"}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(d);
+  d.showModal();
+
+  d.querySelector("#authorClose").onclick=()=>{
+    d.close();
+    d.remove();
+  };
+
+  d.querySelectorAll("[data-read]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.read;
+      d.close();
+      d.remove();
+      openReader(id);
+    };
+  });
+
+  d.querySelectorAll("[data-follow-list]").forEach(b=>{
+    b.onclick=()=>{
+      openFollowList(targetId,b.dataset.followList);
+    };
+  });
+
+  d.querySelector("#followAuthor")?.addEventListener("click",async()=>{
+    const button=d.querySelector("#followAuthor");
+    button.disabled=true;
+
+    const result=follow
+      ?await supabaseClient.from("author_follows")
+        .delete()
+        .eq("follower_id",user.id)
+        .eq("author_id",targetId)
+      :await supabaseClient.from("author_follows")
+        .insert({follower_id:user.id,author_id:targetId});
+
+    if(result.error){
+      button.disabled=false;
+      toast("फ़ॉलो अपडेट नहीं हुआ: "+result.error.message);
+      return;
+    }
+
+    d.close();
+    d.remove();
+
+    await refreshFollowCounts(targetId);
+
+    toast(follow?"फ़ॉलो हटाया गया।":"रचनाकार को फ़ॉलो किया गया।");
+    openAuthorProfile(targetId);
+  });
+
+  d.querySelector("#reportAuthor")?.addEventListener("click",async()=>{
+    const reason=prompt("प्रोफ़ाइल रिपोर्ट का कारण लिखें:");
+    if(!reason)return;
+    const details=prompt("विवरण अधिकतम 100 शब्दों में लिखें:");
+    if(!details)return;
+    if(wordCount(details)>100){
+      toast("रिपोर्ट अधिकतम 100 शब्दों की हो सकती है।");
+      return;
+    }
+    const {error}=await supabaseClient.from("content_reports").insert({
+      reporter_id:user.id,
+      target_type:"profile",
+      target_profile_id:targetId,
+      reason:reason.slice(0,100),
+      details
+    });
+    toast(error?"रिपोर्ट नहीं भेजी: "+error.message:"प्रोफ़ाइल रिपोर्ट भेज दी गई।");
+  });
 }
+
 
 async function loadCloudProfile() {
   if (!supabaseClient) return;
