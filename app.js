@@ -732,7 +732,72 @@ async function submitRatingReview(){
     toast("आपकी रेटिंग और समीक्षा सुरक्षित हो गई।");await loadWorkFeedback(currentReaderId);
   }catch(e){toast("सुरक्षित नहीं हुआ: "+e.message);}
 }
+async function deleteMyFeedback(type) {
+  if (!supabaseClient || !currentReaderId) return;
 
+  const isRating = type === "rating";
+  const table = isRating ? "ratings" : "reviews";
+  const itemName = isRating ? "रेटिंग" : "समीक्षा";
+
+  if (!confirm(`क्या आप अपनी ${itemName} हटाना चाहते हैं?`)) return;
+
+  try {
+    const { data: { user }, error: authError } =
+      await supabaseClient.auth.getUser();
+
+    if (authError) throw authError;
+    if (!user) {
+      toast("पहले लॉगिन करें।");
+      return;
+    }
+
+    const currentWork = state.stories.find(
+      x => String(x.id) === String(currentReaderId)
+    );
+
+    if (!currentWork || currentWork.authorId === user.id) {
+      toast("रचनाकार अपनी ही रचना की प्रतिक्रिया नहीं हटा सकता।");
+      return;
+    }
+
+    const button = document.getElementById(
+      isRating ? "deleteMyRating" : "deleteMyReview"
+    );
+
+    if (button) button.disabled = true;
+
+    const { data, error } = await supabaseClient
+      .from(table)
+      .delete()
+      .eq("work_id", currentReaderId)
+      .eq("user_id", user.id)
+      .select("id");
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      toast(`आपकी ${itemName} नहीं मिली या हटाई नहीं जा सकी।`);
+      return;
+    }
+
+    if (isRating) {
+      document.getElementById("ratingInput").value = "";
+    } else {
+      document.getElementById("reviewInput").value = "";
+    }
+
+    toast(`आपकी ${itemName} हटा दी गई।`);
+    await loadWorkFeedback(currentReaderId);
+
+  } catch (error) {
+    toast(`${itemName} नहीं हटाई जा सकी: ${error.message}`);
+  } finally {
+    const button = document.getElementById(
+      isRating ? "deleteMyRating" : "deleteMyReview"
+    );
+    if (button) button.disabled = false;
+  }
+}
 async function setCurrentWorkStatus(){
   const s=state.stories.find(x=>x.id===currentReaderId);if(!s||!s.authorId||!supabaseClient)return;
   const next=s.status==="draft"?"published":"draft";
