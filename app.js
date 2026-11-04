@@ -1516,13 +1516,47 @@ async function openAuthorProfile(authorId=null){
   
   
   const name=profile?.display_name||profile?.username||"रचनाकार";
-  const list=(works||[]).map(w=>`
-    <article class="story-card">
-      <h3>${escapeHtml(w.title)}</h3>
-      <p>${wordCount(w.content)} शब्द</p>
-      <button class="primary-button" data-read="${escapeHtml(w.id)}">पढ़ें</button>
-    </article>
-  `).join("");
+  
+  const list=(works||[]).map(w=>{
+    const ratings = authorRatings.filter(r => r.work_id === w.id);
+    const reviews = authorReviews.filter(r => r.work_id === w.id);
+
+    const average = ratings.length
+      ? (ratings.reduce((sum,r) => sum + Number(r.rating),0) / ratings.length).toFixed(1)
+      : "अभी रेटिंग नहीं";
+
+    return `
+      <article class="story-card">
+        <h3>${escapeHtml(w.title)}</h3>
+        <p>${wordCount(w.content)} शब्द</p>
+
+        <div class="work-rating-summary">
+          <strong>★ ${average}</strong>
+          <span>(${ratings.length} रेटिंग)</span>
+        </div>
+
+        <div class="work-public-reviews">
+          <strong>पाठकों की समीक्षाएँ (${reviews.length})</strong>
+
+          ${reviews.map(r=>{
+            const reviewer = reviewerProfiles.find(p => p.id === r.user_id);
+            const reviewerName = reviewer?.display_name || reviewer?.username || "पाठक";
+
+            return `
+              <div class="work-public-review">
+                <strong>${escapeHtml(reviewerName)}</strong>
+                <p>${escapeHtml(r.review_text)}</p>
+                <small>${new Date(r.created_at).toLocaleDateString("hi-IN")}</small>
+              </div>
+            `;
+          }).join("") || '<p class="muted">अभी कोई लिखित समीक्षा नहीं है।</p>'}
+        </div>
+
+        <button class="primary-button" data-read="${escapeHtml(w.id)}">पढ़ें</button>
+      </article>
+    `;
+  }).join("");
+  
 
   const d=document.createElement("dialog");
   d.className="modal";
