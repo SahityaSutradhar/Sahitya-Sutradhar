@@ -315,3 +315,28 @@
     transition: none !important;
   }
 }
+/* प्रोफ़ाइल के फ़ॉलोअर और फ़ॉलोइंग आँकड़े */
+.stats-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+.profile-stat-button{
+  border:0;
+  background:transparent;
+  color:var(--maroon);
+  font:inherit;
+  font-size:22px;
+  font-weight:800;
+  padding:0;
+  cursor:pointer;
+}
+
+.profile-stat-button:hover{
+  text-decoration:underline;
+}
+
+@media(max-width:420px){
+  .stats-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
