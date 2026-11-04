@@ -1358,7 +1358,20 @@ async function openAuthorProfile(authorId=null){
     toast("फ़ॉलो आँकड़े लोड नहीं हो सके।");
     return;
   }
+  
+  const { data: communityPosts, error: communityPostsError } =
+    await supabaseClient
+      .from("community_posts")
+      .select("id,author_id,body,image_url,created_at")
+      .eq("author_id", targetId)
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
 
+  if(communityPostsError){
+    toast("संगोष्ठी की पोस्ट लोड नहीं हो सकीं।");
+    return;
+}
+  
   const name=profile?.display_name||profile?.username||"रचनाकार";
   const list=(works||[]).map(w=>`
     <article class="story-card">
