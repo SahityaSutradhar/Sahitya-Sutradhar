@@ -688,6 +688,8 @@ async function loadWorkFeedback(workId){
     const {data:{user}}=await supabaseClient.auth.getUser();
 
     const myRating=rows.find(x=>x.user_id===user?.id);
+    console.log("मेरी रेटिंग:", myRating, "लॉगिन यूज़र:", user?.id);
+    
     const myReview=allReviews.find(x=>x.user_id===user?.id);
 
     document.getElementById("ratingInput").value=myRating?.rating||"";
