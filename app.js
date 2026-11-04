@@ -1239,10 +1239,8 @@ google.addEventListener("click", async () => {
       } else if (mode === "register" && !result.data.session) {
         showMessage("खाता बनाने का अनुरोध सफल हुआ। यदि ईमेल सत्यापन माँगा जाए, तो अपने ईमेल में आए निर्देश पूरे करें।");
     } else {
-  showMessage("लॉगिन सफल हुआ!");
+    showMessage("लॉगिन सफल हुआ!");
   await refreshAuth();
-  const {data: sessionData}=await supabaseClient.auth.getSession();
-  await syncCurrentAccount(sessionData?.session?.user || null);
   setTimeout(() => dialog.close(), 700);
       }
     } catch (error) {
