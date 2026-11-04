@@ -2001,6 +2001,144 @@ loaderQuoteTimer = setInterval(writeLoaderQuote, 8500);
 
 loaderFallbackTimer = setTimeout(hideAppLoader, 15000);
 
+async function loadNotificationBadge(){
+  if(!supabaseClient) return;
+
+  const {data:{user}} = await supabaseClient.auth.getUser();
+  const badge = document.getElementById("notificationBadge");
+
+  if(!badge) return;
+
+  if(!user){
+    badge.hidden = true;
+    return;
+  }
+
+  const {count,error} = await supabaseClient
+    .from("notifications")
+    .select("id",{count:"exact",head:true})
+    .eq("recipient_id",user.id)
+    .eq("is_read",false);
+
+  if(error){
+    console.warn("Notifications:",error);
+    return;
+  }
+
+  badge.textContent = count > 99 ? "99+" : count;
+  badge.hidden = !count;
+}
+
+
+async function openNotifications(){
+  if(!supabaseClient){
+    toast("सर्वर से कनेक्शन उपलब्ध नहीं है।");
+    return;
+  }
+
+  const {data:{user}} = await supabaseClient.auth.getUser();
+
+  if(!user){
+    toast("नोटिफिकेशन देखने के लिए पहले लॉगिन करें।");
+    return;
+  }
+
+  const {data:notifications,error} = await supabaseClient
+    .from("notifications")
+    .select("id,actor_id,notification_type,message,related_work_id,is_read,created_at")
+    .eq("recipient_id",user.id)
+    .order("created_at",{ascending:false})
+    .limit(50);
+
+  if(error){
+    toast("नोटिफिकेशन लोड नहीं हुए: "+error.message);
+    return;
+  }
+
+  const actorIds = [...new Set((notifications||[])
+    .map(n=>n.actor_id).filter(Boolean))];
+
+  let profiles = [];
+
+  if(actorIds.length){
+    const result = await supabaseClient
+      .from("profiles")
+      .select("id,display_name,username,avatar_url")
+      .in("id",actorIds);
+
+    if(result.error){
+      toast("पाठकों की जानकारी लोड नहीं हुई।");
+      return;
+    }
+
+    profiles = result.data||[];
+  }
+
+  const dialog = document.createElement("dialog");
+  dialog.className = "modal";
+
+  const items = (notifications||[]).map(n=>{
+    const actor = profiles.find(p=>p.id===n.actor_id);
+    const actorName = actor?.display_name||actor?.username||"एक पाठक";
+
+    return `
+      <article class="notification-item ${n.is_read?"":"unread"}"
+        data-notification-id="${n.id}"
+        data-work-id="${escapeHtml(n.related_work_id||"")}">
+        <strong>${escapeHtml(actorName)}</strong>
+        <p>${escapeHtml(n.message)}</p>
+        <small>${new Date(n.created_at).toLocaleString("hi-IN")}</small>
+      </article>
+    `;
+  }).join("");
+
+  dialog.innerHTML = `
+    <div class="reader-page">
+      <button class="close-button" id="notificationsClose">×</button>
+      <h2>🔔 नोटिफिकेशन</h2>
+      <div class="notifications-list">
+        ${items||'<p class="muted">अभी कोई नोटिफिकेशन नहीं है।</p>'}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+  dialog.showModal();
+
+  dialog.querySelector("#notificationsClose").onclick=()=>{
+    dialog.close();
+    dialog.remove();
+  };
+
+  const unreadIds = (notifications||[])
+    .filter(n=>!n.is_read)
+    .map(n=>n.id);
+
+  if(unreadIds.length){
+    const {error:updateError} = await supabaseClient
+      .from("notifications")
+      .update({is_read:true})
+      .in("id",unreadIds)
+      .eq("recipient_id",user.id);
+
+    if(!updateError){
+      await loadNotificationBadge();
+    }
+  }
+
+  dialog.querySelectorAll("[data-work-id]").forEach(item=>{
+    item.addEventListener("click",()=>{
+      const workId = item.dataset.workId;
+      if(!workId) return;
+
+      dialog.close();
+      dialog.remove();
+      openReader(workId);
+    });
+  });
+
+  dialog.addEventListener("close",()=>dialog.remove());
+}
 
 function init(){
   applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
