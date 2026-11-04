@@ -2147,7 +2147,9 @@ function init(){
   document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
 
   document.getElementById("profileShortcut").addEventListener("click",()=>switchTab("profile"));
+document.getElementById("notificationsShortcut")?.addEventListener("click",openNotifications);
 
+loadNotificationBadge();
   document.querySelectorAll("[data-follow-list]").forEach(button=>{
     button.addEventListener("click",()=>{
       if(!currentUserId){
