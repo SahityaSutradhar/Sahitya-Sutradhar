@@ -1398,10 +1398,15 @@ async function openAuthorProfile(authorId=null){
 
       <p>${escapeHtml(profile?.bio||"")}</p>
 
-      ${user&&user.id!==targetId?`
+            ${user&&user.id!==targetId?`
         <button class="primary-button" id="followAuthor">
           ${follow?"अनफ़ॉलो":"फ़ॉलो करें"}
         </button>
+
+        <button class="secondary-button" id="blockAuthor">
+          ${isBlocked?"अनब्लॉक करें":"ब्लॉक करें"}
+        </button>
+
         <button class="secondary-button" id="reportAuthor">
           प्रोफ़ाइल रिपोर्ट करें
         </button>
