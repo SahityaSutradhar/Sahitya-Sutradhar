@@ -1323,13 +1323,21 @@ google.addEventListener("click", async () => {
   }
   }
 
-  supabaseClient.auth.onAuthStateChange((event, session) => {
+  
+supabaseClient.auth.onAuthStateChange((event, session) => {
+
+  // नए लॉगिन या लॉगआउट पर Loader दोबारा दिखाएँ।
+  if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+    showAppLoader();
+  }
+
   // Auth callback के बाहर डेटा लोड करें।
   setTimeout(() => {
     refreshAuth();
     syncCurrentAccount(session?.user || null);
   }, 0);
 });
+  
 
   supabaseClient.auth.getSession().then(({data,error})=>{
     if(error) console.error("सेशन लोड नहीं हुआ:",error.message);
