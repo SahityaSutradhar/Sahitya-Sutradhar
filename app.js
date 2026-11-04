@@ -680,6 +680,21 @@ async function loadWorkFeedback(workId){
     const myReview=(reviews||[]).find(x=>x.user_id===user?.id);
     document.getElementById("ratingInput").value=myRating?.rating||"";
     document.getElementById("reviewInput").value=myReview?.review_text||"";
+    const feedbackForm = document.querySelector("#feedbackPanel .feedback-form");
+const currentWork = state.stories.find(x => String(x.id) === String(workId));
+const isWorkOwner = currentWork?.authorId === user?.id;
+
+if (feedbackForm) feedbackForm.classList.toggle("hidden", isWorkOwner);
+
+const deleteRatingButton = document.getElementById("deleteMyRating");
+const deleteReviewButton = document.getElementById("deleteMyReview");
+
+if (deleteRatingButton) {
+  deleteRatingButton.classList.toggle("hidden", isWorkOwner || !myRating);
+}
+if (deleteReviewButton) {
+  deleteReviewButton.classList.toggle("hidden", isWorkOwner || !myReview);
+}
     const userIds=[...new Set([...(reviews||[]).map(x=>x.user_id),...rows.map(x=>x.user_id)])];
     let profiles=[];
     if(userIds.length){const q=await supabaseClient.from("profiles").select("id,display_name,username,avatar_url").in("id",userIds);if(!q.error)profiles=q.data||[];}
