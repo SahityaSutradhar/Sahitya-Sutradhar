@@ -2150,6 +2150,12 @@ function init(){
 document.getElementById("notificationsShortcut")?.addEventListener("click",openNotifications);
 
 loadNotificationBadge();
+
+if(supabaseClient){
+  supabaseClient.auth.onAuthStateChange(()=>{
+    setTimeout(loadNotificationBadge,0);
+  });
+}
   document.querySelectorAll("[data-follow-list]").forEach(button=>{
     button.addEventListener("click",()=>{
       if(!currentUserId){
