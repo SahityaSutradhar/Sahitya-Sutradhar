@@ -760,7 +760,7 @@ async function loadReviewComments(reviewId,workId){
   if(error){box.textContent="कमेंट लोड नहीं हुए: "+error.message;return;}
   const ids=[...new Set((data||[]).map(x=>x.user_id))];let people=[];
   if(ids.length){const q=await supabaseClient.from("profiles").select("id,display_name,username").in("id",ids);if(!q.error)people=q.data||[];}
-  box.innerHTML=(data||[]).length?(data||[]).map(c=>{const u=people.find(p=>p.id===c.user_id);return `<p class="review-comment"><button class="story-author-link" type="button" data-writer="${escapeHtml(c.user_id)}">${escapeHtml(u?.display_name||u?.username||"पाठक")}</button>: ${escapeHtml(c.comment_text)}</p>`;}).join(""):'<p class="muted">अभी कोई टिप्पणी नहीं।</p>';
+  box.innerHTML=(data||[]).length?(data||[]).map(c=>{const u=people.find(p=>p.id===c.user_id);return `<p class="review-comment" data-work-comment-id="${escapeHtml(c.id)}"><button class="story-author-link" type="button" data-writer="${escapeHtml(c.user_id)}">${escapeHtml(u?.display_name||u?.username||"पाठक")}</button>: ${escapeHtml(c.comment_text)}</p>`;}).join(""):'<p class="muted">अभी कोई टिप्पणी नहीं।</p>';
   box.querySelectorAll("[data-writer]").forEach(b=>b.addEventListener("click",()=>openAuthorProfile(b.dataset.writer)));
 }
 async function submitRatingReview(){
