@@ -1371,6 +1371,26 @@ async function openAuthorProfile(authorId=null){
     toast("संगोष्ठी की पोस्ट लोड नहीं हो सकीं।");
     return;
 }
+
+    const communityPostList = (communityPosts || []).map(p => `
+    <article class="community-post">
+      ${p.body ? `<p>${escapeHtml(p.body)}</p>` : ""}
+
+      ${p.image_url ? `
+        <div class="community-post-image">
+          <img
+            src="${escapeHtml(p.image_url)}"
+            alt="रचनाकार की संगोष्ठी पोस्ट"
+            loading="lazy"
+          >
+        </div>
+      ` : ""}
+
+      <small>
+        ${new Date(p.created_at).toLocaleDateString("hi-IN")}
+      </small>
+    </article>
+  `).join("");
   
   const name=profile?.display_name||profile?.username||"रचनाकार";
   const list=(works||[]).map(w=>`
