@@ -1531,7 +1531,7 @@ async function openAuthorProfile(authorId=null){
         <p>${wordCount(w.content)} शब्द</p>
 
         <div class="work-rating-summary">
-          <strong>★ ${average}</strong>
+        <strong>${ratings.length ? "★ " + average : "अभी रेटिंग नहीं"}</strong>
           <span>(${ratings.length} रेटिंग)</span>
         </div>
 
