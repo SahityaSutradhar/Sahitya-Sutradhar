@@ -1442,6 +1442,19 @@ async function openAuthorProfile(authorId=null){
     };
   });
 
+    d.querySelector("#blockAuthor")?.addEventListener("click",async()=>{
+    const action = isBlocked ? "अनब्लॉक" : "ब्लॉक";
+
+    if(!confirm(`क्या आप इस रचनाकार को ${action} करना चाहते हैं?`)){
+      return;
+    }
+
+    d.close();
+    d.remove();
+
+    await toggleAuthorBlock(targetId, isBlocked);
+  });
+  
   d.querySelector("#followAuthor")?.addEventListener("click",async()=>{
     const button=d.querySelector("#followAuthor");
     button.disabled=true;
