@@ -1143,6 +1143,8 @@ function init(){
   document.getElementById("finishReading").addEventListener("click",finishReading);
   document.getElementById("bookmarkButton").addEventListener("click",toggleBookmark);
   document.getElementById("submitFeedback")?.addEventListener("click",submitRatingReview);
+  document.getElementById("deleteMyRating")?.addEventListener("click", () => deleteMyFeedback("rating"));
+document.getElementById("deleteMyReview")?.addEventListener("click", () => deleteMyFeedback("review"));
   document.getElementById("workOwnerAction")?.addEventListener("click",setCurrentWorkStatus);
   document.getElementById("editWorkAction")?.addEventListener("click",()=>openEditWork(currentReaderId));
   document.getElementById("reviewsList")?.addEventListener("submit",e=>{if(e.target.matches("[data-review-comment]")){e.preventDefault();submitReviewComment(e.target);}});
