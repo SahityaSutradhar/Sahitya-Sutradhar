@@ -1289,10 +1289,12 @@ google.addEventListener("click", async () => {
   }
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
+  // Auth callback के बाहर डेटा लोड करें।
+  setTimeout(() => {
     refreshAuth();
-    // Auth callback के भीतर सीधे Supabase query न चलाएँ।
-    setTimeout(() => syncCurrentAccount(session?.user || null), 0);
-  });
+    syncCurrentAccount(session?.user || null);
+  }, 0);
+});
 
   supabaseClient.auth.getSession().then(({data,error})=>{
     if(error) console.error("सेशन लोड नहीं हुआ:",error.message);
