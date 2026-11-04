@@ -1303,9 +1303,15 @@ function renderProfile(){
   const mine=state.stories.filter(s=>s.source==="supabase" && s.authorId===currentUserId && s.status==="published");
   const drafts=state.stories.filter(s=>s.source==="supabase" && s.authorId===currentUserId && s.status==="draft");
   document.getElementById("publishedCount").textContent=mine.length;
-  const followerEl=document.getElementById("myFollowerCount");
+    const followerEl=document.getElementById("myFollowerCount");
+  const followingEl=document.getElementById("myFollowingCount");
+
   if(followerEl)followerEl.textContent="0";
-  if(followerEl&&currentUserId&&supabaseClient){const uid=currentUserId;supabaseClient.from("author_follows").select("follower_id",{count:"exact",head:true}).eq("author_id",uid).then(({count,error})=>{if(!error&&uid===currentUserId)followerEl.textContent=(count||0).toLocaleString("hi-IN");});}
+  if(followingEl)followingEl.textContent="0";
+
+  if(currentUserId&&supabaseClient){
+    refreshFollowCounts(currentUserId);
+  }
   document.getElementById("myStoryList").innerHTML=mine.length?mine.map(storyCard).join(""):'<p class="muted">अभी आपने कोई रचना प्रकाशित नहीं की है।</p>';
   const draftBox=document.getElementById("myDraftList");
   if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><div class="story-meta"><button type="button" data-edit-work="${escapeHtml(d.id)}">संपादित करें</button><button type="button" data-republish="${escapeHtml(d.id)}">पुनः प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
