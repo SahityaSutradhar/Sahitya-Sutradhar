@@ -296,7 +296,7 @@ async function loadCloudWorks() {
     if(requestUserId !== currentUserId) return;
     const { data: works, error } = await supabaseClient
       .from("works")
-      .select("id,author_id,title,content,work_type,main_form,subtype,status,created_at,cover_url,content_language")
+      .select("id,author_id,title,content,work_type,main_form,subtype,status,created_at,cover_url,content_language,series_id,part_number,series_title")
       .in("status", ["published", "draft"])
       .order("created_at", { ascending: false });
 
