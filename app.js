@@ -266,6 +266,33 @@ async function openEditWork(id){
   document.querySelectorAll("#formCategories input").forEach(cb => cb.checked = (s.categories || []).includes(cb.value));
   document.getElementById("storyLanguage").value = s.language || "hi";
   document.getElementById("storyCover").value = "";
+  const seriesMode = document.getElementById("seriesMode");
+const seriesTitle = document.getElementById("seriesTitle");
+const seriesDescription = document.getElementById("seriesDescription");
+const existingSeries = document.getElementById("existingSeries");
+const seriesStatus = document.getElementById("seriesStatus");
+
+if (seriesMode) {
+  seriesMode.value = s.seriesId ? "existing" : "standalone";
+}
+
+if (seriesTitle) seriesTitle.value = "";
+if (seriesDescription) seriesDescription.value = "";
+
+if (seriesStatus) {
+  seriesStatus.value = s.seriesStatus || "ongoing";
+}
+
+updateSeriesEditor();
+
+if (s.seriesId) {
+  await loadMySeries();
+
+  if (existingSeries) {
+    existingSeries.value = s.seriesId;
+    updateSelectedSeriesStatus();
+  }
+}
   document.getElementById("rightsCheck").checked = true;
   document.getElementById("charCount").textContent = `${(s.body || "").length} अक्षर · ${wordCount(s.body||"")} शब्द`;
   document.getElementById("draftStatus").textContent = s.coverUrl ? "मौजूदा कवर सुरक्षित रहेगा; नया कवर चुनने पर बदलेगा" : "प्रकाशित रचना संपादन मोड";
