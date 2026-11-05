@@ -2237,7 +2237,10 @@ function switchTab(tab){
   activeTab=tab;
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   document.querySelector(".app-shell").classList.toggle("hidden",tab!=="home");
-  ["library","profile","settings"].forEach(t=>document.getElementById(t+"View").classList.toggle("hidden",tab!==t));
+  ["library","profile","settings","inbox"].forEach(t=>{
+  const view=document.getElementById(t+"View");
+  if(view) view.classList.toggle("hidden",tab!==t);
+});
   if(tab==="write"){openWrite();document.querySelector('[data-tab="home"]').classList.remove("active");}
   if(tab==="library")renderLibrary();
   if(tab==="settings")renderPreferredCategories();
