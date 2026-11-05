@@ -1617,6 +1617,18 @@ const cannotMessage = !!blockRecord || !!blockedByRecord;
         <button class="primary-button" id="followAuthor">
           ${follow?"अनफ़ॉलो":"फ़ॉलो करें"}
         </button>
+<button
+  type="button"
+  class="secondary-button"
+  id="messageAuthor"
+  ${!follow || cannotMessage ? "disabled" : ""}
+>
+  संदेश भेजें
+</button>
+
+${!follow && !cannotMessage
+  ? '<small class="muted">संदेश भेजने के लिए पहले इस रचनाकार को फ़ॉलो करें।</small>'
+  : ""}
 
         <button class="secondary-button" id="blockAuthor">
           ${isBlocked?"अनब्लॉक करें":"ब्लॉक करें"}
