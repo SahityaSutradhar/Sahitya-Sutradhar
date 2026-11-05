@@ -335,6 +335,23 @@ async function loadCloudWorks() {
       if (profilesError) throw profilesError;
       profiles = data || [];
                                    }
+    
+let seriesRows = [];
+
+const seriesIds = [
+  ...new Set((works || []).map(w => w.series_id).filter(Boolean))
+];
+
+if (seriesIds.length) {
+  const { data, error: seriesError } = await supabaseClient
+    .from("work_series")
+    .select("id,title,description,status")
+    .in("id", seriesIds);
+
+  if (seriesError) throw seriesError;
+  seriesRows = data || [];
+}
+    
     const cloudStories = (works || []).map(w => {
       const profile = profiles.find(p => p.id === w.author_id);
       const linkedCategoryIds = links
