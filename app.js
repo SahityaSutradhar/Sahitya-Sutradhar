@@ -1336,6 +1336,22 @@ async function openAuthorProfile(authorId=null){
     return;
   }
 
+  const {data:blockedByRecord,error:blockedByError} = user && user.id !== targetId
+  ? await supabaseClient
+      .from("author_blocks")
+      .select("id")
+      .eq("blocker_id",targetId)
+      .eq("blocked_user_id",user.id)
+      .maybeSingle()
+  : {data:null,error:null};
+
+if(blockedByError){
+  toast("ब्लॉक स्थिति लोड नहीं हो सकी।");
+  return;
+}
+
+const cannotMessage = !!blockRecord || !!blockedByRecord;
+  
   const isBlocked = !!blockRecord;
   if(worksError||profileError){
     toast("रचनाकार की प्रोफ़ाइल लोड नहीं हो सकी।");
