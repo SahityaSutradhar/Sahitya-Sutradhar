@@ -1990,6 +1990,7 @@ async function loadCloudProfile() {
     renderPreferredCategories();
   }
 }
+
 function renderProfile(){
   const p=state.profile;
   document.getElementById("profileAvatar").innerHTML=p.avatarUrl?`<img src="${escapeHtml(p.avatarUrl)}" alt="प्रोफ़ाइल DP">`:escapeHtml((p.name||"अ").trim().slice(0,1));
