@@ -7,7 +7,7 @@
   <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=20261104-loader-1">
+  <link rel="stylesheet" href="styles.css?v=20261105-home-1">
   <style>
     .feedback-panel{border-top:1px solid var(--line,#ddd);margin-top:22px;padding-top:18px}
     .feedback-panel h2{font-size:1.25rem}
@@ -85,6 +85,19 @@
       <div class="lotus-art" aria-hidden="true"><span>❀</span><span>❀</span><span>❀</span></div>
     </section>
 
+    <section class="discovery-search" aria-label="रचनाएँ खोजें">
+      <div class="discovery-search-copy">
+        <p class="eyebrow">अपनी अगली पसंद खोजें</p>
+        <h2>किस तरह का साहित्य पढ़ना चाहेंगे?</h2>
+        <p>शीर्षक, लेखक, विषय या रचना के शब्दों से खोजें।</p>
+      </div>
+      <div class="search-control">
+        <span aria-hidden="true">⌕</span>
+        <input id="workSearchInput" type="search" placeholder="कहानी, कविता, लेखक का नाम…" aria-label="रचना या लेखक खोजें">
+        <button id="workSearchClear" type="button" class="search-clear" aria-label="खोज मिटाएँ">×</button>
+      </div>
+    </section>
+
     <section class="section-block">
       <div class="section-heading">
         <div><p class="eyebrow">नवीन सृजन</p><h2 id="latestHeading">नई प्रकाशित रचनाएँ</h2></div>
@@ -112,44 +125,6 @@
       <div class="writer-list" id="activeWritersList"></div>
     </section>
 
-    <section class="section-block" id="communitySection">
-  <div class="section-heading">
-    <div>
-      <p class="eyebrow">साहित्यिक संवाद</p>
-      <h2 id="communityTitle">समुदाय की पोस्ट</h2>
-    </div>
-  </div>
-
-  <div class="community-compose">
-    <textarea
-      id="communityPostText"
-      maxlength="2000"
-      rows="3"
-      placeholder="अपने विचार साझा करें…"
-    ></textarea>
-
-    <label for="communityPostImage" class="secondary-button">
-      📷 तस्वीर चुनें
-    </label>
-    <input
-      id="communityPostImage"
-      type="file"
-      accept="image/png,image/jpeg,image/webp"
-    >
-
-    <div id="communityImagePreview" class="community-image-preview"></div>
-
-    <button
-      class="primary-button"
-      id="publishCommunityPost"
-      type="button"
-    >
-      पोस्ट प्रकाशित करें
-    </button>
-  </div>
-
-  <div id="communityPostsList" class="community-posts"></div>
-    </section>
 
     <section class="section-block">
       <div class="section-heading">
@@ -594,6 +569,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261104-loader-3"></script>
+  <script src="app.js?v=20261105-home-1"></script>
 </body>
 </html>
