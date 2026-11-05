@@ -1742,6 +1742,89 @@ ${!follow && !cannotMessage
   });
 }
 
+async function startInboxRequest(recipientId){
+  const {data:{user}} = await supabaseClient.auth.getUser();
+
+  if(!user){
+    toast("पहले लॉगिन करें।");
+    return;
+  }
+
+  currentUserId = user.id;
+
+  const {data:existing,error:existingError} = await supabaseClient
+    .from("message_requests")
+    .select("id,sender_id,recipient_id,status")
+    .or(
+      `and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if(existingError){
+    toast("पुरानी बातचीत की जाँच नहीं हो सकी।");
+    return;
+  }
+
+  if(existing){
+    if(existing.status==="accepted"){
+      switchTab("inbox");
+      await openInboxConversation(existing.id);
+    }else if(existing.status==="pending"){
+      toast(
+        existing.sender_id===user.id
+          ? "आपका संदेश अनुरोध पहले से भेजा जा चुका है।"
+          : "इस रचनाकार का संदेश अनुरोध आपके इनबॉक्स में है।"
+      );
+    }else{
+      toast("इस रचनाकार के साथ पुराना संदेश अनुरोध अस्वीकार या ब्लॉक किया गया है।");
+    }
+    return;
+  }
+
+  const message = prompt("अपना पहला निजी संदेश लिखें:");
+
+  if(!message || !message.trim()) return;
+
+  const text = message.trim();
+
+  if(text.length>5000){
+    toast("संदेश अधिकतम 5000 अक्षरों का हो सकता है।");
+    return;
+  }
+
+  const {data:request,error:requestError} = await supabaseClient
+    .from("message_requests")
+    .insert({
+      sender_id:user.id,
+      recipient_id:recipientId,
+      status:"pending"
+    })
+    .select("id")
+    .single();
+
+  if(requestError){
+    toast("संदेश अनुरोध नहीं भेजा गया: "+requestError.message);
+    return;
+  }
+
+  const {error:messageError} = await supabaseClient
+    .from("messages")
+    .insert({
+      request_id:request.id,
+      sender_id:user.id,
+      message_text:text,
+      is_read:false
+    });
+
+  if(messageError){
+    toast("अनुरोध बन गया, लेकिन पहला संदेश नहीं भेजा जा सका: "+messageError.message);
+    return;
+  }
+
+  toast("संदेश अनुरोध भेज दिया गया।");
+  loadNotificationBadge();
+}
 
 async function openFollowList(profileId, type){
   if(!supabaseClient||!profileId)return;
