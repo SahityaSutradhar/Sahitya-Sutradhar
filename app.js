@@ -2559,6 +2559,20 @@ function init(){
   applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
 
   document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+  document.getElementById("inboxMessagesTab")
+  ?.addEventListener("click",()=>showInboxMode("messages"));
+
+document.getElementById("inboxRequestsTab")
+  ?.addEventListener("click",()=>showInboxMode("requests"));
+
+document.getElementById("inboxBack")
+  ?.addEventListener("click",()=>{
+    document.getElementById("inboxConversation").classList.add("hidden");
+    showInboxMode(inboxCurrentMode);
+  });
+
+document.getElementById("inboxMessageForm")
+  ?.addEventListener("submit",sendInboxMessage);
   document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
 
   document.getElementById("profileShortcut").addEventListener("click",()=>switchTab("profile"));
