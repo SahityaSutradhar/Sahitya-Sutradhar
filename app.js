@@ -498,26 +498,51 @@ async function publishStory(e) {
   const contentLanguage = document.getElementById("storyLanguage")?.value || "hi";
   const coverFile = document.getElementById("storyCover")?.files?.[0] || null;
 
+  const seriesMode = document.getElementById("seriesMode")?.value || "standalone";
+  const seriesTitleInput = document.getElementById("seriesTitle");
+  const seriesDescriptionInput = document.getElementById("seriesDescription");
+  const existingSeriesSelect = document.getElementById("existingSeries");
+  const seriesStatus = document.getElementById("seriesStatus")?.value || "ongoing";
+
   if (!title || !body || !type || !categoryNames.length) {
     toast("शीर्षक, सामग्री, विधा और कम-से-कम एक श्रेणी भरें।");
     return;
   }
+
   if (type !== "चंपू काव्य" && !subtype) {
     toast("कृपया रचना का उपप्रकार चुनें।");
     return;
   }
+
+  if (!editingWorkId && seriesMode === "new") {
+    if (!seriesTitleInput?.value.trim()) {
+      toast("कृपया धारावाहिक का नाम लिखें।");
+      return;
+    }
+  }
+
+  if (!editingWorkId && seriesMode === "existing" && !existingSeriesSelect?.value) {
+    toast("कृपया अपना धारावाहिक चुनें।");
+    return;
+  }
+
   if (!supabaseClient) {
     toast("Supabase कनेक्शन उपलब्ध नहीं है।");
     return;
-}
+  }
+
   const submitButton = document.querySelector(
     '#storyForm button[type="submit"]'
   );
   if (submitButton) submitButton.disabled = true;
 
+  let createdSeriesId = null;
+  let publishedWorkId = null;
+
   try {
     const { data: authData, error: authError } =
       await supabaseClient.auth.getUser();
+
     if (authError) throw authError;
 
     const user = authData?.user;
@@ -526,18 +551,20 @@ async function publishStory(e) {
       return;
     }
 
-    // श्रेणियों की ID पहले जाँचें ताकि गलत श्रेणी पर रचना insert न हो।
     const { data: categoryRows, error: categoryError } =
       await supabaseClient
         .from("categories")
         .select("id,name")
         .in("name", categoryNames);
+
     if (categoryError) throw categoryError;
 
     const categoryMap = new Map(
       (categoryRows || []).map(row => [row.name, row.id])
     );
+
     const missing = categoryNames.filter(name => !categoryMap.has(name));
+
     if (missing.length) {
       throw new Error(
         "ये श्रेणियाँ Supabase की categories टेबल में नहीं मिलीं: " +
@@ -545,12 +572,79 @@ async function publishStory(e) {
       );
     }
 
+    let seriesId = null;
+    let finalSeriesTitle = null;
+    let partNumber = 1;
+
+    // नई धारावाहिक रचना बनाना
+    if (!editingWorkId && seriesMode === "new") {
+      const { data: newSeries, error: seriesError } =
+        await supabaseClient
+          .from("work_series")
+          .insert({
+            author_id: user.id,
+            title: seriesTitleInput.value.trim(),
+            description: seriesDescriptionInput?.value.trim() || "",
+            status: seriesStatus
+          })
+          .select("id,title")
+          .single();
+
+      if (seriesError) throw seriesError;
+
+      seriesId = newSeries.id;
+      finalSeriesTitle = newSeries.title;
+      partNumber = 1;
+      createdSeriesId = newSeries.id;
+    }
+
+    // मौजूदा धारावाहिक में नया भाग जोड़ना
+    if (!editingWorkId && seriesMode === "existing") {
+      const selectedId = existingSeriesSelect.value;
+
+      const { data: selectedSeries, error: selectedError } =
+        await supabaseClient
+          .from("work_series")
+          .select("id,title")
+          .eq("id", selectedId)
+          .eq("author_id", user.id)
+          .single();
+
+      if (selectedError) throw selectedError;
+
+      seriesId = selectedSeries.id;
+      finalSeriesTitle = selectedSeries.title;
+
+      const { data: lastParts, error: partsError } =
+        await supabaseClient
+          .from("works")
+          .select("part_number")
+          .eq("series_id", seriesId)
+          .order("part_number", { ascending: false })
+          .limit(1);
+
+      if (partsError) throw partsError;
+
+      partNumber = (lastParts?.[0]?.part_number || 0) + 1;
+    }
+
     let coverUrl = null;
-    if (coverFile) coverUrl = await uploadSutradharImage(coverFile, "covers");
+
+    if (coverFile) {
+      coverUrl = await uploadSutradharImage(coverFile, "covers");
+    }
+
     let work;
+
     if (editingWorkId) {
-      const existing = state.stories.find(x => String(x.id) === String(editingWorkId));
-      if (!existing || existing.authorId !== user.id) throw new Error("केवल अपनी रचना संपादित कर सकते हैं।");
+      const existing = state.stories.find(
+        x => String(x.id) === String(editingWorkId)
+      );
+
+      if (!existing || existing.authorId !== user.id) {
+        throw new Error("केवल अपनी रचना संपादित कर सकते हैं।");
+      }
+
       const updateData = {
         title,
         content: body,
@@ -560,11 +654,21 @@ async function publishStory(e) {
         content_language: contentLanguage,
         status: "published"
       };
+
       if (coverUrl) updateData.cover_url = coverUrl;
+
       const { data, error: workError } = await supabaseClient
-        .from("works").update(updateData).eq("id", editingWorkId).eq("author_id", user.id).select().single();
+        .from("works")
+        .update(updateData)
+        .eq("id", editingWorkId)
+        .eq("author_id", user.id)
+        .select()
+        .single();
+
       if (workError) throw workError;
+
       work = data;
+
     } else {
       const { data, error: workError } = await supabaseClient
         .from("works")
@@ -577,58 +681,147 @@ async function publishStory(e) {
           subtype: subtype || null,
           status: "published",
           content_language: contentLanguage,
-          cover_url: coverUrl
+          cover_url: coverUrl,
+          series_id: seriesId,
+          part_number: partNumber,
+          series_title: finalSeriesTitle
         })
         .select()
         .single();
+
       if (workError) throw workError;
+
       work = data;
+      publishedWorkId = data.id;
     }
 
-    const desiredCategoryIds = categoryNames.map(name => categoryMap.get(name));
+    // धारावाहिक की स्थिति अपडेट करना
+    if (!editingWorkId && seriesId) {
+      const { error: statusError } = await supabaseClient
+        .from("work_series")
+        .update({
+          status: seriesStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", seriesId)
+        .eq("author_id", user.id);
+
+      if (statusError) throw statusError;
+    }
+
+    const desiredCategoryIds = categoryNames.map(
+      name => categoryMap.get(name)
+    );
+
     let linkError = null;
+
     if (editingWorkId) {
-      // पहले नई श्रेणियाँ जोड़ें; सफल होने के बाद ही हटाई गई श्रेणियाँ हटाएँ।
-      const { data: oldLinks, error: oldLinksError } = await supabaseClient
-        .from("work_categories").select("category_id").eq("work_id", work.id);
+      const { data: oldLinks, error: oldLinksError } =
+        await supabaseClient
+          .from("work_categories")
+          .select("category_id")
+          .eq("work_id", work.id);
+
       if (oldLinksError) throw oldLinksError;
+
       const oldIds = (oldLinks || []).map(x => x.category_id);
       const addIds = desiredCategoryIds.filter(id => !oldIds.includes(id));
       const removeIds = oldIds.filter(id => !desiredCategoryIds.includes(id));
+
       if (addIds.length) {
-        const result = await supabaseClient.from("work_categories").insert(addIds.map(category_id => ({work_id:work.id,category_id})));
+        const result = await supabaseClient
+          .from("work_categories")
+          .insert(addIds.map(category_id => ({
+            work_id: work.id,
+            category_id
+          })));
+
         linkError = result.error;
       }
+
       if (!linkError && removeIds.length) {
-        const result = await supabaseClient.from("work_categories").delete().eq("work_id",work.id).in("category_id",removeIds);
+        const result = await supabaseClient
+          .from("work_categories")
+          .delete()
+          .eq("work_id", work.id)
+          .in("category_id", removeIds);
+
         linkError = result.error;
       }
+
     } else {
-      const result = await supabaseClient.from("work_categories").insert(desiredCategoryIds.map(category_id => ({work_id:work.id,category_id})));
+      const result = await supabaseClient
+        .from("work_categories")
+        .insert(
+          desiredCategoryIds.map(category_id => ({
+            work_id: work.id,
+            category_id
+          }))
+        );
+
       linkError = result.error;
     }
 
     if (linkError) {
       console.error("श्रेणी लिंक सेव नहीं हुए:", linkError);
-      toast("रचना का पाठ सुरक्षित हुआ, लेकिन श्रेणियाँ पूरी तरह अपडेट नहीं हुईं: " + linkError.message);
+      toast("रचना सुरक्षित हुई, लेकिन श्रेणियाँ पूरी तरह अपडेट नहीं हुईं: " + linkError.message);
     } else {
-      toast(editingWorkId ? "पुरानी प्रकाशित रचना के बदलाव सुरक्षित हो गए।" : "रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!");
-  }
+      toast(
+        editingWorkId
+          ? "पुरानी प्रकाशित रचना के बदलाव सुरक्षित हो गए।"
+          : seriesId
+            ? `धारावाहिक का भाग ${partNumber} प्रकाशित हो गया!`
+            : "रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!"
+      );
+    }
 
-     editingWorkId = null;
+    editingWorkId = null;
+
     state.drafts = {
-      title: "", body: "", type: "", subtype: "", categories: []
+      title: "",
+      body: "",
+      type: "",
+      subtype: "",
+      categories: []
     };
+
     saveState();
+
+    if (document.getElementById("seriesMode")) {
+      document.getElementById("seriesMode").value = "standalone";
+      if (seriesTitleInput) seriesTitleInput.value = "";
+      if (seriesDescriptionInput) seriesDescriptionInput.value = "";
+      if (existingSeriesSelect) existingSeriesSelect.value = "";
+      if (document.getElementById("seriesStatus")) {
+        document.getElementById("seriesStatus").value = "ongoing";
+      }
+      updateSeriesEditor();
+    }
+
     document.getElementById("writeDialog").close();
     await loadCloudWorks();
+
   } catch (error) {
     console.error("रचना प्रकाशित करने में समस्या:", error);
+
+    // यदि नई धारावाहिक एंट्री बनी लेकिन रचना प्रकाशित नहीं हुई,
+    // तो खाली धारावाहिक एंट्री हटा दें।
+    if (createdSeriesId && !publishedWorkId) {
+      await supabaseClient
+        .from("work_series")
+        .delete()
+        .eq("id", createdSeriesId)
+        .eq("author_id", currentUserId);
+    }
+
     toast("रचना प्रकाशित नहीं हुई: " + (error.message || String(error)));
+
   } finally {
     if (submitButton) submitButton.disabled = false;
   }
 }
+
+
 
 async function shareExcerptAsImage(){
   const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;
