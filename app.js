@@ -2877,6 +2877,11 @@ if(supabaseClient){
   if(uiSelect){uiSelect.value=state.profile.uiLanguage||"hi";uiSelect.addEventListener("change",async()=>{state.profile.uiLanguage=uiSelect.value;saveState();if(supabaseClient){const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({ui_language:uiSelect.value}).eq("id",user.id);if(error)toast("इस डिवाइस पर भाषा बदली गई, क्लाउड सेव नहीं हुई: "+error.message);}}applyUILanguage();toast("प्रदर्शन भाषा बदल दी गई।");});}
   applyUILanguage();
   document.getElementById("formType").addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
+  document.getElementById("seriesMode")?.addEventListener("change",updateSeriesEditor);
+
+document.getElementById("existingSeries")?.addEventListener("change",updateSelectedSeriesStatus);
+
+updateSeriesEditor();
  document.getElementById("storyForm").addEventListener("submit",publishStory);
   document.getElementById("saveDraftCloud")?.addEventListener("click",saveCloudDraft);
   document.getElementById("storyTitle").addEventListener("input",saveDraftFromForm);
