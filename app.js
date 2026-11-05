@@ -887,6 +887,70 @@ function setupReaderPagination(id){
  readerPageIndex=Number(saved.page)||0;readerSeenPages=new Set(saved.seen||[]);readerWordsTotal=wordCount(body.innerText||"");readerPagesTotal=1;
  body.scrollLeft=0;requestAnimationFrame(()=>{readerPageMetrics();readerGoPage(Math.min(readerPageIndex,readerPagesTotal-1),"next");});
 }
+
+function renderReaderSeriesNav(work){
+  const box = document.getElementById("readerSeriesNav");
+  if(!box) return;
+
+  if(!work?.seriesId){
+    box.classList.add("hidden");
+    return;
+  }
+
+  const parts = state.stories
+    .filter(x =>
+      String(x.seriesId) === String(work.seriesId) &&
+      x.status === "published"
+    )
+    .sort((a,b) => (a.partNumber || 1) - (b.partNumber || 1));
+
+  const index = parts.findIndex(
+    x => String(x.id) === String(work.id)
+  );
+
+  if(index < 0){
+    box.classList.add("hidden");
+    return;
+  }
+
+  box.classList.remove("hidden");
+
+  document.getElementById("readerSeriesTitle").textContent =
+    work.seriesTitle || "धारावाहिक";
+
+  document.getElementById("readerSeriesPart").textContent =
+    `भाग ${work.partNumber || 1} / ${parts.length}`;
+
+  document.getElementById("readerPrevPart").disabled = index === 0;
+  document.getElementById("readerNextPart").disabled =
+    index === parts.length - 1;
+}
+
+async function navigateReaderSeries(direction){
+  const current = state.stories.find(
+    x => String(x.id) === String(currentReaderId)
+  );
+
+  if(!current?.seriesId) return;
+
+  const parts = state.stories
+    .filter(x =>
+      String(x.seriesId) === String(current.seriesId) &&
+      x.status === "published"
+    )
+    .sort((a,b) => (a.partNumber || 1) - (b.partNumber || 1));
+
+  const index = parts.findIndex(
+    x => String(x.id) === String(current.id)
+  );
+
+  const nextIndex = index + direction;
+  if(index < 0 || nextIndex < 0 || nextIndex >= parts.length) return;
+
+  document.getElementById("readerDialog").close();
+  await openReader(parts[nextIndex].id);
+}
+
 async function openReader(id){
   const s=state.stories.find(x=>x.id===id);if(!s)return;
   currentReaderId=id;readingStartedAt=Date.now();
