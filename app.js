@@ -716,6 +716,11 @@ async function publishStory(e) {
       };
 
       if (coverUrl) updateData.cover_url = coverUrl;
+      if (editingWorkId && seriesMode === "existing") {
+  updateData.series_id = seriesId;
+  updateData.part_number = partNumber;
+  updateData.series_title = finalSeriesTitle;
+      }
 
       const { data, error: workError } = await supabaseClient
         .from("works")
