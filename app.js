@@ -2302,6 +2302,7 @@ if(unread.length){
     await loadNotificationBadge();
   }
 }
+}
 
 async function sendInboxMessage(event){
   event.preventDefault();
