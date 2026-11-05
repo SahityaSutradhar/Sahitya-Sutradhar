@@ -201,6 +201,45 @@
       </div>
       <label for="storyTitle">रचना का शीर्षक</label>
       <input id="storyTitle" name="title" maxlength="120" required placeholder="शीर्षक लिखें">
+      
+<div class="series-editor">
+  <label for="seriesMode">रचना का प्रकार</label>
+  <select id="seriesMode">
+    <option value="standalone">स्वतंत्र रचना</option>
+    <option value="new">नई धारावाहिक रचना</option>
+    <option value="existing">मौजूदा धारावाहिक में नया भाग</option>
+  </select>
+
+  <div id="newSeriesFields" class="hidden">
+    <label for="seriesTitle">धारावाहिक का नाम</label>
+    <input id="seriesTitle" maxlength="200"
+      placeholder="धारावाहिक का नाम लिखें">
+
+    <label for="seriesDescription">धारावाहिक का परिचय</label>
+    <textarea id="seriesDescription" rows="2"
+      maxlength="2000" placeholder="संक्षिप्त परिचय लिखें"></textarea>
+  </div>
+
+  <div id="existingSeriesFields" class="hidden">
+    <label for="existingSeries">अपना धारावाहिक चुनें</label>
+    <select id="existingSeries">
+      <option value="">धारावाहिक चुनें</option>
+    </select>
+  </div>
+
+  <div id="seriesStatusField" class="hidden">
+    <label for="seriesStatus">धारावाहिक की स्थिति</label>
+    <select id="seriesStatus">
+      <option value="ongoing">क्रमशः जारी</option>
+      <option value="completed">पूर्ण</option>
+    </select>
+  </div>
+
+  <p class="tiny-note">
+    धारावाहिक के प्रत्येक नए भाग का क्रमांक अपने-आप निर्धारित होगा।
+  </p>
+</div>
+      
       <div class="form-row">
         <div>
           <label for="formType">रचना का रूप</label>
