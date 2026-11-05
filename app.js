@@ -379,6 +379,8 @@ if (seriesIds.length) {
         seriesId: w.series_id || null,
 partNumber: w.part_number || 1,
 seriesTitle: w.series_title || "",
+        seriesStatus: seriesInfo?.status || "ongoing",
+seriesDescription: seriesInfo?.description || "",
         created: new Date(w.created_at).getTime(),
         reads: 0,
         minutes: minutesFor(w.content),
