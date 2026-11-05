@@ -653,6 +653,41 @@ async function publishStory(e) {
       partNumber = (lastParts?.[0]?.part_number || 0) + 1;
     }
 
+    // पुरानी प्रकाशित रचना को मौजूदा धारावाहिक में जोड़ना
+    if (editingWorkId && seriesMode === "existing") {
+      const selectedId = existingSeriesSelect?.value;
+
+      if (!selectedId) {
+        throw new Error("कृपया धारावाहिक चुनें।");
+      }
+
+      const { data: selectedSeries, error: selectedError } =
+        await supabaseClient
+          .from("work_series")
+          .select("id,title")
+          .eq("id", selectedId)
+          .eq("author_id", user.id)
+          .single();
+
+      if (selectedError) throw selectedError;
+
+      seriesId = selectedSeries.id;
+      finalSeriesTitle = selectedSeries.title;
+
+      const { data: lastParts, error: partsError } =
+        await supabaseClient
+          .from("works")
+          .select("part_number")
+          .eq("series_id", seriesId)
+          .neq("id", editingWorkId)
+          .order("part_number", { ascending: false })
+          .limit(1);
+
+      if (partsError) throw partsError;
+
+      partNumber = (lastParts?.[0]?.part_number || 0) + 1;
+    }
+    
     let coverUrl = null;
 
     if (coverFile) {
