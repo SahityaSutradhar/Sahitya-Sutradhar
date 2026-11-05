@@ -1713,6 +1713,15 @@ ${!follow && !cannotMessage
     openAuthorProfile(targetId);
   });
 
+  d.querySelector("#messageAuthor")?.addEventListener("click",async()=>{
+  if(!user || !follow || cannotMessage) return;
+
+  d.close();
+  d.remove();
+
+  await startInboxRequest(targetId);
+});
+  
   d.querySelector("#reportAuthor")?.addEventListener("click",async()=>{
     const reason=prompt("प्रोफ़ाइल रिपोर्ट का कारण लिखें:");
     if(!reason)return;
