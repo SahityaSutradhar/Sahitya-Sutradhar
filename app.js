@@ -941,7 +941,9 @@ function renderReaderSeriesNav(work){
     work.seriesTitle || "धारावाहिक";
 
   document.getElementById("readerSeriesPart").textContent =
-    `भाग ${work.partNumber || 1} / ${parts.length}`;
+  `भाग ${work.partNumber || 1} / ${parts.length} · ${
+    work.seriesStatus === "completed" ? "पूर्ण" : "क्रमशः जारी"
+  }`;
 
   document.getElementById("readerPrevPart").disabled = index === 0;
   document.getElementById("readerNextPart").disabled =
