@@ -3153,6 +3153,11 @@ updateSeriesEditor();
   document.getElementById("closeReader").addEventListener("click",()=>document.getElementById("readerDialog").close());
   document.getElementById("readerPrevPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex-1,"prev"));
   document.getElementById("readerNextPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex+1,"next"));
+  document.getElementById("readerPrevPart")
+  ?.addEventListener("click",()=>navigateReaderSeries(-1));
+
+document.getElementById("readerNextPart")
+  ?.addEventListener("click",()=>navigateReaderSeries(1));
   document.getElementById("readerBody")?.addEventListener("scroll",()=>{readerPageMetrics();recordReaderPage(readerPageIndex);},{passive:true});
   document.getElementById("readerFontSize")?.addEventListener("input",e=>{document.getElementById("readerBody").style.fontSize=e.target.value+"px";requestAnimationFrame(readerPageMetrics);});
   document.getElementById("readerBody")?.addEventListener("touchstart",e=>{window.__readerTouchX=e.changedTouches[0].clientX;},{passive:true});
