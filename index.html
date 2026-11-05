@@ -334,6 +334,37 @@
     </div>
   </dialog>
 
+  
+  <section class="view hidden" id="inboxView">
+    <p class="eyebrow">निजी साहित्यिक संवाद</p>
+    <h1>इनबॉक्स</h1>
+    <p class="muted">पाठकों और रचनाकारों के बीच निजी संदेश।</p>
+
+    <div class="inbox-tabs">
+      <button type="button" class="secondary-button" id="inboxMessagesTab">संदेश</button>
+      <button type="button" class="secondary-button" id="inboxRequestsTab">संदेश अनुरोध</button>
+    </div>
+
+    <div id="inboxNotice" class="muted"></div>
+    <div id="inboxRequestsList"></div>
+    <div id="inboxConversationsList"></div>
+
+    <section id="inboxConversation" class="hidden">
+      <div class="inbox-conversation-heading">
+        <button type="button" class="secondary-button" id="inboxBack">← वापस</button>
+        <h2 id="inboxContactName">बातचीत</h2>
+      </div>
+
+      <div id="inboxMessagesList" class="inbox-messages"></div>
+
+      <form id="inboxMessageForm" class="inbox-compose">
+        <textarea id="inboxMessageText" rows="3" maxlength="5000"
+          placeholder="अपना संदेश लिखें…" required></textarea>
+        <button type="submit" class="primary-button">संदेश भेजें</button>
+      </form>
+    </section>
+  </section>
+
   <section class="view hidden" id="libraryView">
     <p class="eyebrow">आपकी किताबें</p>
     <h1>पुस्तकालय</h1>
