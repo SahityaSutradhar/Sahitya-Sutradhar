@@ -2243,6 +2243,7 @@ function switchTab(tab){
 });
   if(tab==="write"){openWrite();document.querySelector('[data-tab="home"]').classList.remove("active");}
   if(tab==="library")renderLibrary();
+  if(tab==="inbox")loadInbox();
   if(tab==="settings")renderPreferredCategories();
   if(tab==="profile")renderProfile();
   window.scrollTo({top:0,behavior:"smooth"});
