@@ -954,6 +954,7 @@ async function navigateReaderSeries(direction){
 async function openReader(id){
   const s=state.stories.find(x=>x.id===id);if(!s)return;
   currentReaderId=id;readingStartedAt=Date.now();
+  renderReaderSeriesNav(s);
   const {data:{user}} = supabaseClient ? await supabaseClient.auth.getUser() : {data:{user:null}};
   if(s.source==="supabase" && s.status==="published" && !user){
     readerTrack=false;
