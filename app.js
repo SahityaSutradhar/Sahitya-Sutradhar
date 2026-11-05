@@ -761,7 +761,7 @@ async function publishStory(e) {
     }
 
     // धारावाहिक की स्थिति अपडेट करना
-    if (!editingWorkId && seriesId) {
+    if (seriesId) {
       const { error: statusError } = await supabaseClient
         .from("work_series")
         .update({
