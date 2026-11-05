@@ -1629,6 +1629,9 @@ const cannotMessage = !!blockRecord || !!blockedByRecord;
 ${!follow && !cannotMessage
   ? '<small class="muted">संदेश भेजने के लिए पहले इस रचनाकार को फ़ॉलो करें।</small>'
   : ""}
+  ${blockedByRecord
+  ? '<p class="muted" style="color:#d9534f;">आपको इस रचनाकार ने ब्लॉक किया है। आप इन्हें निजी संदेश नहीं भेज सकते।</p>'
+  : ""}
 
         <button class="secondary-button" id="blockAuthor">
           ${isBlocked?"अनब्लॉक करें":"ब्लॉक करें"}
