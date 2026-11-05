@@ -354,6 +354,9 @@ if (seriesIds.length) {
     
     const cloudStories = (works || []).map(w => {
       const profile = profiles.find(p => p.id === w.author_id);
+      const seriesInfo = seriesRows.find(
+  item => item.id === w.series_id
+);
       const linkedCategoryIds = links
         .filter(link => link.work_id === w.id)
         .map(link => link.category_id);
