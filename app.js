@@ -2289,11 +2289,16 @@ async function loadInboxMessages(){
     .filter(m=>m.sender_id!==currentUserId&&!m.is_read)
     .map(m=>m.id);
 
-  if(unread.length){
-    await supabaseClient
-      .from("messages")
-      .update({is_read:true})
-      .in("id",unread);
+if(unread.length){
+  const {error:readError} = await supabaseClient
+    .from("messages")
+    .update({is_read:true})
+    .in("id",unread);
+
+  if(readError){
+    console.warn("Messages read status:",readError);
+  }else{
+    await loadNotificationBadge();
   }
 }
 
