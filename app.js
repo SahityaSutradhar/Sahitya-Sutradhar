@@ -420,6 +420,71 @@ async function saveCloudDraft(){
   finally{if(button)button.disabled=false;}
 }
 
+
+async function loadMySeries(){
+  const select = document.getElementById("existingSeries");
+  if(!select || !supabaseClient) return;
+
+  const {data:{user}} = await supabaseClient.auth.getUser();
+
+  if(!user){
+    toast("धारावाहिक देखने के लिए पहले लॉगिन करें।");
+    return;
+  }
+
+  const {data,error} = await supabaseClient
+    .from("work_series")
+    .select("id,title,status")
+    .eq("author_id",user.id)
+    .order("created_at",{ascending:false});
+
+  if(error){
+    toast("धारावाहिक लोड नहीं हुए: "+error.message);
+    return;
+  }
+
+  select.innerHTML =
+    '<option value="">धारावाहिक चुनें</option>' +
+    (data||[]).map(s=>`
+      <option value="${escapeHtml(s.id)}"
+        data-status="${escapeHtml(s.status)}">
+        ${escapeHtml(s.title)} — ${s.status==="completed"?"पूर्ण":"क्रमशः जारी"}
+      </option>
+    `).join("");
+
+  if(!data?.length){
+    toast("आपका कोई पुराना धारावाहिक नहीं मिला।");
+  }
+}
+
+function updateSeriesEditor(){
+  const mode = document.getElementById("seriesMode")?.value || "standalone";
+
+  document.getElementById("newSeriesFields")
+    ?.classList.toggle("hidden",mode!=="new");
+
+  document.getElementById("existingSeriesFields")
+    ?.classList.toggle("hidden",mode!=="existing");
+
+  document.getElementById("seriesStatusField")
+    ?.classList.toggle("hidden",mode==="standalone");
+
+  if(mode==="existing"){
+    loadMySeries();
+  }
+}
+
+function updateSelectedSeriesStatus(){
+  const select = document.getElementById("existingSeries");
+  const selected = select?.selectedOptions?.[0];
+
+  if(selected?.dataset.status){
+    document.getElementById("seriesStatus").value =
+      selected.dataset.status;
+  }
+}
+
+
 async function publishStory(e) {
   e.preventDefault();
 
