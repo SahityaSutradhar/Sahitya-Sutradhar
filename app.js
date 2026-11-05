@@ -749,6 +749,13 @@ async function publishStory(e) {
   updateData.series_title = finalSeriesTitle;
       }
 
+      // धारावाहिक से हटाकर स्वतंत्र रचना बनाना
+if (editingWorkId && seriesMode === "standalone") {
+  updateData.series_id = null;
+  updateData.part_number = 1;
+  updateData.series_title = null;
+}
+      
       const { data, error: workError } = await supabaseClient
         .from("works")
         .update(updateData)
