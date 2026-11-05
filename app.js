@@ -1897,6 +1897,342 @@ function renderProfile(){
   bindReadButtons();
   document.querySelectorAll("[data-republish]").forEach(b=>b.addEventListener("click",()=>{currentReaderId=b.dataset.republish;setCurrentWorkStatus();}));
 }
+
+async function loadInbox(){
+  if(!supabaseClient){
+    toast("सर्वर से कनेक्शन उपलब्ध नहीं है।");
+    return;
+  }
+
+  const {data:{user}} = await supabaseClient.auth.getUser();
+
+  if(!user){
+    toast("इनबॉक्स के लिए पहले लॉगिन करें।");
+    document.getElementById("openAuthButton")?.click();
+    return;
+  }
+
+  currentUserId = user.id;
+
+  const notice = document.getElementById("inboxNotice");
+  if(notice) notice.textContent = "संदेश लोड हो रहे हैं…";
+
+  await loadInboxRequests();
+  await loadInboxConversations();
+}
+
+async function loadInboxRequests(){
+  const box = document.getElementById("inboxRequestsList");
+  if(!box || !currentUserId) return;
+
+  const {data,error} = await supabaseClient
+    .from("message_requests")
+    .select("id,sender_id,recipient_id,status,created_at")
+    .eq("recipient_id",currentUserId)
+    .eq("status","pending")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    box.innerHTML = '<p class="muted">अनुरोध लोड नहीं हुए।</p>';
+    console.error("Inbox requests:",error);
+    return;
+  }
+
+  inboxRequestsCache = data || [];
+
+  if(!inboxRequestsCache.length){
+    box.innerHTML = '<p class="muted">कोई नया संदेश अनुरोध नहीं है।</p>';
+    return;
+  }
+
+  const ids = [...new Set(inboxRequestsCache.map(r=>r.sender_id))];
+
+  const {data:profiles,error:profileError} = await supabaseClient
+    .from("profiles")
+    .select("id,display_name,username,avatar_url")
+    .in("id",ids);
+
+  if(profileError){
+    console.error("Inbox profiles:",profileError);
+  }
+
+  const profileMap = new Map((profiles||[]).map(p=>[p.id,p]));
+
+  box.innerHTML = inboxRequestsCache.map(r=>{
+    const p = profileMap.get(r.sender_id)||{};
+    const name = escapeHtml(p.display_name||p.username||"रचनाकार");
+
+    return `
+      <article class="story-card">
+        <h3>${name}</h3>
+        <p>आपको नया निजी संदेश अनुरोध मिला है।</p>
+        <div class="story-meta">
+          <button type="button" data-inbox-open-request="${r.id}">
+            संदेश देखें
+          </button>
+          <button type="button" data-inbox-accept="${r.id}">
+            स्वीकारें
+          </button>
+          <button type="button" data-inbox-reject="${r.id}">
+            अस्वीकारें
+          </button>
+          <button type="button" data-inbox-block="${r.id}">
+            ब्लॉक करें
+          </button>
+        </div>
+      </article>`;
+  }).join("");
+
+  box.querySelectorAll("[data-inbox-open-request]").forEach(b=>{
+    b.onclick=()=>openInboxConversation(Number(b.dataset.inboxOpenRequest));
+  });
+
+  box.querySelectorAll("[data-inbox-accept]").forEach(b=>{
+    b.onclick=()=>respondInboxRequest(Number(b.dataset.inboxAccept),"accepted");
+  });
+
+  box.querySelectorAll("[data-inbox-reject]").forEach(b=>{
+    b.onclick=()=>respondInboxRequest(Number(b.dataset.inboxReject),"rejected");
+  });
+
+  box.querySelectorAll("[data-inbox-block]").forEach(b=>{
+    b.onclick=()=>respondInboxRequest(Number(b.dataset.inboxBlock),"blocked");
+  });
+}
+
+async function respondInboxRequest(requestId,status){
+  if(!["accepted","rejected","blocked"].includes(status)) return;
+
+  const {data:{user}} = await supabaseClient.auth.getUser();
+  if(!user) return;
+
+  const request = inboxRequestsCache.find(r=>r.id===requestId);
+  if(!request || request.recipient_id!==user.id) return;
+
+  if(status==="blocked"){
+    const {error:blockError} = await supabaseClient
+      .from("author_blocks")
+      .insert({
+        blocker_id:user.id,
+        blocked_user_id:request.sender_id
+      });
+
+    if(blockError && blockError.code!=="23505"){
+      toast("ब्लॉक नहीं कर सके: "+blockError.message);
+      return;
+    }
+  }
+
+  const {error} = await supabaseClient
+    .from("message_requests")
+    .update({status})
+    .eq("id",requestId)
+    .eq("recipient_id",user.id)
+    .eq("status","pending");
+
+  if(error){
+    toast("अनुरोध अपडेट नहीं हुआ: "+error.message);
+    return;
+  }
+
+  toast(
+    status==="accepted" ? "संदेश अनुरोध स्वीकार हुआ।" :
+    status==="rejected" ? "संदेश अनुरोध अस्वीकार हुआ।" :
+    "उपयोगकर्ता ब्लॉक किया गया।"
+  );
+
+  await loadInboxRequests();
+  await loadInboxConversations();
+}
+
+async function loadInboxConversations(){
+  const box = document.getElementById("inboxConversationsList");
+  if(!box || !currentUserId) return;
+
+  const {data,error} = await supabaseClient
+    .from("message_requests")
+    .select("id,sender_id,recipient_id,status,created_at")
+    .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
+    .eq("status","accepted")
+    .order("updated_at",{ascending:false});
+
+  if(error){
+    box.innerHTML='<p class="muted">बातचीत लोड नहीं हुई।</p>';
+    console.error("Inbox conversations:",error);
+    return;
+  }
+
+  const requests=data||[];
+
+  if(!requests.length){
+    box.innerHTML='<p class="muted">अभी कोई स्वीकार की गई बातचीत नहीं है।</p>';
+    return;
+  }
+
+  const ids=[...new Set(requests.map(r=>
+    r.sender_id===currentUserId?r.recipient_id:r.sender_id
+  ))];
+
+  const {data:profiles,error:profileError}=await supabaseClient
+    .from("profiles")
+    .select("id,display_name,username,avatar_url")
+    .in("id",ids);
+
+  if(profileError) console.error(profileError);
+
+  const map=new Map((profiles||[]).map(p=>[p.id,p]));
+
+  box.innerHTML=requests.map(r=>{
+    const otherId=r.sender_id===currentUserId?r.recipient_id:r.sender_id;
+    const p=map.get(otherId)||{};
+    return `
+      <button type="button" class="writer-card"
+        data-inbox-conversation="${r.id}">
+        <span class="writer-card-main">
+          <strong>${escapeHtml(p.display_name||p.username||"रचनाकार")}</strong>
+          <small>निजी बातचीत खोलें</small>
+        </span>
+        <span>खोलें ↗</span>
+      </button>`;
+  }).join("");
+
+  box.querySelectorAll("[data-inbox-conversation]").forEach(b=>{
+    b.onclick=()=>openInboxConversation(Number(b.dataset.inboxConversation));
+  });
+}
+
+async function openInboxConversation(requestId){
+  const request=inboxRequestsCache.find(r=>r.id===requestId)
+    || (await supabaseClient
+      .from("message_requests")
+      .select("id,sender_id,recipient_id,status")
+      .eq("id",requestId)
+      .single()).data;
+
+  if(!request) return;
+
+  if(![request.sender_id,request.recipient_id].includes(currentUserId)){
+    toast("इस बातचीत की अनुमति नहीं है।");
+    return;
+  }
+
+  inboxCurrentRequestId=request.id;
+  inboxCurrentOtherUserId=
+    request.sender_id===currentUserId
+      ? request.recipient_id
+      : request.sender_id;
+
+  const {data:profile}=await supabaseClient
+    .from("profiles")
+    .select("display_name,username")
+    .eq("id",inboxCurrentOtherUserId)
+    .maybeSingle();
+
+  document.getElementById("inboxContactName").textContent=
+    profile?.display_name||profile?.username||"रचनाकार";
+
+  document.getElementById("inboxRequestsList").classList.add("hidden");
+  document.getElementById("inboxConversationsList").classList.add("hidden");
+  document.getElementById("inboxConversation").classList.remove("hidden");
+
+  await loadInboxMessages();
+}
+
+async function loadInboxMessages(){
+  const box=document.getElementById("inboxMessagesList");
+  if(!box || !inboxCurrentRequestId) return;
+
+  const {data,error}=await supabaseClient
+    .from("messages")
+    .select("id,request_id,sender_id,message_text,created_at,is_read")
+    .eq("request_id",inboxCurrentRequestId)
+    .order("created_at",{ascending:true});
+
+  if(error){
+    box.innerHTML='<p class="muted">संदेश लोड नहीं हुए।</p>';
+    console.error("Inbox messages:",error);
+    return;
+  }
+
+  inboxMessagesCache=data||[];
+
+  box.innerHTML=inboxMessagesCache.map(m=>`
+    <div class="inbox-message ${m.sender_id===currentUserId?"mine":"theirs"}">
+      <p>${escapeHtml(m.message_text)}</p>
+      <small>${new Date(m.created_at).toLocaleString("hi-IN")}</small>
+    </div>
+  `).join("")||'<p class="muted">अभी कोई संदेश नहीं है।</p>';
+
+  box.scrollTop=box.scrollHeight;
+
+  const unread=inboxMessagesCache
+    .filter(m=>m.sender_id!==currentUserId&&!m.is_read)
+    .map(m=>m.id);
+
+  if(unread.length){
+    await supabaseClient
+      .from("messages")
+      .update({is_read:true})
+      .in("id",unread);
+  }
+}
+
+async function sendInboxMessage(event){
+  event.preventDefault();
+
+  const input=document.getElementById("inboxMessageText");
+  const message=input.value.trim();
+
+  if(!message || !inboxCurrentRequestId) return;
+
+  if(!currentUserId){
+    toast("पहले लॉगिन करें।");
+    return;
+  }
+
+  if(message.length>5000){
+    toast("संदेश अधिकतम 5000 अक्षरों का हो सकता है।");
+    return;
+  }
+
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  if(!user || user.id!==currentUserId) return;
+
+  const {error}=await supabaseClient
+    .from("messages")
+    .insert({
+      request_id:inboxCurrentRequestId,
+      sender_id:user.id,
+      message_text:message,
+      is_read:false
+    });
+
+  if(error){
+    toast("संदेश नहीं भेजा गया: "+error.message);
+    return;
+  }
+
+  input.value="";
+  await loadInboxMessages();
+  loadNotificationBadge();
+}
+
+function showInboxMode(mode){
+  inboxCurrentMode=mode;
+
+  const conversation=document.getElementById("inboxConversation");
+  conversation?.classList.add("hidden");
+
+  document.getElementById("inboxRequestsList")
+    ?.classList.toggle("hidden",mode!=="requests");
+
+  document.getElementById("inboxConversationsList")
+    ?.classList.toggle("hidden",mode!=="messages");
+
+  if(mode==="requests") loadInboxRequests();
+  else loadInboxConversations();
+}
+
 function switchTab(tab){
   activeTab=tab;
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
