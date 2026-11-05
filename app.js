@@ -2474,28 +2474,47 @@ async function loadNotificationBadge(){
   if(!supabaseClient) return;
 
   const {data:{user}} = await supabaseClient.auth.getUser();
-  const badge = document.getElementById("notificationBadge");
 
-  if(!badge) return;
+  const badge = document.getElementById("notificationBadge");
+  const inboxBadge = document.getElementById("inboxBadge");
 
   if(!user){
-    badge.hidden = true;
+    if(badge) badge.hidden = true;
+    if(inboxBadge) inboxBadge.classList.add("hidden");
     return;
   }
 
-  const {count,error} = await supabaseClient
-    .from("notifications")
-    .select("id",{count:"exact",head:true})
-    .eq("recipient_id",user.id)
-    .eq("is_read",false);
+  // सामान्य नोटिफिकेशन की संख्या
+  if(badge){
+    const {count,error} = await supabaseClient
+      .from("notifications")
+      .select("id",{count:"exact",head:true})
+      .eq("recipient_id",user.id)
+      .eq("is_read",false);
 
-  if(error){
-    console.warn("Notifications:",error);
-    return;
+    if(error){
+      console.warn("Notifications:",error);
+    }else{
+      badge.textContent = count > 99 ? "99+" : count;
+      badge.hidden = !count;
+    }
   }
 
-  badge.textContent = count > 99 ? "99+" : count;
-  badge.hidden = !count;
+  // इनबॉक्स में आए अपठित संदेशों की संख्या
+  if(inboxBadge){
+    const {count,error} = await supabaseClient
+      .from("messages")
+      .select("id",{count:"exact",head:true})
+      .eq("is_read",false)
+      .neq("sender_id",user.id);
+
+    if(error){
+      console.warn("Inbox unread messages:",error);
+    }else{
+      inboxBadge.textContent = count > 99 ? "99+" : count;
+      inboxBadge.classList.toggle("hidden",!count);
+    }
+  }
 }
 
 
