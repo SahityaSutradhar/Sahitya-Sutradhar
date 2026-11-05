@@ -20,7 +20,14 @@ let authSyncVersion = 0;
 let readingStartedAt = 0;
 let readerPageIndex = 0, readerPagesTotal = 1, readerSeenPages = new Set(), readerTrack = false, readerWordsTotal = 0;
 let toastTimer;
-
+// =====================================
+// SAHITYA SUTRADHAR — PRIVATE INBOX
+// =====================================
+let inboxCurrentRequestId = null;
+let inboxCurrentOtherUserId = null;
+let inboxCurrentMode = "messages";
+let inboxRequestsCache = [];
+let inboxMessagesCache = [];
 
 const UI_TEXT={
   en:{home:"Home",library:"Library",write:"Write",profile:"Profile",settings:"Settings",latest:"Newly published works",newWriters:"New writers",activeWriters:"Active and popular writers",categories:"Literary categories",readWorld:"Explore works",all:"View all",yourLibrary:"Your library",myWorks:"My published works",myDrafts:"My private drafts",wordsRead:"Total words read",myFollowers:"Followers",readingLanguage:"Reading language",preferred:"Preferred categories",darkMode:"Dark mode",edit:"Edit",login:"Login / Account",logout:"Log out",publish:"Publish",saveChanges:"Save changes",saveDraft:"Save draft",newWork:"New work",workTitle:"Work title",workBody:"Write your work",cover:"Work cover (9:16 ratio)",workLanguage:"Work language",writerOrder:"Writer ranking",mostRead:"Most read",mostWorks:"Most works",mostFollowers:"Most followers",read:"Open",report:"Report",share:"Share",finish:"Finish reading",ratingReview:"Reader feedback",yourRating:"Your rating",yourReview:"Your review",saveFeedback:"Save rating / review",profileIntro:"Introduction (up to 1,000 characters)",changeDP:"Change profile picture",chooseCategories:"Choose preferred categories",welcomeTitle:"Where words come together.",welcomeText:"Read, write and share your creations with readers.",communityTitle:"Community posts",communityPlaceholder:"Share your thoughts…",categoryHeading:"Literary categories"},
