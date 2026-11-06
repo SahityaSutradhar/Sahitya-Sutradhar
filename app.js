@@ -4,9 +4,9 @@ const supabaseClient = window.supabase?.createClient(
 );
 const CATEGORIES = ["रोमांटिक","कॉमेडी","हास्य-व्यंग्य","प्रेम","सस्पेंस एवं थ्रिलर","एडवेंचर","साइंस फिक्शन","फैंटेसी","देशप्रेम","शौर्य","ओज","ऐतिहासिक","पौराणिक","मिश्रित","रेखाचित्र","बालकथा","मनोरंजन","शिक्षाप्रद","अन्य"];
 const SUBTYPES = {
-  "गद्य":["कहानी","लघुकथा","उपन्यास","लेख","निबंध","नाटक","संस्मरण","यात्रा वृत्तांत","आत्मकथा","हास्य-व्यंग्य","जीवनी"],
-  "पद्य":["कविता","गीत","मुक्तक","छंद","नई कविता"],
-  "चंपू काव्य":[]
+  "गद्य":["कहानी","लघुकथा","उपन्यास","लेख","निबंध","नाटक","संस्मरण","यात्रा वृत्तांत","आत्मकथा","हास्य-व्यंग्य","जीवनी","अन्य"],
+  "पद्य":["कविता","गीत","मुक्तक","छंद","नई कविता","अन्य"],
+  "चंपू काव्य":["अन्य"]
 };
 const STORAGE = "sahityaSutradhar.account.v2";
 const seed = [];
@@ -105,10 +105,24 @@ function storyCard(s){
   const isOwner = s.source === "supabase" && !!currentUserId && s.authorId === currentUserId;
   return `<article class="story-card"><div class="cover-grid"><button class="cover-open" type="button" data-read="${escapeHtml(s.id)}" aria-label="${escapeHtml(s.title)} पढ़ें">${s.coverUrl?`<img class="cover-thumb" src="${escapeHtml(s.coverUrl)}" alt="${escapeHtml(s.title)} कवर">`:`<div class="cover-placeholder">❀</div>`}</button><div><div>${cats}</div><h3>${escapeHtml(s.title)}</h3><p><button class="story-author-link" type="button" data-story-author="${escapeHtml(s.authorId||"")}">${escapeHtml(s.author||"अनाम लेखक")}</button> · ${escapeHtml(s.type||"रचना")}${s.subtype?" / "+escapeHtml(s.subtype):""}</p><p class="excerpt">${escapeHtml(excerpt)}${excerpt.length>=150?"…":""}</p><div class="story-meta"><span>◉ ${s.reads||0} पाठक</span><button data-read="${escapeHtml(s.id)}">खोलें ↗</button>${isOwner && s.status === "published" ? `<button class="secondary-button" type="button" data-edit-work="${escapeHtml(s.id)}">संपादित करें ✎</button>` : ""}</div></div></div></article>`;
 }
+function renderStoryCards(items){
+  const groups=new Map(), emitted=new Set(), output=[];
+  for(const work of items){
+    if(!work.seriesId){output.push(storyCard(work));continue;}
+    const key=String(work.seriesId);
+    if(emitted.has(key))continue;
+    emitted.add(key);
+    const parts=items.filter(x=>String(x.seriesId)===key&&x.status==="published")
+      .sort((x,y)=>(Number(x.partNumber)||1)-(Number(y.partNumber)||1));
+    const first=parts[0]||work, title=first.seriesTitle||first.title;
+    const chapters=parts.map(part=>`<button type="button" class="series-part-link" data-read="${escapeHtml(part.id)}">भाग ${Number(part.partNumber)||1}: ${escapeHtml(part.title)}</button>`).join("");
+    const cats=(first.categories||[]).map(c=>`<span class="tag">${escapeHtml(c)}</span>`).join(" ");
+    output.push(`<article class="story-card series-story-card"><div class="cover-grid"><button class="cover-open" type="button" data-read="${escapeHtml(first.id)}" aria-label="${escapeHtml(title)} पढ़ें">${first.coverUrl?`<img class="cover-thumb" src="${escapeHtml(first.coverUrl)}" alt="">`:`<div class="cover-placeholder">❀</div>`}</button><div><div>${cats}<span class="tag">धारावाहिक · ${parts.length} भाग</span></div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(first.author||"अनाम लेखक")}</p><div class="series-parts-list">${chapters}</div></div></div></article>`);
+  }
+  return output.join("");
+}
 function renderStories(){
   let list=[...state.stories].filter(s=>s.status==="published").sort((a,b)=>(b.created||0)-(a.created||0));
-  const readingLang=state.profile.readingLanguage||"hi";
-  list=list.filter(s=>(s.language||"hi")===readingLang);
   const preferred=state.profile.preferredCategories||[];
   if(preferred.length)list.sort((a,b)=>Number((b.categories||[]).some(c=>preferred.includes(c)))-Number((a.categories||[]).some(c=>preferred.includes(c))));
   if(activeCategory!=="सभी")list=list.filter(s=>(s.categories||[]).includes(activeCategory));
@@ -118,7 +132,7 @@ function renderStories(){
       .some(value=>String(value||"").toLocaleLowerCase("hi").includes(query)));
   }
   document.getElementById("storyCount").textContent=`${list.length} रचनाएँ`;
-  document.getElementById("storyList").innerHTML=list.map(storyCard).join("");
+  document.getElementById("storyList").innerHTML=renderStoryCards(list);
   document.getElementById("emptyState").classList.toggle("hidden",list.length!==0);
   document.getElementById("storyList").classList.toggle("hidden",list.length===0);
   document.getElementById("storyHeading").textContent=activeCategory==="सभी"?"नई और लोकप्रिय रचनाएँ":activeCategory+" की रचनाएँ";
@@ -186,7 +200,7 @@ async function openWriterProfile(authorId){
 }
 async function loadHomepageStats(){
   const latest=state.stories.filter(s=>s.status==="published").sort((a,b)=>b.created-a.created).slice(0,20);
-  const box=document.getElementById("latestWorksList");if(box){box.innerHTML=latest.map(storyCard).join("")||'<p class="muted">अभी कोई प्रकाशित रचना नहीं।</p>';bindReadButtons();}
+  const box=document.getElementById("latestWorksList");if(box){box.innerHTML=renderStoryCards(latest)||'<p class="muted">अभी कोई प्रकाशित रचना नहीं।</p>';bindReadButtons();}
   renderWriters();
   if(!supabaseClient)return;
   const [{data:stats,error},{data:workReadStats,error:workStatsError}]=await Promise.all([
@@ -198,7 +212,7 @@ async function loadHomepageStats(){
     const perWorkReads=new Map(workReadStats.map(x=>[x.work_id,Number(x.total_reads||0)]));
     for(const s of state.stories)s.reads=perWorkReads.get(s.id)||0;
     const followMap=new Map(stats.map(x=>[x.author_id,Number(x.total_followers||0)]));
-    const latestBox=document.getElementById("latestWorksList");if(latestBox){latestBox.innerHTML=state.stories.filter(x=>x.status==="published").sort((a,b)=>b.created-a.created).slice(0,20).map(storyCard).join("");bindReadButtons();}
+    const latestBox=document.getElementById("latestWorksList");if(latestBox){latestBox.innerHTML=renderStoryCards(state.stories.filter(x=>x.status==="published").sort((a,b)=>b.created-a.created).slice(0,20));bindReadButtons();}
     renderStories();
     const grouped=new Map();for(const s of state.stories.filter(x=>x.status==="published"&&x.authorId)){const w=grouped.get(s.authorId)||{id:s.authorId,name:s.author,avatar:s.authorAvatar,works:0,reads:0,followers:followMap.get(s.authorId)||0,firstPublished:s.created};w.works++;w.reads+=Number(s.reads||0);w.firstPublished=Math.min(w.firstPublished,s.created||w.firstPublished);grouped.set(s.authorId,w);}
     const writers=[...grouped.values()];const sort=document.getElementById("writerSort")?.value||"reads";
@@ -961,7 +975,7 @@ function saveReaderProgress(id,entry){const all=loadReaderProgress();all[String(
 function readerProgressFor(id){return loadReaderProgress()[String(id)]||{page:0,seen:[],words:0};}
 function readerPageMetrics(){
  const el=document.getElementById("readerBody");if(!el)return;
- readerPagesTotal=Math.max(1,Math.round(el.scrollWidth/Math.max(1,el.clientWidth)));
+ readerPagesTotal=Math.max(1,Math.ceil(el.scrollWidth/Math.max(1,el.clientWidth)));
  readerPageIndex=Math.min(readerPagesTotal-1,Math.max(0,Math.round(el.scrollLeft/Math.max(1,el.clientWidth))));
  document.getElementById("readerPageStatus").textContent=`पृष्ठ ${readerPageIndex+1} / ${readerPagesTotal}`;
  document.getElementById("readerPrevPage").disabled=readerPageIndex===0;
@@ -1054,24 +1068,43 @@ async function navigateReaderSeries(direction){
   await openReader(parts[nextIndex].id);
 }
 
+function anonymousPreview(work){
+  const body=String(work.body||"");
+  const parts=work.seriesId?state.stories.filter(x=>String(x.seriesId)===String(work.seriesId)&&x.status==="published").sort((a,b)=>(Number(a.partNumber)||1)-(Number(b.partNumber)||1)):[];
+  const partNo=Number(work.partNumber)||1;
+  if(parts.length && partNo===1) return {html:formatMarkup(body),locked:false};
+  if(parts.length && partNo>3) return {html:"",locked:true};
+  const ratio=parts.length?0.5:0.4;
+  const total=wordCount(body), target=Math.max(1,Math.floor(total*ratio));
+  if(typeof Intl!=="undefined"&&Intl.Segmenter){
+    const seg=new Intl.Segmenter("hi",{granularity:"word"});let count=0,end=0;
+    for(const item of seg.segment(body)){if(item.isWordLike){count++;if(count>=target){end=item.index+item.segment.length;break;}}}
+    if(!end)end=body.length;
+    return {html:formatMarkup(body.slice(0,end)),locked:true};
+  }
+  const words=body.match(/\S+\s*/g)||[];return {html:formatMarkup(words.slice(0,target).join("")),locked:true};
+}
 async function openReader(id){
   const s=state.stories.find(x=>x.id===id);if(!s)return;
   currentReaderId=id;readingStartedAt=Date.now();
   renderReaderSeriesNav(s);
   const {data:{user}} = supabaseClient ? await supabaseClient.auth.getUser() : {data:{user:null}};
   if(s.source==="supabase" && s.status==="published" && !user){
+    const preview=anonymousPreview(s);
+    if(preview.locked){
     readerTrack=false;
     document.getElementById("readerTitle").textContent=s.title;
     document.getElementById("readerCategory").textContent=[s.type,s.subtype,...(s.categories||[])].filter(Boolean).join(" · ");
     document.getElementById("readerAuthor").textContent=s.author||"अनाम लेखक";
     document.getElementById("readerAuthorAvatar").innerHTML=s.authorAvatar?`<img src="${escapeHtml(s.authorAvatar)}" alt="">`:escapeHtml((s.author||"अ").trim().slice(0,1));
     const previewCover=document.getElementById("readerCoverSlot");previewCover.innerHTML=s.coverUrl?`<img class="cover-thumb" src="${escapeHtml(s.coverUrl)}" alt="कवर">`:`<div class="cover-placeholder">कवर नहीं</div>`;
-    document.getElementById("readerBody").textContent=(s.body||"").slice(0,220)+"… पूरी रचना पढ़ने, रेटिंग और समीक्षा के लिए खाता बनाएँ या लॉगिन करें।";
+    document.getElementById("readerBody").innerHTML=preview.html+(preview.html?'<p class="login-preview-prompt">… आगे पढ़ने के लिए खाता बनाएँ या लॉगिन करें।</p>':'<p class="login-preview-prompt">इस भाग को पढ़ने के लिए लॉगिन करें।</p>');
     document.getElementById("readerWords").textContent=`रचना में कुल ${wordCount(s.body)} शब्द`;
     document.getElementById("feedbackPanel").classList.add("hidden");
     document.getElementById("editWorkAction")?.classList.add("hidden");document.getElementById("workOwnerAction")?.classList.add("hidden");
     document.getElementById("readerDialog").showModal();
     return;
+    }
   }
   readerTrack=!!(s.source==="supabase"&&s.status==="published"&&user&&user.id!==s.authorId);
   document.getElementById("readerTitle").textContent=s.title;
@@ -3161,7 +3194,7 @@ document.getElementById("inboxMessageForm")
   document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
 
   document.getElementById("profileShortcut").addEventListener("click",()=>switchTab("profile"));
-document.getElementById("notificationsShortcut")?.addEventListener("click",openNotifications);
+document.getElementById("inboxNotificationsTab")?.addEventListener("click",()=>{switchTab("inbox");openNotifications();});
 
 loadNotificationBadge();
 
@@ -3221,7 +3254,7 @@ if(supabaseClient){
   preview.appendChild(img);
 });
   loadCommunityPosts();
-  document.getElementById("authShortcut")?.addEventListener("click",()=>document.getElementById("openAuthButton")?.click());
+  document.getElementById("settingsAuthButton")?.addEventListener("click",()=>document.getElementById("openAuthButton")?.click());
   document.getElementById("avatarUpload")?.addEventListener("change", async e => {
   const file = e.target.files?.[0];
   if (!file) return;
