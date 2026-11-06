@@ -7,7 +7,7 @@
   <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=20261106-reader-platform-2">
+  <link rel="stylesheet" href="styles.css?v=20261106-series-reader-1">
   <style>
     .feedback-panel{border-top:1px solid var(--line,#ddd);margin-top:22px;padding-top:18px}
     .feedback-panel h2{font-size:1.25rem}
@@ -57,15 +57,9 @@
       <span><strong>साहित्य सूत्रधार</strong><small>शब्दों का अपना संसार</small></span>
     </a>
     <div class="top-actions">
-      <button class="top-icon notification-button" id="notificationsShortcut"
-  aria-label="नोटिफिकेशन" title="नोटिफिकेशन">
-  🔔
-  <span id="notificationBadge" hidden>0</span>
-      </button>
       <button class="icon-button" id="themeToggle" aria-label="थीम बदलें" title="डार्क/ब्राइट मोड">◐</button>
       <button class="top-icon" id="profileShortcut" aria-label="प्रोफ़ाइल">♙</button>
       <button class="top-icon" id="settingsShortcut" aria-label="सेटिंग्स">⚙</button>
-      <button class="top-icon" id="authShortcut" aria-label="लॉगिन या लॉगआउट">⇥</button>
       <select id="layoutLanguage" aria-label="भाषा" style="width:auto;padding:7px">
         <option value="hi">हिंदी</option>
         <option value="en">English</option>
@@ -371,6 +365,7 @@
     <div class="inbox-tabs">
       <button type="button" class="secondary-button" id="inboxMessagesTab">संदेश</button>
       <button type="button" class="secondary-button" id="inboxRequestsTab">संदेश अनुरोध</button>
+      <button type="button" class="secondary-button" id="inboxNotificationsTab">सूचनाएँ <span id="notificationBadge" hidden>0</span></button>
     </div>
 
     <div id="inboxNotice" class="muted"></div>
@@ -473,6 +468,10 @@
       <div><strong>डेमो डेटा मिटाएँ</strong><p>इस डिवाइस पर सुरक्षित स्थानीय रचनाएँ और प्रोफ़ाइल हटेंगी।</p></div>
       <button class="danger-button" id="resetData">रीसेट</button>
     </div>
+    <div class="setting-row">
+      <div><strong>खाता</strong><p>लॉगिन, नया खाता या लॉगआउट।</p></div>
+      <button type="button" class="secondary-button" id="settingsAuthButton">लॉगिन / लॉगआउट</button>
+    </div>
     <p class="tiny-note">लॉगिन और क्लाउड सिंक Supabase से जुड़े हैं।</p>
   </section>
 
@@ -569,6 +568,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261105-home-1"></script>
+  <script src="app.js?v=20261106-series-reader-1"></script>
 </body>
 </html>
