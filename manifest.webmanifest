@@ -1,10 +1,10 @@
 {
-  "id": "./",
+  "id": "./mobile-app.html",
   "name": "साहित्य सूत्रधार",
   "short_name": "साहित्य सूत्रधार",
   "description": "पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।",
   "lang": "hi-IN",
-  "start_url": "./",
+  "start_url": "./mobile-app.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f8f3e6",
