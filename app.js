@@ -2649,7 +2649,7 @@ async function loadCloudProfile() {
     console.error("प्रोफ़ाइल लोड नहीं हुई:", error.message);
     return;
                                  }
-  // Google/Facebook आदि से प्राप्त वास्तविक नाम प्रोफ़ाइल में भरें।
+// Google/Facebook आदि से प्राप्त वास्तविक नाम प्रोफ़ाइल में भरें।
 const authUser = latestAuth.data.user;
 const meta = authUser.user_metadata || {};
 
@@ -2690,9 +2690,9 @@ if (oauthName && isDefaultName) {
   if (!nameUpdate.error) {
     if (data) {
       data.display_name = oauthName;
-    } else {
-      data = { display_name: oauthName };
     }
+
+    state.profile.name = oauthName;
   } else {
     console.warn(
       "OAuth नाम प्रोफ़ाइल में सुरक्षित नहीं हुआ:",
@@ -2702,7 +2702,7 @@ if (oauthName && isDefaultName) {
 }
   if (data) {
     state.profile.name =
-      data.display_name || "अनाम पाठक";
+      data.display_name || oauthName || "अनाम पाठक";
     state.profile.avatarUrl = data.avatar_url || "";
     state.profile.intro = data.bio || "";
     state.profile.readingLanguage = data.reading_language || "hi";
