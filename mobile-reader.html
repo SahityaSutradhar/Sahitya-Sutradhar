@@ -1,27 +1,74 @@
 <!doctype html>
 <html lang="hi">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#641f2b"><meta name="description" content="साहित्य सूत्रधार — मोबाइल रीडर">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#641f2b">
+<meta name="description" content="साहित्य सूत्रधार — मोबाइल साहित्यिक रीडर">
 <title>रचना पढ़ें — साहित्य सूत्रधार</title>
-<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="mobile-app.css?v=2"><link rel="stylesheet" href="mobile-reader.css?v=1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="mobile-app.css?v=20261107-reader-2">
+<link rel="stylesheet" href="mobile-reader.css?v=20261107-reader-2">
 </head>
 <body class="reader-page">
 <div class="app-frame reader-frame">
-<header class="app-header reader-header"><a class="back-link" href="mobile-app.html" aria-label="वापस">←</a><a class="brand" href="mobile-app.html"><span class="brand-symbol">❀</span><span><b>साहित्य सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a><button id="readerTextSettings" class="round-btn" aria-label="पाठ सेटिंग">अ</button></header>
-<main id="readerMain" class="reader-main">
-<div id="readerState" class="reader-state">रचना खोली जा रही है…</div>
-<article id="readerArticle" hidden>
-<div id="readerCoverWrap" class="reader-cover-wrap" hidden><img id="readerCover" alt="रचना का आवरण"></div>
-<div class="reader-heading"><div class="reader-kicker" id="readerType">साहित्य</div><h1 id="readerTitle"></h1><p id="readerAuthor"></p><div class="reader-meta" id="readerMeta"></div></div>
-<div class="reader-progress"><div class="reader-progress-track"><span id="readerProgressBar"></span></div><small id="readerProgressText">0% पढ़ा</small></div>
-<div id="readerContent" class="reader-content"></div>
-<div class="reader-end" id="readerEnd">— रचना समाप्त —</div>
-<section id="seriesPanel" class="series-panel" hidden><h2 id="seriesTitle">इस धारावाहिक के भाग</h2><div id="seriesLinks"></div></section>
-<div class="reader-actions"><button id="readerBackBottom" type="button">← वापस</button><button id="readerShare" type="button">साझा करें ↗</button></div>
-</article>
-</main>
-<div id="readerSettings" class="reader-settings" hidden><label>अक्षर आकार <input id="fontSizeControl" type="range" min="16" max="28" value="20"></label><label>पंक्ति दूरी <input id="lineHeightControl" type="range" min="15" max="24" value="19"></label></div>
+  <header class="app-header reader-header">
+    <a class="back-link" href="mobile-app.html" aria-label="वापस">←</a>
+    <a class="brand" href="mobile-app.html"><span class="brand-symbol">❀</span><span><b>साहित्य सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a>
+    <button id="readerTextSettings" class="round-btn" type="button" aria-label="पाठ सेटिंग">अ</button>
+  </header>
+  <main id="readerMain" class="reader-main">
+    <div id="readerState" class="reader-state">रचना खोली जा रही है…</div>
+    <article id="readerArticle" hidden>
+      <div id="readerCoverWrap" class="reader-cover-wrap" hidden><img id="readerCover" alt="रचना का आवरण"></div>
+      <div class="reader-heading">
+        <div class="reader-kicker" id="readerType">साहित्य</div>
+        <h1 id="readerTitle"></h1>
+        <p id="readerAuthor"></p>
+        <div class="reader-meta" id="readerMeta"></div>
+      </div>
+      <div class="reader-progress"><div class="reader-progress-track"><span id="readerProgressBar"></span></div><small id="readerProgressText">0% पढ़ा</small></div>
+      <section class="page-reader" aria-label="रचना के पृष्ठ">
+        <div class="page-topline"><span id="pageNumber">पृष्ठ 1 / 1</span><span>साहित्य सूत्रधार</span></div>
+        <div id="readerPages" class="reader-pages"></div>
+        <div class="page-controls">
+          <button id="prevPage" type="button" disabled>‹ पिछला</button>
+          <span id="pageHint">स्वाइप करके भी पृष्ठ पलटें</span>
+          <button id="nextPage" type="button">अगला ›</button>
+        </div>
+      </section>
+      <section id="seriesPanel" class="series-panel" hidden><h2 id="seriesTitle">इस धारावाहिक के भाग</h2><div id="seriesLinks"></div></section>
+      <section class="reader-actions">
+        <button id="workLikeButton" type="button" data-liked="0">♡ पसंद करें · <span id="workLikeCount">0</span></button>
+        <button id="readerShare" type="button">साझा करें ↗</button>
+      </section>
+      <section id="feedbackPanel" class="feedback-panel">
+        <h2>पाठकों की प्रतिक्रिया</h2>
+        <p id="ratingSummary" class="rating-summary">रेटिंग और समीक्षाएँ लोड हो रही हैं…</p>
+        <div id="feedbackForm" class="feedback-form">
+          <label for="ratingInput">आपकी रेटिंग</label>
+          <select id="ratingInput">
+            <option value="">रेटिंग चुनें</option><option value="5">★★★★★ — उत्कृष्ट</option>
+            <option value="4">★★★★ — बहुत अच्छी</option><option value="3">★★★ — अच्छी</option>
+            <option value="2">★★ — औसत</option><option value="1">★ — सुधार की आवश्यकता</option>
+          </select>
+          <label for="reviewInput">आपकी समीक्षा</label>
+          <textarea id="reviewInput" maxlength="5000" rows="4" placeholder="रचना के बारे में अपनी राय लिखें…"></textarea>
+          <div class="feedback-buttons"><button id="submitFeedback" type="button">रेटिंग / समीक्षा सुरक्षित करें</button><button id="deleteMyRating" class="quiet-button" type="button" hidden>मेरी रेटिंग हटाएँ</button><button id="deleteMyReview" class="quiet-button" type="button" hidden>मेरी समीक्षा हटाएँ</button></div>
+        </div>
+        <div id="reviewsList"></div>
+      </section>
+      <div class="reader-bottom"><a href="mobile-app.html">← मोबाइल होम</a><span>— रचना समाप्त —</span></div>
+    </article>
+  </main>
+  <div id="readerSettings" class="reader-settings" hidden>
+    <label>अक्षर आकार <input id="fontSizeControl" type="range" min="16" max="30" value="20"></label>
+    <label>पंक्ति दूरी <input id="lineHeightControl" type="range" min="14" max="24" value="19"></label>
+  </div>
+  <div id="readerToast" class="reader-toast" role="status" aria-live="polite"></div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="mobile-reader.js?v=1"></script>
-</body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="mobile-reader.js?v=20261107-reader-2"></script>
+</body>
+</html>
