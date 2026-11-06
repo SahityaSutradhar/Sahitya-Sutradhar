@@ -4,11 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#641f2b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="साहित्य सूत्रधार">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
   <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css?v=20261106-series-reader-1">
   <style>
+    #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
+    #networkStatus[hidden]{display:none}
     .feedback-panel{border-top:1px solid var(--line,#ddd);margin-top:22px;padding-top:18px}
     .feedback-panel h2{font-size:1.25rem}
     .feedback-form{display:grid;gap:10px;margin:14px 0 22px}
@@ -50,6 +57,7 @@
   </style>
 </head>
 <body>
+  <div id="networkStatus" role="status" aria-live="polite" hidden>आप ऑफलाइन हैं। सहेजा हुआ वेबसाइट ढाँचा खुल सकता है; लॉगिन, रचनाएँ और क्लाउड सिंक के लिए इंटरनेट आवश्यक है।</div>
   <header class="topbar">
     <span class="brand-mark" aria-hidden="true">❀</span>
     <a class="brand" href="#" aria-label="साहित्य सूत्रधार मुख्यपृष्ठ">
@@ -568,5 +576,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js?v=20261106-cloud-reader-1"></script>
+  <script>
+    (() => {
+      const status = document.getElementById("networkStatus");
+      if (!status) return;
+      const updateNetworkStatus = () => { status.hidden = navigator.onLine; };
+      window.addEventListener("online", updateNetworkStatus);
+      window.addEventListener("offline", updateNetworkStatus);
+      updateNetworkStatus();
+    })();
+  </script>
 </body>
 </html>
