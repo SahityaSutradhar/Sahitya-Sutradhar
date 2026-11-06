@@ -2669,11 +2669,7 @@ const oauthName = String(
 ).trim().slice(0, 60);
 
 const savedName = String(data?.display_name || "").trim();
-  alert(
-  "Provider: " + (authUser.app_metadata?.provider || "अज्ञात") +
-  "\nGoogle/Facebook से मिला नाम: " + (oauthName || "नहीं मिला") +
-  "\nप्रोफ़ाइल में पुराना नाम: " + (savedName || "खाली")
-);
+
 // Google/Facebook की प्रोफ़ाइल फ़ोटो प्राप्त करें।
 const providerPicture =
   meta.picture?.data?.url ||
