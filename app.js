@@ -112,6 +112,11 @@ function renderStories(){
   const preferred=state.profile.preferredCategories||[];
   if(preferred.length)list.sort((a,b)=>Number((b.categories||[]).some(c=>preferred.includes(c)))-Number((a.categories||[]).some(c=>preferred.includes(c))));
   if(activeCategory!=="सभी")list=list.filter(s=>(s.categories||[]).includes(activeCategory));
+  const query=(document.getElementById("workSearchInput")?.value||"").trim().toLocaleLowerCase("hi");
+  if(query){
+    list=list.filter(s=>[s.title,s.author,s.body,s.type,s.subtype,...(s.categories||[]) ]
+      .some(value=>String(value||"").toLocaleLowerCase("hi").includes(query)));
+  }
   document.getElementById("storyCount").textContent=`${list.length} रचनाएँ`;
   document.getElementById("storyList").innerHTML=list.map(storyCard).join("");
   document.getElementById("emptyState").classList.toggle("hidden",list.length!==0);
@@ -3147,6 +3152,12 @@ document.getElementById("inboxBack")
 
 document.getElementById("inboxMessageForm")
   ?.addEventListener("submit",sendInboxMessage);
+
+  const workSearchInput=document.getElementById("workSearchInput");
+  workSearchInput?.addEventListener("input",renderStories);
+  document.getElementById("workSearchClear")?.addEventListener("click",()=>{
+    if(workSearchInput){workSearchInput.value="";renderStories();workSearchInput.focus();}
+  });
   document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
 
   document.getElementById("profileShortcut").addEventListener("click",()=>switchTab("profile"));
