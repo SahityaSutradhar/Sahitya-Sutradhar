@@ -2649,7 +2649,57 @@ async function loadCloudProfile() {
     console.error("प्रोफ़ाइल लोड नहीं हुई:", error.message);
     return;
                                  }
-  
+  // Google/Facebook आदि से प्राप्त वास्तविक नाम प्रोफ़ाइल में भरें।
+const authUser = latestAuth.data.user;
+const meta = authUser.user_metadata || {};
+
+const identityMeta = authUser.identities?.find(
+  x => x.provider === authUser.app_metadata?.provider
+)?.identity_data || {};
+
+const oauthName = String(
+  meta.full_name ||
+  meta.name ||
+  meta.display_name ||
+  meta.username ||
+  identityMeta.full_name ||
+  identityMeta.name ||
+  identityMeta.username ||
+  ""
+).trim().slice(0, 60);
+
+const savedName = String(data?.display_name || "").trim();
+
+const isDefaultName =
+  !savedName ||
+  ["अनाम पाठक", "anonymous reader"].includes(savedName.toLowerCase());
+
+if (oauthName && isDefaultName) {
+  const nameUpdate = data
+    ? await supabaseClient
+        .from("profiles")
+        .update({ display_name: oauthName })
+        .eq("id", profileUserId)
+    : await supabaseClient
+        .from("profiles")
+        .upsert(
+          { id: profileUserId, display_name: oauthName },
+          { onConflict: "id" }
+        );
+
+  if (!nameUpdate.error) {
+    if (data) {
+      data.display_name = oauthName;
+    } else {
+      data = { display_name: oauthName };
+    }
+  } else {
+    console.warn(
+      "OAuth नाम प्रोफ़ाइल में सुरक्षित नहीं हुआ:",
+      nameUpdate.error.message
+    );
+  }
+}
   if (data) {
     state.profile.name =
       data.display_name || "अनाम पाठक";
