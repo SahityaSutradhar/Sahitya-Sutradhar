@@ -2751,7 +2751,7 @@ if (oauthName && isDefaultName) {
   if (data) {
     state.profile.name =
       data.display_name || oauthName || "अनाम पाठक";
-    state.profile.avatarUrl = data.avatar_url || "";
+    state.profile.avatarUrl = data.avatar_url || oauthAvatar || "";
     state.profile.intro = data.bio || "";
     state.profile.readingLanguage = data.reading_language || "hi";
     state.profile.uiLanguage = data.ui_language || state.profile.uiLanguage || "hi";
