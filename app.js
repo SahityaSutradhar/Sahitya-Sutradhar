@@ -970,9 +970,121 @@ function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines){
 }
 
 const READER_PROGRESS_KEY="sutradhar.reader.progress.v1";
-function loadReaderProgress(){try{return JSON.parse(localStorage.getItem(READER_PROGRESS_KEY)||"{}");}catch{return {};}}
-function saveReaderProgress(id,entry){const all=loadReaderProgress();all[String(id)]=entry;localStorage.setItem(READER_PROGRESS_KEY,JSON.stringify(all));}
-function readerProgressFor(id){return loadReaderProgress()[String(id)]||{page:0,seen:[],words:0};}
+let readerProgressUserId=undefined;
+let readerProgressSaveTimer=null;
+let readerProgressSaveInFlight=false;
+let readerProgressSavePending=false;
+let readerProgressCloudWarningShown=false;
+function reportReaderProgressCloudError(error){
+ console.warn("क्लाउड पठन-प्रगति सिंक उपलब्ध नहीं:",error?.message||error);
+ if(!readerProgressCloudWarningShown){
+  readerProgressCloudWarningShown=true;
+  toast("पठन-प्रगति इस डिवाइस में सुरक्षित है, लेकिन क्लाउड सिंक नहीं हो पाया।");
+ }
+}
+function parseReaderProgressStore(key){
+ try{const value=JSON.parse(localStorage.getItem(key)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{};}
+ catch{return {};}
+}
+function readerProgressStorageKey(userId=readerProgressUserId){
+ if(userId===undefined)return READER_PROGRESS_KEY;
+ return `${READER_PROGRESS_KEY}.v2.${userId||"guest"}`;
+}
+function loadReaderProgress(){
+ const key=readerProgressStorageKey(),saved=localStorage.getItem(key);
+ if(saved!==null)return parseReaderProgressStore(key);
+ // पुराने v1 डेटा को पहले उपयोगकर्ता/गेस्ट के स्थानीय दायरे में कॉपी करें; मूल v1 key कभी नहीं मिटती।
+ let initial={};
+ if(readerProgressUserId===undefined)return parseReaderProgressStore(READER_PROGRESS_KEY);
+ const legacyOwner=localStorage.getItem(READER_PROGRESS_KEY+".legacy_owner");
+ if(!legacyOwner){
+  initial=parseReaderProgressStore(READER_PROGRESS_KEY);
+  if(readerProgressUserId){
+   const guest=parseReaderProgressStore(READER_PROGRESS_KEY+".v2.guest");
+   for(const [id,item] of Object.entries(guest)){
+    const prior=initial[id];
+    initial[id]=prior?{...prior,...(Number(item.updatedAt)>Number(prior.updatedAt)?item:{}),seen:[...new Set([...(prior.seen||[]),...(item.seen||[])])],words:Math.max(Number(prior.words)||0,Number(item.words)||0)}:item;
+   }
+   try{localStorage.setItem(READER_PROGRESS_KEY+".legacy_owner",readerProgressUserId);}catch{}
+  }
+ }
+ try{localStorage.setItem(key,JSON.stringify(initial));}catch{}
+ return initial;
+}
+function saveAllReaderProgress(all){try{localStorage.setItem(readerProgressStorageKey(),JSON.stringify(all));}catch(error){console.warn("स्थानीय पठन-प्रगति सुरक्षित नहीं हुई:",error);}}
+function saveReaderProgress(id,entry){const all=loadReaderProgress();all[String(id)]=entry;saveAllReaderProgress(all);}
+function readerProgressFor(id){return loadReaderProgress()[String(id)]||{page:0,seen:[],words:0,ratio:0,totalPages:0,updatedAt:0};}
+function readerProgressRatio(entry){
+ if(Number.isFinite(Number(entry?.ratio)))return Math.max(0,Math.min(1,Number(entry.ratio)));
+ const total=Number(entry?.totalPages)||0,page=Number(entry?.page)||0;
+ return total>0?Math.max(0,Math.min(1,(page+1)/total)):0;
+}
+function scheduleCloudReaderProgressSave(id=currentReaderId){
+ if(!readerProgressUserId||!supabaseClient||!id)return;
+ clearTimeout(readerProgressSaveTimer);
+ const targetUserId=readerProgressUserId;
+ readerProgressSaveTimer=setTimeout(()=>flushCloudReaderProgress(id,targetUserId),650);
+}
+async function flushCloudReaderProgress(id=currentReaderId,expectedUserId=readerProgressUserId){
+ clearTimeout(readerProgressSaveTimer);readerProgressSaveTimer=null;
+ if(!expectedUserId||expectedUserId!==readerProgressUserId||!supabaseClient||!id)return;
+ if(readerProgressSaveInFlight){readerProgressSavePending=true;return;}
+ const userId=readerProgressUserId,progress=readerProgressFor(id),ratio=readerProgressRatio(progress);
+ if(!progress.updatedAt&&!progress.words&&!progress.page)return;
+ readerProgressSaveInFlight=true;
+ try{
+  // last_position stores a device-independent position (0–10,000 basis points).
+  const payload={user_id:userId,work_id:id,last_position:Math.round(ratio*10000),estimated_words_read:Math.max(0,Math.round(Number(progress.words)||0)),updated_at:new Date(Number(progress.updatedAt)||Date.now()).toISOString()};
+  const {error}=await supabaseClient.from("reading_progress").upsert(payload,{onConflict:"user_id,work_id"});
+  if(error)throw error;
+ }catch(error){reportReaderProgressCloudError(error);}
+ finally{
+  readerProgressSaveInFlight=false;
+  if(readerProgressSavePending){readerProgressSavePending=false;scheduleCloudReaderProgressSave(id);}
+ }
+}
+async function loadCloudReaderProgress(id,userId=readerProgressUserId){
+ if(!supabaseClient||!id||!userId)return readerProgressFor(id);
+ try{
+  const {data,error}=await supabaseClient.from("reading_progress")
+   .select("user_id,work_id,last_position,estimated_words_read,updated_at")
+   .eq("user_id",userId).eq("work_id",id).maybeSingle();
+  if(error)throw error;
+  const local=readerProgressFor(id);
+  if(!data){if(local.updatedAt||local.words||local.page)scheduleCloudReaderProgressSave(id);return local;}
+  const cloudTime=Date.parse(data.updated_at||"")||0,localTime=Number(local.updatedAt)||0;
+  const cloudRatio=Math.max(0,Math.min(1,(Number(data.last_position)||0)/10000));
+  if(cloudTime>localTime){
+   const merged={...local,ratio:cloudRatio,words:Math.max(Number(local.words)||0,Number(data.estimated_words_read)||0),updatedAt:cloudTime};
+   saveReaderProgress(id,merged);return merged;
+  }
+  const merged={...local,words:Math.max(Number(local.words)||0,Number(data.estimated_words_read)||0)};
+  if(localTime>cloudTime)scheduleCloudReaderProgressSave(id);
+  saveReaderProgress(id,merged);return merged;
+ }catch(error){reportReaderProgressCloudError(error);return readerProgressFor(id);}
+}
+async function loadCloudReaderProgressForUser(userId){
+ if(!supabaseClient||!userId)return;
+ try{
+  const {data,error}=await supabaseClient.from("reading_progress")
+   .select("user_id,work_id,last_position,estimated_words_read,updated_at")
+   .eq("user_id",userId).order("updated_at",{ascending:false}).limit(500);
+  if(error)throw error;
+  const all=loadReaderProgress();
+  for(const row of data||[]){
+   const id=String(row.work_id),local=all[id]||{page:0,seen:[],words:0,ratio:0,totalPages:0,updatedAt:0};
+   const cloudTime=Date.parse(row.updated_at||"")||0,localTime=Number(local.updatedAt)||0;
+   const words=Math.max(Number(local.words)||0,Number(row.estimated_words_read)||0);
+   if(cloudTime>localTime){
+    all[id]={...local,ratio:Math.max(0,Math.min(1,(Number(row.last_position)||0)/10000)),words,updatedAt:cloudTime};
+   }else{
+    all[id]={...local,words};
+    if(localTime>cloudTime)scheduleCloudReaderProgressSave(id);
+   }
+  }
+  saveAllReaderProgress(all);renderLibrary();
+ }catch(error){reportReaderProgressCloudError(error);}
+}
 function readerPageMetrics(){
  const el=document.getElementById("readerBody");if(!el)return;
  readerPagesTotal=Math.max(1,Math.ceil(el.scrollWidth/Math.max(1,el.clientWidth)));
@@ -988,19 +1100,33 @@ function readerGoPage(index,direction){
 }
 async function recordReaderPage(page){
  const id=String(currentReaderId),seen=readerSeenPages;
- if(seen.has(page))return;
- seen.add(page);
- const pageWords=Math.max(0,Math.ceil(readerWordsTotal/readerPagesTotal));
- const progress=readerProgressFor(id);progress.page=page;progress.seen=[...seen];progress.words=(progress.words||0)+pageWords;progress.updatedAt=Date.now();saveReaderProgress(id,progress);
- if(readerTrack&&supabaseClient){const {data:{user}}=await supabaseClient.auth.getUser();if(user&&user.id!==state.stories.find(x=>String(x.id)===id)?.authorId){
-  const {error}=await supabaseClient.from("work_reads").insert({work_id:id,reader_id:user.id,words_count:pageWords});
-  if(error)console.warn("पृष्ठ-पठन रिकॉर्ड सेव नहीं हुआ",error.message);
- }}
+ if(!id||id==="null")return;
+ const wasSeen=seen.has(page);seen.add(page);
+ const ratio=readerPagesTotal<=1?1:Math.max(0,Math.min(1,(page+1)/readerPagesTotal));
+ const progress=readerProgressFor(id);
+ progress.page=page;progress.seen=[...seen];progress.totalPages=readerPagesTotal;progress.ratio=ratio;
+ progress.words=Math.max(Number(progress.words)||0,Math.ceil(readerWordsTotal*ratio));
+ progress.updatedAt=Date.now();saveReaderProgress(id,progress);scheduleCloudReaderProgressSave(id);
+ if(!wasSeen&&readerTrack&&supabaseClient){
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  if(user&&user.id!==state.stories.find(x=>String(x.id)===id)?.authorId){
+   const pageWords=Math.max(0,Math.ceil(readerWordsTotal/readerPagesTotal));
+   const {error}=await supabaseClient.from("work_reads").insert({work_id:id,reader_id:user.id,words_count:pageWords});
+   if(error)console.warn("पृष्ठ-पठन रिकॉर्ड सेव नहीं हुआ",error.message);
+  }
+ }
 }
 function setupReaderPagination(id){
  const body=document.getElementById("readerBody"),saved=readerProgressFor(id);
- readerPageIndex=Number(saved.page)||0;readerSeenPages=new Set(saved.seen||[]);readerWordsTotal=wordCount(body.innerText||"");readerPagesTotal=1;
- body.scrollLeft=0;requestAnimationFrame(()=>{readerPageMetrics();readerGoPage(Math.min(readerPageIndex,readerPagesTotal-1),"next");});
+ readerSeenPages=new Set(saved.seen||[]);readerWordsTotal=wordCount(body.innerText||"");readerPagesTotal=1;readerPageIndex=0;
+ const storedRatio=readerProgressRatio(saved),hasRatio=Number.isFinite(Number(saved.ratio))&&Number(saved.updatedAt)>0;
+ const legacyPage=Number(saved.page)||0;
+ body.scrollLeft=0;
+ requestAnimationFrame(()=>{
+  readerPageMetrics();
+  const target=hasRatio?Math.round(storedRatio*Math.max(0,readerPagesTotal-1)):Math.min(legacyPage,readerPagesTotal-1);
+  body.scrollLeft=target*body.clientWidth;readerPageMetrics();recordReaderPage(target);
+ });
 }
 
 function renderReaderSeriesNav(work){
@@ -1064,7 +1190,7 @@ async function navigateReaderSeries(direction){
   const nextIndex = index + direction;
   if(index < 0 || nextIndex < 0 || nextIndex >= parts.length) return;
 
-  document.getElementById("readerDialog").close();
+  await finishReading(false);
   await openReader(parts[nextIndex].id);
 }
 
@@ -1085,10 +1211,12 @@ function anonymousPreview(work){
   const words=body.match(/\S+\s*/g)||[];return {html:formatMarkup(words.slice(0,target).join("")),locked:true};
 }
 async function openReader(id){
-  const s=state.stories.find(x=>x.id===id);if(!s)return;
+  const s=state.stories.find(x=>String(x.id)===String(id));if(!s)return;
+  if(currentReaderId&&String(currentReaderId)!==String(id))await flushCloudReaderProgress(currentReaderId);
   currentReaderId=id;readingStartedAt=Date.now();
   renderReaderSeriesNav(s);
   const {data:{user}} = supabaseClient ? await supabaseClient.auth.getUser() : {data:{user:null}};
+  readerProgressUserId=user?.id||null;
   if(s.source==="supabase" && s.status==="published" && !user){
     const preview=anonymousPreview(s);
     if(preview.locked){
@@ -1116,13 +1244,14 @@ async function openReader(id){
   document.getElementById("readerMeta").textContent=`लगभग ${minutesFor(s.body)} मिनट`;
   document.getElementById("readerWords").textContent=`रचना में कुल ${wordCount(s.body)} शब्द`;
   document.getElementById("bookmarkButton").textContent=(state.profile.bookmarks||[]).includes(id)?"♥":"♧";
-  const owner = !!s.authorId && (await supabaseClient?.auth.getUser())?.data?.user?.id === s.authorId;
+  const owner = !!s.authorId && user?.id === s.authorId;
   const action = document.getElementById("workOwnerAction");
   if(action){ action.classList.toggle("hidden",!owner); action.textContent=s.status==="draft"?"पुनः प्रकाशित करें":"अप्रकाशित करके ड्राफ्ट में रखें"; }
   const editAction = document.getElementById("editWorkAction");
   if(editAction) editAction.classList.toggle("hidden",!owner);
   const panel=document.getElementById("feedbackPanel");
   if(panel) panel.classList.toggle("hidden",s.source!=="supabase" || s.status==="draft");
+  if(user&&s.source==="supabase")await loadCloudReaderProgress(id,user.id);
   document.getElementById("readerDialog").showModal();
   setupReaderPagination(id);
   if(s.source==="supabase" && s.status!=="draft") await loadWorkFeedback(id);
@@ -1330,11 +1459,11 @@ async function submitReviewComment(form){
   form.reset();await loadReviewComments(reviewId,currentReaderId);toast("टिप्पणी प्रकाशित हो गई।");
 }
 
-async function finishReading(){
-  const s=state.stories.find(x=>x.id===currentReaderId);
-  readerPageMetrics();const p=readerProgressFor(currentReaderId);p.page=readerPageIndex;p.seen=[...readerSeenPages];p.updatedAt=Date.now();saveReaderProgress(currentReaderId,p);
-  document.getElementById("readerDialog").close();
-  if(s)toast(`पठन सुरक्षित: ${readerSeenPages.size} पृष्ठ देखे गए।`);
+async function finishReading(showNotice=true){
+  const id=currentReaderId,s=state.stories.find(x=>String(x.id)===String(id));
+  if(id){readerPageMetrics();await recordReaderPage(readerPageIndex);await flushCloudReaderProgress(id);}
+  const dialog=document.getElementById("readerDialog");if(dialog?.open)dialog.close();
+  if(showNotice&&s)toast(`पठन सुरक्षित: ${readerSeenPages.size} पृष्ठ देखे गए।`);
 }
 
 function toggleBookmark(){
@@ -1344,10 +1473,23 @@ function toggleBookmark(){
   if(i>=0)list.splice(i,1);else list.push(currentReaderId);
   saveState();document.getElementById("bookmarkButton").textContent=i>=0?"♧":"♥";renderLibrary();toast(i>=0?"बुकमार्क हटाया गया":"पुस्तकालय में बुकमार्क किया गया");
 }
+function readingProgressCard(work,progress){
+  const ratio=readerProgressRatio(progress),percent=Math.max(0,Math.min(100,Math.round(ratio*100)));
+  const cats=(work.categories||[]).map(c=>`<span class="tag">${escapeHtml(c)}</span>`).join(" ");
+  const excerpt=String(work.body||"").replace(/\s+/g," ").slice(0,105);
+  return `<article class="story-card reading-resume-card"><div class="cover-grid"><button class="cover-open" type="button" data-read="${escapeHtml(work.id)}" aria-label="${escapeHtml(work.title)} वहीं से पढ़ें">${work.coverUrl?`<img class="cover-thumb" src="${escapeHtml(work.coverUrl)}" alt="${escapeHtml(work.title)} कवर">`:`<div class="cover-placeholder">❀</div>`}</button><div><div>${cats}</div><h3>${escapeHtml(work.title)}</h3><p>${escapeHtml(work.author||"अनाम लेखक")}</p><p class="excerpt">${escapeHtml(excerpt)}${excerpt.length>=105?"…":""}</p><div class="resume-progress-track" role="progressbar" aria-label="पठन प्रगति" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div><div class="resume-progress-meta"><small>${percent>=100?"पूरा पढ़ा गया":"लगभग "+percent+"% पढ़ा गया"}${progress.words?" · "+Number(progress.words).toLocaleString("hi-IN")+" शब्द":""}</small><button type="button" data-read="${escapeHtml(work.id)}">${percent>=100?"फिर से पढ़ें":"वहीं से पढ़ें ↗"}</button></div></div></div></article>`;
+}
 function renderLibrary(){
   const ids=state.profile.bookmarks||[];
-  const list=state.stories.filter(s=>ids.includes(s.id));
-  document.getElementById("libraryList").innerHTML=list.length?list.map(storyCard).join():'<div class="empty-state"><span class="empty-flower">✿</span><h3>आपका पुस्तकालय खाली है</h3><p>किसी रचना को खोलकर बुकमार्क करें। वह यहाँ दिखाई देगी।</p></div>';
+  const list=state.stories.filter(s=>ids.some(id=>String(id)===String(s.id)));
+  const progressItems=state.stories
+    .filter(s=>s.status==="published"&&s.source==="supabase")
+    .map(work=>({work,progress:readerProgressFor(work.id)}))
+    .filter(x=>Number(x.progress.updatedAt)>0||Number(x.progress.words)>0||Number(x.progress.page)>0)
+    .sort((a,b)=>(Number(b.progress.updatedAt)||0)-(Number(a.progress.updatedAt)||0));
+  const resumeHtml=progressItems.length?`<section class="library-subsection"><h2>पढ़ना जारी रखें</h2><div class="story-list">${progressItems.map(x=>readingProgressCard(x.work,x.progress)).join("")}</div></section>`:"";
+  const bookmarksHtml=list.length?`<section class="library-subsection"><h2>आपका पुस्तकालय</h2><div class="story-list">${renderStoryCards(list)}</div></section>`:`<div class="empty-state"><span class="empty-flower">✿</span><h3>आपका पुस्तकालय खाली है</h3><p>किसी रचना को खोलकर बुकमार्क करें। वह यहाँ दिखाई देगी।</p></div>`;
+  document.getElementById("libraryList").innerHTML=resumeHtml+bookmarksHtml;
   bindReadButtons();
 }
 
@@ -3292,7 +3434,8 @@ updateSeriesEditor();
   document.getElementById("formSubType").addEventListener("change",saveDraftFromForm);
   document.getElementById("formCategories").addEventListener("change",saveDraftFromForm);
   document.getElementById("closeWrite").addEventListener("click",()=>document.getElementById("writeDialog").close());
-  document.getElementById("closeReader").addEventListener("click",()=>document.getElementById("readerDialog").close());
+  document.getElementById("closeReader").addEventListener("click",()=>finishReading());
+  document.getElementById("readerDialog")?.addEventListener("cancel",event=>{event.preventDefault();finishReading();});
   document.getElementById("readerPrevPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex-1,"prev"));
   document.getElementById("readerNextPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex+1,"next"));
   document.getElementById("readerPrevPart")
@@ -3535,11 +3678,18 @@ google.addEventListener("click", async () => {
   try {
     const nextId = sessionUser?.id || null;
 
-    if (currentUserId !== nextId) switchAccountState(nextId);
+    if (currentUserId !== nextId) {
+      clearTimeout(readerProgressSaveTimer);
+      readerProgressSaveTimer=null;
+      readerProgressSavePending=false;
+      readerProgressUserId=nextId;
+      switchAccountState(nextId);
+    }
 
     if (!nextId) {
       state = emptyAccountState();
       currentUserId = null;
+      readerProgressUserId=null;
       saveState();
       renderProfile();
       renderStories();
@@ -3563,6 +3713,9 @@ google.addEventListener("click", async () => {
     await loadCloudWorks();
     if (version !== authSyncVersion) return;
 
+    readerProgressUserId=nextId;
+    await loadCloudReaderProgressForUser(nextId);
+    if (version !== authSyncVersion) return;
     renderProfile();
 
     await loadCommunityPosts();
