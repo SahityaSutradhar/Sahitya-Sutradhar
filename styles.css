@@ -722,3 +722,112 @@
   border-radius: 50%;
   font-size: 11px;
 }
+
+/* =========================================
+   SAHITYA SUTRADHAR — DISCOVERY HOME REFRESH
+   चरण 1: मुख्यपृष्ठ, खोज और नेविगेशन
+========================================= */
+:root{
+  --bg:#f7f3ec;
+  --paper:#fffefa;
+  --ink:#302321;
+  --muted:#76665d;
+  --gold:#b58a45;
+  --maroon:#672733;
+  --line:#e9dfd1;
+  --soft:#f1e8dc;
+  --shadow:0 10px 28px rgba(65,35,27,.065);
+}
+body{background:radial-gradient(ellipse at 12% 0%,#fffaf0 0,transparent 34%),var(--bg)}
+.topbar{height:72px;box-shadow:0 3px 16px rgba(56,31,25,.035);backdrop-filter:blur(14px);background:rgba(255,254,250,.94)}
+.brand{gap:11px;margin-left:0}
+.brand-mark{color:#b58a45;text-shadow:0 2px 8px #b58a4526}
+.brand strong{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:20px;letter-spacing:.1px}
+.brand small{letter-spacing:.35px}
+.top-actions{gap:7px}
+.top-icon,.icon-button{border-radius:13px;background:#fffdf8;transition:transform .18s ease,background .18s ease}
+.top-icon:hover,.icon-button:hover{transform:translateY(-1px);background:var(--soft)}
+.app-shell{max-width:1120px;padding-left:24px;padding-right:24px}
+.welcome{margin:24px 0 20px;min-height:222px;padding:34px clamp(22px,4vw,48px);border:1px solid #8b4c4c55;border-radius:27px;background:linear-gradient(112deg,#4b1b25 0%,#71313b 54%,#8b5947 100%);box-shadow:0 18px 42px rgba(77,29,38,.16)}
+.welcome:after{content:"";position:absolute;width:320px;height:320px;border:1px solid #f3d69b33;border-radius:50%;right:7%;top:-190px;box-shadow:0 0 0 22px #f3d69b0b,0 0 0 48px #f3d69b09}
+.welcome h1{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:clamp(30px,4.5vw,46px);letter-spacing:.1px}
+.welcome-copy{font-size:15px;line-height:1.9;max-width:520px}
+.lotus-art{z-index:1;transform:scale(1.12);margin-right:15px}
+.discovery-search{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);align-items:center;gap:24px;padding:20px 23px;margin:0 0 35px;background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.discovery-search-copy h2{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:clamp(19px,2.5vw,25px);margin:0 0 3px}
+.discovery-search-copy p:last-child{font-size:12px;color:var(--muted);margin:0}
+.search-control{display:flex;align-items:center;gap:8px;padding:5px 7px 5px 14px;border:1px solid #dfd1bd;border-radius:14px;background:#fbf8f2;min-width:0}
+.search-control>span{font-size:27px;line-height:1;color:var(--gold)}
+.search-control input{border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:10px 3px!important;min-width:0}
+.search-clear{border:0;border-radius:10px;width:34px;height:34px;background:var(--soft);color:var(--maroon);font-size:22px;flex:0 0 auto}
+.section-block{margin-bottom:39px}
+.section-heading{margin-bottom:16px;align-items:center}
+.section-heading h2,.view h1{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:clamp(21px,2.8vw,26px);letter-spacing:.05px}
+.section-heading .eyebrow{letter-spacing:1.35px}
+.story-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.story-card{border-radius:19px;border-color:#e9dfd2;padding:16px;box-shadow:0 5px 18px rgba(60,35,25,.045);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.story-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(60,35,25,.09);border-color:#d7c29f}
+.story-card h3{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:19px;line-height:1.5}
+.story-card .excerpt{line-height:1.8}
+.cover-thumb,.cover-placeholder{border-radius:11px}
+.cover-placeholder{background:linear-gradient(145deg,#f1e4d0,#e7d3b5);font-size:32px}
+.writer-list{gap:12px}
+.writer-card{border-radius:16px;padding:14px;background:var(--paper);border-color:var(--line);transition:transform .18s ease,box-shadow .18s ease}
+.writer-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.chips{padding:3px 0 10px;scrollbar-width:thin}
+.chip{padding:9px 16px;background:var(--paper);border-color:#e6dac9}
+.chip.active{background:var(--maroon);box-shadow:0 4px 12px #6727332b}
+.bottom-nav{justify-content:space-evenly;gap:4px;padding:8px max(12px,calc((100vw - 720px)/2)) max(8px,env(safe-area-inset-bottom));background:rgba(255,254,250,.97);backdrop-filter:blur(16px);box-shadow:0 -5px 22px rgba(52,31,25,.055);border-top-color:#e8dfd3}
+.nav-item{position:relative;min-width:68px;padding:4px 9px;border-radius:13px;font-size:11px;transition:background .18s ease,color .18s ease}
+.nav-item span:first-child{font-size:22px}
+.nav-item.active{background:#f3e9df;color:var(--maroon)}
+.nav-item.write-nav span:first-child{width:36px;height:32px;border-radius:12px;background:var(--maroon);color:#fff4df}
+body.dark{--bg:#191615;--paper:#26211f;--ink:#f3e8d9;--muted:#c0ad9b;--gold:#d6b16e;--maroon:#8b3d49;--line:#493b35;--soft:#392d28}
+body.dark .topbar,body.dark .bottom-nav{background:rgba(38,33,31,.96)}
+body.dark .discovery-search{background:var(--paper)}
+body.dark .search-control{background:#211c1a;border-color:var(--line)}
+body.dark .top-icon,body.dark .icon-button{background:var(--paper)}
+body.dark .nav-item.active{background:#39282a}
+@media(max-width:700px){
+ .app-shell{padding-left:15px;padding-right:15px}
+ .welcome{min-height:190px;padding:25px 20px;border-radius:22px;margin-top:16px}
+ .welcome h1{font-size:29px;max-width:310px}
+ .welcome-copy{font-size:13px;max-width:260px}
+ .lotus-art{width:80px;transform:scale(.72);margin-left:-20px;margin-right:0}
+ .discovery-search{grid-template-columns:1fr;gap:12px;padding:17px;margin-bottom:29px}
+ .discovery-search-copy h2{font-size:20px}
+ .search-control{width:100%}
+ .story-list{grid-template-columns:1fr;gap:12px}
+ .story-card{padding:14px}
+ .section-block{margin-bottom:31px}
+ .section-heading{align-items:flex-start}
+ .section-heading h2{font-size:21px}
+ .bottom-nav{gap:1px;padding-left:4px;padding-right:4px}
+ .nav-item{min-width:0;flex:1;padding:4px 2px;font-size:9px}
+ .nav-item span:first-child{font-size:21px}
+}
+@media(min-width:701px){.story-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* =========================================
+   SAHITYA SUTRADHAR — DISCOVERY HOME REFRESH
+   चरण 1: मुख्यपृष्ठ, खोज और नेविगेशन
+========================================= */
+:root{--bg:#f7f3ec;--paper:#fffefa;--ink:#302321;--muted:#76665d;--gold:#b58a45;--maroon:#672733;--line:#e9dfd1;--soft:#f1e8dc;--shadow:0 10px 28px rgba(65,35,27,.065)}
+body{background:radial-gradient(ellipse at 12% 0%,#fffaf0 0,transparent 34%),var(--bg)}
+.topbar{height:72px;box-shadow:0 3px 16px rgba(56,31,25,.035);backdrop-filter:blur(14px);background:rgba(255,254,250,.94)}
+.brand{gap:11px;margin-left:0}.brand-mark{color:#b58a45;text-shadow:0 2px 8px #b58a4526}.brand strong{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:20px;letter-spacing:.1px}.brand small{letter-spacing:.35px}.top-actions{gap:7px}
+.top-icon,.icon-button{border-radius:13px;background:#fffdf8;transition:transform .18s ease,background .18s ease}.top-icon:hover,.icon-button:hover{transform:translateY(-1px);background:var(--soft)}
+.app-shell{max-width:1120px;padding-left:24px;padding-right:24px}
+.welcome{margin:24px 0 20px;min-height:222px;padding:34px clamp(22px,4vw,48px);border:1px solid #8b4c4c55;border-radius:27px;background:linear-gradient(112deg,#4b1b25 0%,#71313b 54%,#8b5947 100%);box-shadow:0 18px 42px rgba(77,29,38,.16)}
+.welcome:after{content:"";position:absolute;width:320px;height:320px;border:1px solid #f3d69b33;border-radius:50%;right:7%;top:-190px;box-shadow:0 0 0 22px #f3d69b0b,0 0 0 48px #f3d69b09}
+.welcome h1{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:clamp(30px,4.5vw,46px);letter-spacing:.1px}.welcome-copy{font-size:15px;line-height:1.9;max-width:520px}.lotus-art{z-index:1;transform:scale(1.12);margin-right:15px}
+.discovery-search{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);align-items:center;gap:24px;padding:20px 23px;margin:0 0 35px;background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.discovery-search-copy h2{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:clamp(19px,2.5vw,25px);margin:0 0 3px}.discovery-search-copy p:last-child{font-size:12px;color:var(--muted);margin:0}
+.search-control{display:flex;align-items:center;gap:8px;padding:5px 7px 5px 14px;border:1px solid #dfd1bd;border-radius:14px;background:#fbf8f2;min-width:0}.search-control>span{font-size:27px;line-height:1;color:var(--gold)}.search-control input{border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:10px 3px!important;min-width:0}.search-clear{border:0;border-radius:10px;width:34px;height:34px;background:var(--soft);color:var(--maroon);font-size:22px;flex:0 0 auto}
+.section-block{margin-bottom:39px}.section-heading{margin-bottom:16px;align-items:center}.section-heading h2,.view h1{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:clamp(21px,2.8vw,26px);letter-spacing:.05px}.section-heading .eyebrow{letter-spacing:1.35px}
+.story-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.story-card{border-radius:19px;border-color:#e9dfd2;padding:16px;box-shadow:0 5px 18px rgba(60,35,25,.045);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.story-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(60,35,25,.09);border-color:#d7c29f}.story-card h3{font-family:"Noto Serif Devanagari",Georgia,serif;font-size:19px;line-height:1.5}.story-card .excerpt{line-height:1.8}.cover-thumb,.cover-placeholder{border-radius:11px}.cover-placeholder{background:linear-gradient(145deg,#f1e4d0,#e7d3b5);font-size:32px}
+.writer-list{gap:12px}.writer-card{border-radius:16px;padding:14px;background:var(--paper);border-color:var(--line);transition:transform .18s ease,box-shadow .18s ease}.writer-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}.chips{padding:3px 0 10px;scrollbar-width:thin}.chip{padding:9px 16px;background:var(--paper);border-color:#e6dac9}.chip.active{background:var(--maroon);box-shadow:0 4px 12px #6727332b}
+.bottom-nav{justify-content:space-evenly;gap:4px;padding:8px max(12px,calc((100vw - 720px)/2)) max(8px,env(safe-area-inset-bottom));background:rgba(255,254,250,.97);backdrop-filter:blur(16px);box-shadow:0 -5px 22px rgba(52,31,25,.055);border-top-color:#e8dfd3}.nav-item{position:relative;min-width:68px;padding:4px 9px;border-radius:13px;font-size:11px;transition:background .18s ease,color .18s ease}.nav-item span:first-child{font-size:22px}.nav-item.active{background:#f3e9df;color:var(--maroon)}.nav-item.write-nav span:first-child{width:36px;height:32px;border-radius:12px;background:var(--maroon);color:#fff4df}
+body.dark{--bg:#191615;--paper:#26211f;--ink:#f3e8d9;--muted:#c0ad9b;--gold:#d6b16e;--maroon:#8b3d49;--line:#493b35;--soft:#392d28}body.dark .topbar,body.dark .bottom-nav{background:rgba(38,33,31,.96)}body.dark .discovery-search{background:var(--paper)}body.dark .search-control{background:#211c1a;border-color:var(--line)}body.dark .top-icon,body.dark .icon-button{background:var(--paper)}body.dark .nav-item.active{background:#39282a}
+@media(max-width:700px){.app-shell{padding-left:15px;padding-right:15px}.welcome{min-height:190px;padding:25px 20px;border-radius:22px;margin-top:16px}.welcome h1{font-size:29px;max-width:310px}.welcome-copy{font-size:13px;max-width:260px}.lotus-art{width:80px;transform:scale(.72);margin-left:-20px;margin-right:0}.discovery-search{grid-template-columns:1fr;gap:12px;padding:17px;margin-bottom:29px}.discovery-search-copy h2{font-size:20px}.search-control{width:100%}.story-list{grid-template-columns:1fr;gap:12px}.story-card{padding:14px}.section-block{margin-bottom:31px}.section-heading{align-items:flex-start}.section-heading h2{font-size:21px}.bottom-nav{gap:1px;padding-left:4px;padding-right:4px}.nav-item{min-width:0;flex:1;padding:4px 2px;font-size:9px}.nav-item span:first-child{font-size:21px}}
+@media(min-width:701px){.story-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
