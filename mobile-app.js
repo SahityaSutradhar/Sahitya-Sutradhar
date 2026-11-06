@@ -5,7 +5,7 @@
   const client = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
   let allWorks = [];
   function render(items) {
-    grid.innerHTML = items.map(w => `<article class="work-card"><div class="cover">${w.cover_url ? `<img loading="lazy" src="${escapeHTML(w.cover_url)}" alt="${escapeHTML(w.title)} का आवरण">` : '<span class="cover-placeholder">❀</span>'}</div><div class="work-info"><h3>${escapeHTML(w.title || 'शीर्षक रहित रचना')}</h3><p class="work-author">${escapeHTML(w.author_name || 'अनाम रचनाकार')}</p><a class="open-work" href="index.html#work-${encodeURIComponent(w.id)}">रचना पढ़ें ↗</a></div></article>`).join('');
+    grid.innerHTML = items.map(w => `<article class="work-card"><div class="cover">${w.cover_url ? `<img loading="lazy" src="${escapeHTML(w.cover_url)}" alt="${escapeHTML(w.title)} का आवरण">` : '<span class="cover-placeholder">❀</span>'}</div><div class="work-info"><h3>${escapeHTML(w.title || 'शीर्षक रहित रचना')}</h3><p class="work-author">${escapeHTML(w.author_name || 'अनाम रचनाकार')}</p><a class="open-work" href="mobile-reader.html?id=${encodeURIComponent(w.id)}">रचना पढ़ें ↗</a></div></article>`).join('');
     state.textContent = items.length ? `${items.length} नवीन रचनाएँ` : 'अभी कोई प्रकाशित रचना उपलब्ध नहीं है।';
   }
   async function load() {
@@ -34,4 +34,3 @@
   $('accountBtn').addEventListener('click', () => location.href='index.html#profileView');
   load();
 })();
-    
