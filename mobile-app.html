@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#641f2b"><meta name="description" content="साहित्य सूत्रधार — शब्दों का अपना संसार">
+  <title>साहित्य सूत्रधार</title>
+  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="mobile-app.css?v=1">
+</head>
+<body>
+  <div class="app-frame">
+    <header class="app-header">
+      <a class="brand" href="mobile-app.html"><span class="brand-symbol">❀</span><span><b>साहित्य सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a>
+      <div class="header-actions"><button id="searchToggle" class="round-btn" aria-label="खोजें">⌕</button><button id="accountBtn" class="round-btn" aria-label="खाता">♙</button></div>
+    </header>
+    <main id="appMain">
+      <section class="welcome-card"><div class="welcome-copy"><span class="eyebrow">आपका साहित्यिक संसार</span><h1>हर शब्द में<br>एक नई दुनिया।</h1><p>पढ़िए, महसूस कीजिए और शब्दों के साथ आगे बढ़िए।</p><a class="primary-link" href="index.html#latestHeading">साहित्य की दुनिया में जाएँ <span>↗</span></a></div><div class="welcome-flower">❀</div></section>
+      <section id="searchPanel" class="search-panel" hidden><input id="searchInput" type="search" placeholder="रचना या रचनाकार खोजें…"><button id="searchClose" aria-label="बंद करें">×</button></section>
+      <section class="section-head"><div><span class="eyebrow">आज का साहित्य</span><h2>नई प्रकाशित रचनाएँ</h2></div><a href="index.html#latestHeading">सभी देखें</a></section>
+      <div id="worksState" class="state-message">रचनाएँ लाई जा रही हैं…</div><section id="worksGrid" class="works-grid" aria-live="polite"></section>
+      <section class="quote-card"><span>❝</span><p>शब्द केवल कहे नहीं जाते, वे मनुष्य के भीतर एक संसार रचते हैं।</p><small>— साहित्य सूत्रधार</small></section>
+      <section class="section-head"><div><span class="eyebrow">अपनी रुचि चुनें</span><h2>साहित्य की विधाएँ</h2></div></section>
+      <div class="genre-grid"><a href="index.html#storyHeading">कविता</a><a href="index.html#storyHeading">कहानी</a><a href="index.html#storyHeading">उपन्यास</a><a href="index.html#storyHeading">लेख</a><a href="index.html#storyHeading">निबंध</a><a href="index.html#storyHeading">संस्मरण</a></div>
+      <section class="author-invite"><div><span class="eyebrow">आप भी रचिए</span><h2>आपके शब्दों की भी जगह है यहाँ।</h2><p>अपनी रचनाएँ प्रकाशित करें और पाठकों से जुड़ें।</p></div><a href="index.html#writeView">लिखना शुरू करें ↗</a></section>
+      <footer>साहित्य सूत्रधार <span>·</span> स + हित</footer>
+    </main>
+    <nav class="bottom-nav" aria-label="मुख्य नेविगेशन"><a class="active" href="mobile-app.html"><span>⌂</span>होम</a><a href="index.html#storyHeading"><span>⌕</span>खोज</a><a href="index.html#libraryView"><span>▤</span>पुस्तकालय</a><a href="index.html#communityView"><span>✧</span>संगोष्ठी</a><a href="index.html#profileView"><span>♙</span>प्रोफाइल</a></nav>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="mobile-app.js?v=1"></script>
+</body></html>
