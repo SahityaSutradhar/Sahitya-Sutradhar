@@ -1,5 +1,5 @@
 
-const CACHE = "sahitya-sutradhar-shell-v6";
+const CACHE = "sahitya-sutradhar-shell-v7";
 
 const ASSETS = [
   "./",
