@@ -23,6 +23,6 @@
 ## पठन-प्रगति का क्लाउड सिंक
 - पाठक की पठन-प्रगति स्थानीय रूप से `sutradhar.reader.progress.v1` में सुरक्षित रहती है; पुराने key को हटाया नहीं जाता। नए स्थानीय रिकॉर्ड guest और प्रत्येक Supabase user के अलग v2 key में रखे जाते हैं।
 - लॉगिन उपयोगकर्ता की प्रगति `public.reading_progress` में `user_id + work_id` के आधार पर सिंक होती है।
-- `last_position` में 0–10,000 के बीच normalized reading position रखी जाती है, ताकि अलग स्क्रीन आकार और pagination वाले डिवाइस पर भी लगभग उसी स्थान से पढ़ना शुरू हो। `estimated_words_read` अब तक पढ़े शब्दों का अनुमान रखता है।
+- `last_position` में 0–10,000 के बीच normalized reading position रखी जाती है, ताकि अलग स्क्रीन आकार और pagination वाले डिवाइस पर भी लगभग उसी स्थान से पढ़ना शुरू हो। `words_read` अब तक पढ़े शब्दों का अनुमान रखता है।
 - पुस्तकालय में “पढ़ना जारी रखें” सूची cloud और local progress से बनती है।
-- इस सुविधा के लिए कोई schema reset, data deletion या नई destructive migration नहीं है। Cloud sync मौजूदा `reading_progress` table के `user_id`, `work_id`, `last_position`, `estimated_words_read` और `updated_at` columns पर निर्भर है।
+- इस सुविधा के लिए कोई schema reset, data deletion या नई destructive migration नहीं है। Cloud sync मौजूदा `reading_progress` table के `user_id`, `work_id`, `last_position`, `words_read` और `updated_at` columns पर निर्भर है।
