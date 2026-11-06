@@ -2674,7 +2674,50 @@ const savedName = String(data?.display_name || "").trim();
   "\nGoogle/Facebook से मिला नाम: " + (oauthName || "नहीं मिला") +
   "\nप्रोफ़ाइल में पुराना नाम: " + (savedName || "खाली")
 );
+// Google/Facebook की प्रोफ़ाइल फ़ोटो प्राप्त करें।
+const providerPicture =
+  meta.picture?.data?.url ||
+  meta.picture ||
+  meta.avatar_url ||
+  identityMeta.picture?.data?.url ||
+  identityMeta.picture ||
+  identityMeta.avatar_url ||
+  "";
 
+const oauthAvatar = String(providerPicture).trim();
+const savedAvatar = String(data?.avatar_url || "").trim();
+
+if (oauthAvatar && !savedAvatar) {
+  const avatarUpdate = data
+    ? await supabaseClient
+        .from("profiles")
+        .update({ avatar_url: oauthAvatar })
+        .eq("id", profileUserId)
+    : await supabaseClient
+        .from("profiles")
+        .upsert(
+          {
+            id: profileUserId,
+            avatar_url: oauthAvatar
+          },
+          { onConflict: "id" }
+        );
+
+  if (!avatarUpdate.error) {
+    if (data) {
+      data.avatar_url = oauthAvatar;
+    }
+
+    state.profile.avatarUrl = oauthAvatar;
+  } else {
+    console.warn(
+      "OAuth DP सुरक्षित नहीं हुई:",
+      avatarUpdate.error.message
+    );
+  }
+}
+  
+  
 const isDefaultName =
   !savedName ||
   ["अनाम पाठक", "anonymous reader"].includes(savedName.toLowerCase());
