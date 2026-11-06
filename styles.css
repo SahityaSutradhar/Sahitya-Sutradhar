@@ -1056,3 +1056,22 @@ body.dark .chip.active{background:#8a3c49;color:#fff}
 body.dark .nav-item.active{background:#3a2828;color:#f0cda1}
 body.dark .top-icon,body.dark .icon-button{background:#292320;border-color:#4a3d36;color:#f0d6b6}
 body.dark .reader-top{background:#211d1b}
+
+/* पाठक पृष्ठ: हर कॉलम ठीक दृश्य चौड़ाई का, ताकि देवनागरी पंक्तियाँ न चढ़ें */
+.reader-body{
+  column-width:680px;
+  column-gap:0!important;
+  column-fill:auto!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  box-sizing:border-box!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scroll-snap-type:x mandatory;
+  line-height:2.05!important;
+}
+.reader-body>*{break-inside:auto!important}
+.login-preview-prompt{margin-top:1.5em;padding:14px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-weight:600}
+.series-parts-list{display:flex;flex-direction:column;gap:5px;margin-top:9px}
+.series-part-link{border:0;background:transparent;color:var(--maroon);text-align:left;padding:5px 0;text-decoration:underline}
+#writeDialog[open]{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;border:0;border-radius:0;overflow:auto}
