@@ -1,10 +1,13 @@
 /* साहित्य सूत्रधार PWA cache — versioned shell cache */
 const CACHE_PREFIX = "sahitya-sutradhar-";
-const CACHE_NAME = `${CACHE_PREFIX}shell-v11-pwa-icons`;
+const CACHE_NAME = `${CACHE_PREFIX}shell-v12-premium-mobile-app`;
 
 const PRECACHE_ASSETS = [
   "./",
   "./index.html",
+  "./mobile-app.html",
+  "./mobile-app.css",
+  "./mobile-app.js",
   "./styles.css",
   "./app.js",
   "./supabase-config.js",
@@ -51,11 +54,11 @@ self.addEventListener("fetch", event => {
         const response = await fetch(request);
         if (response && response.ok) {
           const cache = await caches.open(CACHE_NAME);
-          await cache.put("./index.html", response.clone());
+          await cache.put(request, response.clone());
         }
         return response;
       } catch (_) {
-        return (await caches.match("./index.html")) || Response.error();
+        return (await caches.match(request)) || (await caches.match("./index.html")) || Response.error();
       }
     })());
     return;
