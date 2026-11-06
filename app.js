@@ -1034,7 +1034,7 @@ async function flushCloudReaderProgress(id=currentReaderId,expectedUserId=reader
  readerProgressSaveInFlight=true;
  try{
   // last_position stores a device-independent position (0–10,000 basis points).
-  const payload={user_id:userId,work_id:id,last_position:Math.round(ratio*10000),estimated_words_read:Math.max(0,Math.round(Number(progress.words)||0)),updated_at:new Date(Number(progress.updatedAt)||Date.now()).toISOString()};
+  const payload={user_id:userId,work_id:id,last_position:Math.round(ratio*10000),words_read:Math.max(0,Math.round(Number(progress.words)||0)),updated_at:new Date(Number(progress.updatedAt)||Date.now()).toISOString()};
   const {error}=await supabaseClient.from("reading_progress").upsert(payload,{onConflict:"user_id,work_id"});
   if(error)throw error;
  }catch(error){reportReaderProgressCloudError(error);}
@@ -1047,7 +1047,7 @@ async function loadCloudReaderProgress(id,userId=readerProgressUserId){
  if(!supabaseClient||!id||!userId)return readerProgressFor(id);
  try{
   const {data,error}=await supabaseClient.from("reading_progress")
-   .select("user_id,work_id,last_position,estimated_words_read,updated_at")
+   .select("user_id,work_id,last_position,words_read,updated_at")
    .eq("user_id",userId).eq("work_id",id).maybeSingle();
   if(error)throw error;
   const local=readerProgressFor(id);
@@ -1055,10 +1055,10 @@ async function loadCloudReaderProgress(id,userId=readerProgressUserId){
   const cloudTime=Date.parse(data.updated_at||"")||0,localTime=Number(local.updatedAt)||0;
   const cloudRatio=Math.max(0,Math.min(1,(Number(data.last_position)||0)/10000));
   if(cloudTime>localTime){
-   const merged={...local,ratio:cloudRatio,words:Math.max(Number(local.words)||0,Number(data.estimated_words_read)||0),updatedAt:cloudTime};
+   const merged={...local,ratio:cloudRatio,words:Math.max(Number(local.words)||0,Number(data.words_read)||0),updatedAt:cloudTime};
    saveReaderProgress(id,merged);return merged;
   }
-  const merged={...local,words:Math.max(Number(local.words)||0,Number(data.estimated_words_read)||0)};
+  const merged={...local,words:Math.max(Number(local.words)||0,Number(data.words_read)||0)};
   if(localTime>cloudTime)scheduleCloudReaderProgressSave(id);
   saveReaderProgress(id,merged);return merged;
  }catch(error){reportReaderProgressCloudError(error);return readerProgressFor(id);}
@@ -1067,14 +1067,14 @@ async function loadCloudReaderProgressForUser(userId){
  if(!supabaseClient||!userId)return;
  try{
   const {data,error}=await supabaseClient.from("reading_progress")
-   .select("user_id,work_id,last_position,estimated_words_read,updated_at")
+   .select("user_id,work_id,last_position,words_read,updated_at")
    .eq("user_id",userId).order("updated_at",{ascending:false}).limit(500);
   if(error)throw error;
   const all=loadReaderProgress();
   for(const row of data||[]){
    const id=String(row.work_id),local=all[id]||{page:0,seen:[],words:0,ratio:0,totalPages:0,updatedAt:0};
    const cloudTime=Date.parse(row.updated_at||"")||0,localTime=Number(local.updatedAt)||0;
-   const words=Math.max(Number(local.words)||0,Number(row.estimated_words_read)||0);
+   const words=Math.max(Number(local.words)||0,Number(row.words_read)||0);
    if(cloudTime>localTime){
     all[id]={...local,ratio:Math.max(0,Math.min(1,(Number(row.last_position)||0)/10000)),words,updatedAt:cloudTime};
    }else{
