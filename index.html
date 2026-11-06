@@ -7,7 +7,7 @@
   <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=20261106-community-profile-1">
+  <link rel="stylesheet" href="styles.css?v=20261106-series-reader-1">
   <style>
     .feedback-panel{border-top:1px solid var(--line,#ddd);margin-top:22px;padding-top:18px}
     .feedback-panel h2{font-size:1.25rem}
@@ -403,8 +403,7 @@
       <div><h2 id="profileName">अनाम पाठक</h2><p id="profileRole">पाठक</p></div>
       <button class="text-button" id="editProfile">बदलें</button>
     </div>
-    <label for="avatarUpload">प्रोफ़ाइल DP बदलें</label>
-    <input id="avatarUpload" type="file" accept="image/png,image/jpeg,image/webp">
+    <input id="avatarUpload" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="प्रोफ़ाइल तस्वीर चुनें">
     <label for="introInput">परिचय (अधिकतम 1,000 अक्षर)</label>
     <textarea id="introInput" rows="4" maxlength="1000" placeholder="अपने बारे में लिखें…"></textarea>
     <div class="editor-foot">
@@ -432,30 +431,11 @@
       </div>
     </div>
 
-    <div class="profile-section-tabs" role="tablist" aria-label="प्रोफ़ाइल अनुभाग">
-      <button type="button" class="profile-section-tab active" data-own-profile-tab="works">मेरी रचनाएँ</button>
-      <button type="button" class="profile-section-tab" data-own-profile-tab="community">संगोष्ठी</button>
-    </div>
-    <section id="myWorksPanel" class="own-profile-panel">
-      <h2>मेरी प्रकाशित रचनाएँ</h2>
-      <div class="story-list" id="myStoryList"></div>
-      <h2 class="draft-heading">मेरे निजी ड्राफ्ट</h2>
+    <h2>मेरी प्रकाशित रचनाएँ</h2>
+    <div class="story-list" id="myStoryList"></div>
+    <h2 class="draft-heading">मेरे निजी ड्राफ्ट</h2>
     <p class="muted">ये रचनाएँ केवल आपको दिखाई देती हैं।</p>
-      <div class="story-list" id="myDraftList"></div>
-    </section>
-    <section id="myCommunityPanel" class="own-profile-panel hidden">
-      <h2>मेरी संगोष्ठी</h2>
-      <div class="community-compose">
-        <label for="communityPostText">अपने विचार लिखें</label>
-        <textarea id="communityPostText" rows="4" maxlength="12000" placeholder="साहित्य, पठन या लेखन से जुड़े विचार साझा करें…"></textarea>
-        <label for="communityPostImage">तस्वीर जोड़ें (वैकल्पिक)</label>
-        <input id="communityPostImage" type="file" accept="image/jpeg,image/png,image/webp">
-        <div id="communityImagePreview"></div>
-        <button type="button" class="primary-button" id="publishCommunityPost">संगोष्ठी में प्रकाशित करें</button>
-        <small class="muted">अधिकतम 2,000 शब्द। फोटो वाली पोस्ट प्रकाशित होने के बाद संपादित नहीं की जा सकेगी।</small>
-      </div>
-      <div class="community-posts" id="myCommunityPostsList"><p class="muted">आपकी पोस्ट लोड हो रही हैं…</p></div>
-    </section>
+    <div class="story-list" id="myDraftList"></div>
   </section>
 
   <section class="view hidden" id="settingsView">
@@ -587,6 +567,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261106-community-profile-1"></script>
+  <script src="app.js?v=20261106-cloud-reader-1"></script>
 </body>
 </html>

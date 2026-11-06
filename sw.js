@@ -1,5 +1,5 @@
 
-const CACHE = "sahitya-sutradhar-shell-v9-cloud-reader";
+const CACHE = "sahitya-sutradhar-shell-v10-author-profile";
 
 const ASSETS = [
   "./",

@@ -1081,13 +1081,17 @@ body.dark .reader-top{background:#211d1b}
 .library-subsection{margin:0 0 28px}.library-subsection>h2{font-size:19px;margin:0 0 12px;color:var(--ink)}.resume-progress-track{height:6px;background:var(--soft);border-radius:99px;overflow:hidden;margin:8px 0 6px}.resume-progress-track span{display:block;height:100%;background:var(--maroon);border-radius:99px;min-width:2px}.resume-progress-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}.resume-progress-meta small{font-size:10px;color:var(--muted)}.resume-progress-meta button{border:0;background:transparent;color:var(--maroon);font-weight:800;font-size:11px;padding:4px 0}.reading-resume-card .excerpt{margin:6px 0 8px}
 body.dark .resume-progress-track{background:#473832}
 
-
-/* लेखक प्रोफ़ाइल: रचनाएँ और संगोष्ठी */
-.profile-section-tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin:22px 0 16px}
-.profile-section-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);padding:10px 14px;font:inherit;font-weight:700}
-.profile-section-tab.active{color:var(--maroon);border-bottom-color:var(--maroon)}
-.own-profile-panel{min-width:0}
-.community-owner-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.community-owner-actions button{border:1px solid var(--line);background:var(--soft);color:var(--maroon);border-radius:9px;padding:7px 11px}
-.community-owner-actions .danger-button{color:#a32626}
-.community-compose textarea{width:100%;min-height:110px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit}
+/* लेखक प्रोफ़ाइल अब पॉप-अप नहीं, पूरी स्क्रीन का स्वतंत्र पृष्ठ है */
+.author-profile-page{position:fixed;inset:0;z-index:1000;display:none;overflow-y:auto;overscroll-behavior:contain;background:var(--bg);color:var(--ink);padding:0 0 calc(28px + env(safe-area-inset-bottom));}
+.author-profile-page.is-open{display:block;}
+.author-profile-inner{width:100%;max-width:1000px;min-height:100%;margin:0 auto;padding:18px 20px 35px;background:var(--bg);}
+.author-profile-inner>.close-button{position:sticky;top:0;z-index:2;display:block;margin-left:auto;background:var(--paper);border:1px solid var(--line);border-radius:50%;width:42px;height:42px;line-height:1;}
+.profile-section-tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin:18px 0 20px;position:sticky;top:0;background:var(--bg);z-index:1;padding:8px 0;}
+.profile-section-tab{border:1px solid var(--line);border-radius:999px;padding:9px 18px;background:var(--paper);color:var(--ink);font-weight:700;}
+.profile-section-tab.active{background:var(--maroon);border-color:var(--maroon);color:#fff5e4;}
+.profile-community-comment-form{display:flex;gap:8px;align-items:center;padding:12px 0;}
+.profile-community-comment-form input{min-width:0;flex:1;}
+.profile-community-comment-form button,[data-profile-reply-form] button{border:0;border-radius:10px;background:var(--maroon);color:#fff5e4;padding:10px 13px;font-weight:700;}
+.author-profile-page .community-post{margin:14px 0;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:16px;}
+.author-profile-page .community-comment{padding:9px 0;border-bottom:1px solid var(--line);}
+@media(max-width:600px){.author-profile-inner{padding:12px 14px 28px}.profile-community-comment-form{align-items:stretch}.profile-community-comment-form button{white-space:nowrap;}}

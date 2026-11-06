@@ -1783,72 +1783,6 @@ async function publishCommunityPostComment(postId, text, parentCommentId = null)
   await loadCommunityPosts();
   toast("आपका कमेंट प्रकाशित हो गया।");
 }
-async function loadMyCommunityPosts(){
-  const box=document.getElementById("myCommunityPostsList");
-  if(!box||!supabaseClient)return;
-  const {data:{user}}=await supabaseClient.auth.getUser();
-  if(!user){box.innerHTML='<p class="muted">संगोष्ठी पोस्ट देखने के लिए लॉगिन करें।</p>';return;}
-  const {data,error}=await supabaseClient.from("community_posts")
-    .select("id,author_id,body,image_url,created_at")
-    .eq("author_id",user.id).eq("status","published")
-    .order("created_at",{ascending:false});
-  if(error){box.innerHTML='<p class="muted">आपकी पोस्ट लोड नहीं हुईं: '+escapeHtml(error.message)+'</p>';return;}
-  box.innerHTML=(data||[]).map(p=>`
-    <article class="community-post" data-community-post-id="${escapeHtml(p.id)}">
-      ${p.body?`<p>${escapeHtml(p.body)}</p>`:""}
-      ${p.image_url?`<div class="community-post-image"><img src="${escapeHtml(p.image_url)}" alt="संगोष्ठी पोस्ट की तस्वीर" loading="lazy"></div>`:""}
-      <small>${new Date(p.created_at).toLocaleDateString("hi-IN")}</small>
-      <div class="community-owner-actions">
-        ${!p.image_url?`<button type="button" data-community-edit="${escapeHtml(p.id)}">✎ एडिट करें</button>`:""}
-        <button type="button" class="danger-button" data-community-delete="${escapeHtml(p.id)}">डिलीट करें</button>
-      </div>
-    </article>`).join("")||'<p class="muted">अभी आपने कोई संगोष्ठी पोस्ट नहीं की है।</p>';
-  bindCommunityOwnerActions(box,user.id);
-}
-
-function bindCommunityOwnerActions(container,ownerId){
-  container.querySelectorAll("[data-community-edit]").forEach(button=>{
-    button.addEventListener("click",async()=>{
-      const postId=button.dataset.communityEdit;
-      const {data:{user}}=await supabaseClient.auth.getUser();
-      if(!user||user.id!==ownerId){toast("केवल पोस्ट का लेखक इसे संपादित कर सकता है।");return;}
-      const {data:post,error:loadError}=await supabaseClient.from("community_posts")
-        .select("id,body,image_url").eq("id",postId).eq("author_id",user.id).maybeSingle();
-      if(loadError||!post){toast("पोस्ट उपलब्ध नहीं है।");return;}
-      if(post.image_url){toast("फोटो सहित पोस्ट संपादित नहीं की जा सकती।");return;}
-      const updated=prompt("अपनी लिखित पोस्ट संपादित करें:",post.body||"");
-      if(updated===null)return;
-      const body=updated.trim();
-      if(!body){toast("पोस्ट खाली नहीं हो सकती।");return;}
-      if(wordCount(body)>2000){toast("पोस्ट अधिकतम 2,000 शब्दों की हो सकती है।");return;}
-      const {error}=await supabaseClient.from("community_posts").update({body})
-        .eq("id",postId).eq("author_id",user.id).is("image_url",null);
-      if(error){toast("पोस्ट संपादित नहीं हुई: "+error.message);return;}
-      toast("लिखित पोस्ट अपडेट हो गई।");
-      await loadMyCommunityPosts();
-      const activeProfile=document.getElementById("authorProfileDialog");
-      if(activeProfile){activeProfile.close();activeProfile.remove();await openAuthorProfile(ownerId);}
-      await loadCommunityPosts();
-    });
-  });
-  container.querySelectorAll("[data-community-delete]").forEach(button=>{
-    button.addEventListener("click",async()=>{
-      const postId=button.dataset.communityDelete;
-      const {data:{user}}=await supabaseClient.auth.getUser();
-      if(!user||user.id!==ownerId){toast("केवल पोस्ट का लेखक इसे डिलीट कर सकता है।");return;}
-      if(!confirm("क्या आप यह संगोष्ठी पोस्ट हमेशा के लिए डिलीट करना चाहते हैं?"))return;
-      const {error}=await supabaseClient.from("community_posts").delete()
-        .eq("id",postId).eq("author_id",user.id);
-      if(error){toast("पोस्ट डिलीट नहीं हुई: "+error.message);return;}
-      toast("संगोष्ठी पोस्ट डिलीट हो गई।");
-      await loadMyCommunityPosts();
-      const activeProfile=document.getElementById("authorProfileDialog");
-      if(activeProfile){activeProfile.close();activeProfile.remove();await openAuthorProfile(ownerId);}
-      await loadCommunityPosts();
-    });
-  });
-}
-
 async function publishCommunityPost(){
   const field = document.getElementById("communityPostText");
   const imageInput = document.getElementById("communityPostImage");
@@ -1925,7 +1859,6 @@ async function publishCommunityPost(){
   if (preview) preview.innerHTML = "";
 
   await loadCommunityPosts();
-  await loadMyCommunityPosts();
   toast("आपकी पोस्ट प्रकाशित हो गई।");
 }
 
@@ -2131,9 +2064,9 @@ const cannotMessage = !!blockRecord || !!blockedByRecord;
 
     return `
       <article class="community-post" data-community-post-id="${escapeHtml(p.id)}">
+        ${user && user.id===targetId ? `<div class="community-owner-actions">${!p.image_url?`<button type="button" data-profile-edit-post="${escapeHtml(p.id)}">✎ एडिट करें</button>`:""}<button type="button" class="danger-button" data-profile-delete-post="${escapeHtml(p.id)}">डिलीट करें</button></div>` : ""}
         ${p.body ? `<p>${escapeHtml(p.body)}</p>` : ""}
 
-        ${user && user.id===targetId ? `<div class="community-owner-actions">${!p.image_url?`<button type="button" data-community-edit="${escapeHtml(p.id)}">✎ एडिट करें</button>`:""}<button type="button" class="danger-button" data-community-delete="${escapeHtml(p.id)}">डिलीट करें</button></div>` : ""}
         ${p.image_url ? `
           <div class="community-post-image">
             <img src="${escapeHtml(p.image_url)}"
@@ -2154,8 +2087,17 @@ const cannotMessage = !!blockRecord || !!blockedByRecord;
                 .filter(r => r.parent_comment_id === c.id)
                 .map(r => renderProfileComment(r, true))
                 .join("")}
+              <button type="button" class="text-button" data-profile-reply="${escapeHtml(c.id)}">जवाब दें</button>
+              <form data-profile-reply-form="${escapeHtml(c.id)}" hidden>
+                <input name="reply" maxlength="1000" placeholder="अपना जवाब लिखें…" required>
+                <button type="submit">जवाब भेजें</button>
+              </form>
             </div>
           `).join("") || '<p class="muted">अभी कोई कमेंट नहीं है।</p>'}
+          <form data-profile-comment-form="${escapeHtml(p.id)}" class="profile-community-comment-form">
+            <input name="comment" maxlength="1000" placeholder="इस पोस्ट पर कमेंट लिखें…" required>
+            <button type="submit">कमेंट भेजें</button>
+          </form>
         </div>
 
         <small>${new Date(p.created_at).toLocaleDateString("hi-IN")}</small>
@@ -2255,11 +2197,15 @@ const cannotMessage = !!blockRecord || !!blockedByRecord;
   }).join("");
   
 
-  const d=document.createElement("dialog");
-  d.className="modal";
-  d.id="authorProfileDialog";
+  const d=document.createElement("section");
+  d.className="author-profile-page";
+  d.setAttribute("role","region");
+  d.setAttribute("aria-label",`${name || "लेखक"} की पूरी प्रोफ़ाइल`);
+  // पुराने event handlers के close/remove calls को सुरक्षित रखने के लिए छोटे compatibility methods
+  d.close=()=>d.remove();
+  d.showModal=()=>d.classList.add("is-open");
   d.innerHTML=`
-    <div class="reader-page">
+    <div class="author-profile-inner">
       <button class="close-button" id="authorClose">×</button>
 
       <div class="profile-card">
@@ -2315,27 +2261,72 @@ ${!follow && !cannotMessage
         </button>
       `:""}
 
-      <div class="profile-section-tabs" role="tablist" aria-label="लेखक प्रोफ़ाइल अनुभाग">
-        <button type="button" class="profile-section-tab active" data-profile-pane="works">रचनाएँ</button>
+      <div class="profile-section-tabs" role="tablist" aria-label="प्रोफ़ाइल अनुभाग">
+        <button type="button" class="profile-section-tab active" data-profile-pane="works">रचनाएँ (${(works||[]).length})</button>
         <button type="button" class="profile-section-tab" data-profile-pane="community">संगोष्ठी (${(communityPosts||[]).length})</button>
       </div>
-      <section data-profile-panel="works"><h3>प्रकाशित रचनाएँ (${(works||[]).length})</h3>
+      <section data-profile-panel="works">
+        <h3>प्रकाशित रचनाएँ</h3>
         <div class="story-list">${list||"<p>अभी कोई प्रकाशित रचना नहीं।</p>"}</div>
       </section>
-      <section data-profile-panel="community" class="hidden"><div class="community-posts">
-        ${communityPostList || "<p>अभी कोई संगोष्ठी पोस्ट नहीं है।</p>"}
-      </div></section>
+      <section data-profile-panel="community" class="hidden">
+        <h3>संगोष्ठी</h3>
+        <div class="community-posts">${communityPostList || "<p>अभी कोई संगोष्ठी पोस्ट नहीं है।</p>"}</div>
+      </section>
     </div>
   `;
 
   document.body.appendChild(d);
   d.showModal();
+
   d.querySelectorAll("[data-profile-pane]").forEach(tab=>tab.addEventListener("click",()=>{
     const pane=tab.dataset.profilePane;
     d.querySelectorAll("[data-profile-pane]").forEach(x=>x.classList.toggle("active",x===tab));
     d.querySelectorAll("[data-profile-panel]").forEach(x=>x.classList.toggle("hidden",x.dataset.profilePanel!==pane));
   }));
-  if(user && user.id===targetId) bindCommunityOwnerActions(d,targetId);
+  d.querySelectorAll("[data-profile-edit-post]").forEach(button=>button.addEventListener("click",async()=>{
+    if(!user||user.id!==targetId){toast("केवल पोस्ट का लेखक इसे संपादित कर सकता है।");return;}
+    const postId=button.dataset.profileEditPost;
+    const {data:post,error}=await supabaseClient.from("community_posts")
+      .select("id,body,image_url").eq("id",postId).eq("author_id",user.id).maybeSingle();
+    if(error||!post){toast("पोस्ट उपलब्ध नहीं है।");return;}
+    if(post.image_url){toast("फोटो वाली पोस्ट संपादित नहीं की जा सकती।");return;}
+    const value=prompt("अपनी लिखित पोस्ट संपादित करें:",post.body||"");
+    if(value===null)return;
+    const body=value.trim();
+    if(!body){toast("पोस्ट खाली नहीं हो सकती।");return;}
+    if(wordCount(body)>2000){toast("पोस्ट अधिकतम 2,000 शब्दों की हो सकती है।");return;}
+    const result=await supabaseClient.from("community_posts").update({body})
+      .eq("id",postId).eq("author_id",user.id).is("image_url",null);
+    if(result.error){toast("पोस्ट अपडेट नहीं हुई: "+result.error.message);return;}
+    toast("लिखित पोस्ट अपडेट हो गई।");d.remove();await openAuthorProfile(targetId);
+  }));
+  d.querySelectorAll("[data-profile-delete-post]").forEach(button=>button.addEventListener("click",async()=>{
+    if(!user||user.id!==targetId){toast("केवल पोस्ट का लेखक इसे डिलीट कर सकता है।");return;}
+    if(!confirm("क्या आप यह संगोष्ठी पोस्ट डिलीट करना चाहते हैं?"))return;
+    const result=await supabaseClient.from("community_posts").delete()
+      .eq("id",button.dataset.profileDeletePost).eq("author_id",user.id);
+    if(result.error){toast("पोस्ट डिलीट नहीं हुई: "+result.error.message);return;}
+    toast("संगोष्ठी पोस्ट डिलीट हो गई।");d.remove();await openAuthorProfile(targetId);
+  }));
+  d.querySelectorAll("[data-profile-comment-form]").forEach(form=>form.addEventListener("submit",async e=>{
+    e.preventDefault();
+    await publishCommunityPostComment(form.dataset.profileCommentForm,form.elements.comment.value);
+    d.remove();
+    await openAuthorProfile(targetId);
+  }));
+  d.querySelectorAll("[data-profile-reply]").forEach(button=>button.addEventListener("click",()=>{
+    const form=d.querySelector(`[data-profile-reply-form="${button.dataset.profileReply}"]`);
+    if(form)form.hidden=!form.hidden;
+  }));
+  d.querySelectorAll("[data-profile-reply-form]").forEach(form=>form.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const post=form.closest("[data-community-post-id]");
+    if(!post)return;
+    await publishCommunityPostComment(post.dataset.communityPostId,form.elements.reply.value,form.dataset.profileReplyForm);
+    d.remove();
+    await openAuthorProfile(targetId);
+  }));
 
   d.querySelector("#authorClose").onclick=()=>{
     d.close();
@@ -2701,7 +2692,6 @@ function renderProfile(){
   if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><div class="story-meta"><button type="button" data-edit-work="${escapeHtml(d.id)}">संपादित करें</button><button type="button" data-republish="${escapeHtml(d.id)}">पुनः प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
   bindReadButtons();
   document.querySelectorAll("[data-republish]").forEach(b=>b.addEventListener("click",()=>{currentReaderId=b.dataset.republish;setCurrentWorkStatus();}));
-  loadMyCommunityPosts();
 }
 
 async function loadInbox(){
@@ -3442,13 +3432,6 @@ if(supabaseClient){
   document.getElementById("shareExcerptImage")?.addEventListener("click",shareExcerptAsImage);
   document.getElementById("workLikeButton")?.addEventListener("click",toggleWorkLike);
   document.getElementById("publishCommunityPost")?.addEventListener("click",publishCommunityPost);
-  document.querySelectorAll("[data-own-profile-tab]").forEach(tab=>tab.addEventListener("click",()=>{
-    const pane=tab.dataset.ownProfileTab;
-    document.querySelectorAll("[data-own-profile-tab]").forEach(x=>x.classList.toggle("active",x===tab));
-    document.getElementById("myWorksPanel")?.classList.toggle("hidden",pane!=="works");
-    document.getElementById("myCommunityPanel")?.classList.toggle("hidden",pane!=="community");
-    if(pane==="community")loadMyCommunityPosts();
-  }));
   document.getElementById("communityPostImage")?.addEventListener("change", e => {
   const file = e.target.files?.[0];
   const preview = document.getElementById("communityImagePreview");
@@ -3482,6 +3465,17 @@ if(supabaseClient){
 });
   loadCommunityPosts();
   document.getElementById("settingsAuthButton")?.addEventListener("click",()=>document.getElementById("openAuthButton")?.click());
+  const ownAvatar=document.getElementById("profileAvatar");
+  const avatarPicker=document.getElementById("avatarUpload");
+  if(ownAvatar&&avatarPicker){
+    ownAvatar.setAttribute("role","button");
+    ownAvatar.setAttribute("tabindex","0");
+    ownAvatar.setAttribute("aria-label","प्रोफ़ाइल तस्वीर बदलें");
+    ownAvatar.title="DP बदलने के लिए छुएँ";
+    ownAvatar.style.cursor="pointer";
+    ownAvatar.addEventListener("click",()=>avatarPicker.click());
+    ownAvatar.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();avatarPicker.click();}});
+  }
   document.getElementById("avatarUpload")?.addEventListener("change", async e => {
   const file = e.target.files?.[0];
   if (!file) return;
