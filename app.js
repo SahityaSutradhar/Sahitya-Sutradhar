@@ -3133,10 +3133,11 @@ function switchTab(tab){
   activeTab=tab;
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
   document.querySelector(".app-shell").classList.toggle("hidden",tab!=="home");
-  ["library","profile","settings","inbox"].forEach(t=>{
+  ["library","profile","settings","inbox","community"].forEach(t=>{
   const view=document.getElementById(t+"View");
   if(view) view.classList.toggle("hidden",tab!==t);
 });
+  if(tab==="community")loadCommunityPosts();
   if(tab==="write"){openWrite();document.querySelector('[data-tab="home"]').classList.remove("active");}
   if(tab==="library")renderLibrary();
   if(tab==="inbox")loadInbox();
@@ -3203,6 +3204,8 @@ function writeLoaderQuote() {
 function showAppLoader() {
   const loader = document.getElementById("appLoader");
   if (!loader) return;
+  if (window.__sutradharLoaderAlreadyShown) return;
+  window.__sutradharLoaderAlreadyShown = true;
 
   clearTimeout(loaderHideTimer);
   clearTimeout(loaderFallbackTimer);
@@ -3239,7 +3242,8 @@ function hideAppLoader() {
   }, Math.max(0, minimumDisplay - elapsed));
 }
 
-// पहली बार वेबसाइट खुलने पर Loader पहले से दिखाई देगा।
+// पहली बार ऐप/वेबसाइट खुलने पर Loader पहले से दिखाई देगा; इस पेज सत्र में दोबारा नहीं।
+window.__sutradharLoaderAlreadyShown = true;
 writeLoaderQuote();
 
 loaderQuoteTimer = setInterval(writeLoaderQuote, 8500);
@@ -3617,7 +3621,28 @@ updateSeriesEditor();
 document.getElementById("readerNextPart")
   ?.addEventListener("click",()=>navigateReaderSeries(1));
   document.getElementById("readerBody")?.addEventListener("scroll",()=>{readerPageMetrics();recordReaderPage(readerPageIndex);},{passive:true});
-  document.getElementById("readerFontSize")?.addEventListener("input",e=>{document.getElementById("readerBody").style.fontSize=e.target.value+"px";requestAnimationFrame(readerPageMetrics);});
+  document.getElementById("readerFontSize")?.addEventListener("input",e=>{
+    const body=document.getElementById("readerBody");
+    const ratio=readerPagesTotal>1?readerPageIndex/(readerPagesTotal-1):0;
+    body.style.fontSize=e.target.value+"px";
+    requestAnimationFrame(()=>{
+      readerPageMetrics();
+      const target=Math.round(ratio*Math.max(0,readerPagesTotal-1));
+      body.scrollLeft=target*body.clientWidth;readerPageMetrics();recordReaderPage(target);
+    });
+  });
+  let readerResizeTimer;
+  window.addEventListener("resize",()=>{
+    if(!document.getElementById("readerDialog")?.open)return;
+    clearTimeout(readerResizeTimer);
+    const ratio=readerPagesTotal>1?readerPageIndex/(readerPagesTotal-1):0;
+    readerResizeTimer=setTimeout(()=>{
+      const body=document.getElementById("readerBody");
+      readerPageMetrics();
+      const target=Math.round(ratio*Math.max(0,readerPagesTotal-1));
+      body.scrollLeft=target*body.clientWidth;readerPageMetrics();recordReaderPage(target);
+    },180);
+  });
   document.getElementById("readerBody")?.addEventListener("touchstart",e=>{window.__readerTouchX=e.changedTouches[0].clientX;},{passive:true});
   document.getElementById("readerBody")?.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-(window.__readerTouchX||e.changedTouches[0].clientX);if(Math.abs(dx)>55)readerGoPage(readerPageIndex+(dx<0?1:-1),dx<0?"next":"prev");},{passive:true});
 

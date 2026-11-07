@@ -1,30 +1,647 @@
 <!doctype html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#641f2b"><meta name="description" content="साहित्य सूत्रधार — शब्दों का अपना संसार">
-  <title>साहित्य सूत्रधार</title>
-  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/icon-192.png">
-  <link rel="stylesheet" href="mobile-app.css?v=20261106-community-search-3">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#641f2b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="साहित्य सूत्रधार">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+  <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
+  <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=20261106-series-reader-1">
+  <link rel="stylesheet" href="mobile-app.css?v=20261107-full-app-1">
+  <style>
+    #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
+    #networkStatus[hidden]{display:none}
+    .feedback-panel{border-top:1px solid var(--line,#ddd);margin-top:22px;padding-top:18px}
+    .feedback-panel h2{font-size:1.25rem}
+    .feedback-form{display:grid;gap:10px;margin:14px 0 22px}
+    .feedback-form select,.feedback-form textarea,.review-comment-form input{width:100%;padding:11px;border:1px solid var(--line,#ccc);border-radius:10px;background:var(--surface,#fff);color:inherit;font:inherit}
+    .feedback-form textarea{min-height:90px}
+    .review-card{border:1px solid var(--line,#ddd);border-radius:12px;padding:14px;margin:12px 0}
+    .review-card>p{white-space:pre-wrap}
+    .review-card small{opacity:.7}
+    .review-comments{margin:12px 0 8px;padding-left:10px;border-left:2px solid var(--line,#ddd)}
+    .review-comment{font-size:.92rem;margin:7px 0}
+    .review-comment-form{display:flex;gap:8px}
+    .review-comment-form button,.review-card button{border:0;border-radius:9px;padding:9px 13px;background:#641f2b;color:#fff}
+    .owner-action{margin:14px 0;width:100%}
+    .rating-summary{font-weight:600;margin:10px 0}
+    .draft-heading{margin-top:28px}
+
+    /* प्रोफ़ाइल के फ़ॉलोअर और फ़ॉलोइंग आँकड़े */
+    .profile-stat-button{
+      border:0;
+      background:transparent;
+      color:var(--maroon,#641f2b);
+      font:inherit;
+      font-size:22px;
+      font-weight:800;
+      padding:0;
+      cursor:pointer;
+    }
+    .profile-stat-button:hover{
+      text-decoration:underline;
+    }
+    .stats-grid{
+      grid-template-columns:repeat(4,minmax(0,1fr));
+    }
+    @media(max-width:420px){
+      .stats-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+  </style>
 </head>
-<body>
-  <div class="app-frame">
-    <header class="app-header">
-      <a class="brand" href="mobile-app.html"><span class="brand-symbol">❀</span><span><b>साहित्य सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a>
-      <div class="header-actions"><button id="searchToggle" class="round-btn" aria-label="खोजें">⌕</button><button id="accountBtn" class="round-btn" aria-label="खाता">♙</button></div>
-    </header>
-    <main id="appMain">
-      <section class="welcome-card"><div class="welcome-copy"><span class="eyebrow">आपका साहित्यिक संसार</span><h1>हर शब्द में<br>एक नई दुनिया।</h1><p>पढ़िए, महसूस कीजिए और शब्दों के साथ आगे बढ़िए।</p><a class="primary-link" href="index.html#latestHeading">साहित्य की दुनिया में जाएँ <span>↗</span></a></div><div class="welcome-flower">❀</div></section>
-      <section id="searchPanel" class="search-panel" hidden><input id="searchInput" type="search" placeholder="रचना, रचनाकार या विषय खोजें…"><button id="searchClose" aria-label="बंद करें">×</button><div id="mobileSearchAuthors" class="mobile-search-authors"></div><div id="mobileSearchCommunity" class="mobile-search-community"></div></section>
-      <section class="section-head"><div><span class="eyebrow">आज का साहित्य</span><h2>नई प्रकाशित रचनाएँ</h2></div><a href="index.html#latestHeading">सभी देखें</a></section>
-      <div id="worksState" class="state-message">रचनाएँ लाई जा रही हैं…</div><section id="worksGrid" class="works-grid" aria-live="polite"></section>
-      <section class="quote-card"><span>❝</span><p>शब्द केवल कहे नहीं जाते, वे मनुष्य के भीतर एक संसार रचते हैं।</p><small>— साहित्य सूत्रधार</small></section>
-      <section class="section-head"><div><span class="eyebrow">अपनी रुचि चुनें</span><h2>साहित्य की विधाएँ</h2></div></section>
-      <div class="genre-grid"><a href="index.html#storyHeading">कविता</a><a href="index.html#storyHeading">कहानी</a><a href="index.html#storyHeading">उपन्यास</a><a href="index.html#storyHeading">लेख</a><a href="index.html#storyHeading">निबंध</a><a href="index.html#storyHeading">संस्मरण</a></div>
-      <section class="author-invite"><div><span class="eyebrow">आप भी रचिए</span><h2>आपके शब्दों की भी जगह है यहाँ।</h2><p>अपनी रचनाएँ प्रकाशित करें और पाठकों से जुड़ें।</p></div><a href="index.html#writeView">लिखना शुरू करें ↗</a></section>
-      <footer>साहित्य सूत्रधार <span>·</span> स + हित</footer>
-    </main>
-    <nav class="bottom-nav" aria-label="मुख्य नेविगेशन"><a class="active" href="mobile-app.html"><span>⌂</span>होम</a><a href="index.html#storyHeading"><span>⌕</span>खोज</a><a href="index.html#libraryView"><span>▤</span>पुस्तकालय</a><a href="index.html#communityView"><span>✧</span>संगोष्ठी</a><a href="index.html#profileView"><span>♙</span>प्रोफाइल</a></nav>
+<body class="mobile-full-app">
+  <div id="networkStatus" role="status" aria-live="polite" hidden>आप ऑफलाइन हैं। सहेजा हुआ वेबसाइट ढाँचा खुल सकता है; लॉगिन, रचनाएँ और क्लाउड सिंक के लिए इंटरनेट आवश्यक है।</div>
+  <header class="topbar">
+    <span class="brand-mark" aria-hidden="true">❀</span>
+    <a class="brand" href="#" aria-label="साहित्य सूत्रधार मुख्यपृष्ठ">
+      <span class="brand-mark">❀</span>
+      <span><strong>साहित्य सूत्रधार</strong><small>शब्दों का अपना संसार</small></span>
+    </a>
+    <div class="top-actions">
+      <button class="icon-button" id="themeToggle" aria-label="थीम बदलें" title="डार्क/ब्राइट मोड">◐</button>
+      <button class="top-icon" id="profileShortcut" aria-label="प्रोफ़ाइल">♙</button>
+      <button class="top-icon" id="settingsShortcut" aria-label="सेटिंग्स">⚙</button>
+      <select id="layoutLanguage" aria-label="भाषा" style="width:auto;padding:7px">
+        <option value="hi">हिंदी</option>
+        <option value="en">English</option>
+        <option value="sa">संस्कृतम्</option>
+        <option value="mr">मराठी</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="welcome">
+      <div>
+        <p class="eyebrow">आपका साहित्यिक आँगन</p>
+        <h1 id="welcomeTitle">जहाँ शब्द मिलते हैं।</h1>
+        <p class="welcome-copy" id="welcomeText">पढ़िए, लिखिए और अपनी रचनाओं को पाठकों तक पहुँचाइए।</p>
+      </div>
+      <div class="lotus-art" aria-hidden="true"><span>❀</span><span>❀</span><span>❀</span></div>
+    </section>
+
+    <section class="discovery-search" aria-label="रचनाएँ खोजें">
+      <div class="discovery-search-copy">
+        <p class="eyebrow">अपनी अगली पसंद खोजें</p>
+        <h2>किस तरह का साहित्य पढ़ना चाहेंगे?</h2>
+        <p>शीर्षक, लेखक, विषय या रचना के शब्दों से खोजें।</p>
+      </div>
+      <div class="search-control">
+        <span aria-hidden="true">⌕</span>
+        <input id="workSearchInput" type="search" placeholder="कहानी, कविता, लेखक का नाम…" aria-label="रचना या लेखक खोजें">
+        <button id="workSearchClear" type="button" class="search-clear" aria-label="खोज मिटाएँ">×</button>
+      </div>
+    </section>
+
+    <section class="section-block mobile-discovery-block">
+      <div class="section-heading"><div><p class="eyebrow">पाठकों की पसंद</p><h2>सर्वाधिक पढ़ी गई रचनाएँ</h2></div></div>
+      <div id="mobileTopWorks" class="story-list"><p class="muted">लोकप्रिय रचनाएँ लोड हो रही हैं…</p></div>
+    </section>
+    <section class="section-block mobile-discovery-block">
+      <div class="section-heading"><div><p class="eyebrow">साहित्य के अनुरागी</p><h2>सर्वाधिक पढ़ने वाले पाठक</h2></div></div>
+      <div id="mobileTopReaders" class="writer-list"><p class="muted">पाठकों की सूची लोड हो रही है…</p></div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div><p class="eyebrow">नवीन सृजन</p><h2 id="latestHeading">नई प्रकाशित रचनाएँ</h2></div>
+        <span class="subtle">अधिकतम 20 नवीनतम</span>
+      </div>
+      <div class="story-list" id="latestWorksList"></div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div><p class="eyebrow">नए स्वर</p><h2 id="newWritersHeading">नए लेखक</h2></div>
+      </div>
+      <div class="writer-list" id="newWritersList"></div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div><p class="eyebrow">साहित्य समुदाय</p><h2 id="activeWritersHeading">सक्रिय एवं लोकप्रिय लेखक</h2></div>
+        <select id="writerSort" aria-label="लेखक क्रम" style="width:auto">
+          <option value="reads">सर्वाधिक पढ़े गए</option>
+          <option value="works">सर्वाधिक रचनाएँ</option>
+          <option value="followers">सर्वाधिक फ़ॉलोअर्स</option>
+        </select>
+      </div>
+      <div class="writer-list" id="activeWritersList"></div>
+    </section>
+
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div><p class="eyebrow">अपनी पसंद चुनें</p><h2 id="categoryHeading">साहित्य की श्रेणियाँ</h2></div>
+        <button class="text-button" id="clearCategory">सभी देखें</button>
+      </div>
+      <div class="chips" id="categoryChips"></div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div><p class="eyebrow">ज्ञान · परम्परा · सृजन</p><h2>शास्त्रीय साहित्य एवं शोध</h2></div>
+      </div>
+      <a href="shastriya.html" class="primary-button full-width">शास्त्रीय विभाग में प्रवेश करें →</a>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div><p class="eyebrow">पढ़ने के लिए</p><h2 id="storyHeading">रचनाओं की दुनिया</h2></div>
+        <span class="subtle" id="storyCount"></span>
+      </div>
+      <div class="story-list" id="storyList"></div>
+      <div class="empty-state hidden" id="emptyState">
+        <span class="empty-flower">✿</span>
+        <h3>यहाँ से शुरुआत करें</h3>
+        <p>अपनी पहली रचना लिखें या चुनी हुई श्रेणी बदलें।</p>
+        <button class="primary-button" data-go="write">रचना लिखें</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="मुख्य नेविगेशन">
+    <button class="nav-item active" data-tab="home"><span>⌂</span>मुख्यपृष्ठ</button>
+    <button class="nav-item" data-tab="library"><span>▤</span>पुस्तकालय</button>
+    <button class="nav-item" data-tab="community"><span>✧</span>संगोष्ठी</button>
+<button class="nav-item" data-tab="inbox">
+  <span>✉</span>इनबॉक्स
+  <span id="inboxBadge" class="notification-badge hidden">0</span>
+</button>
+<button class="nav-item write-nav" data-tab="write"><span>＋</span>लिखें</button>
+    <button class="nav-item" data-tab="profile"><span>♙</span>प्रोफ़ाइल</button>
+    <button class="nav-item" data-tab="settings"><span>⚙</span>सेटिंग्स</button>
+  </nav>
+
+  <dialog id="writeDialog" class="modal">
+    <form id="storyForm" method="dialog">
+      <div class="modal-heading">
+        <div><p class="eyebrow">आपकी आवाज़</p><h2>नई रचना</h2></div>
+        <button type="button" class="close-button" id="closeWrite" aria-label="बंद करें">×</button>
+      </div>
+      <label for="storyTitle">रचना का शीर्षक</label>
+      <input id="storyTitle" name="title" maxlength="120" required placeholder="शीर्षक लिखें">
+      
+<div class="series-editor">
+  <label for="seriesMode">रचना का प्रकार</label>
+  <select id="seriesMode">
+    <option value="standalone">स्वतंत्र रचना</option>
+    <option value="new">नई धारावाहिक रचना</option>
+    <option value="existing">मौजूदा धारावाहिक में नया भाग</option>
+  </select>
+
+  <div id="newSeriesFields" class="hidden">
+    <label for="seriesTitle">धारावाहिक का नाम</label>
+    <input id="seriesTitle" maxlength="200"
+      placeholder="धारावाहिक का नाम लिखें">
+
+    <label for="seriesDescription">धारावाहिक का परिचय</label>
+    <textarea id="seriesDescription" rows="2"
+      maxlength="2000" placeholder="संक्षिप्त परिचय लिखें"></textarea>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="mobile-app.js?v=20261107-reader-2"></script>
-</body></html>
+
+  <div id="existingSeriesFields" class="hidden">
+    <label for="existingSeries">अपना धारावाहिक चुनें</label>
+    <select id="existingSeries">
+      <option value="">धारावाहिक चुनें</option>
+    </select>
+  </div>
+
+  <div id="seriesStatusField" class="hidden">
+    <label for="seriesStatus">धारावाहिक की स्थिति</label>
+    <select id="seriesStatus">
+      <option value="ongoing">क्रमशः जारी</option>
+      <option value="completed">पूर्ण</option>
+    </select>
+  </div>
+
+  <p class="tiny-note">
+    धारावाहिक के प्रत्येक नए भाग का क्रमांक अपने-आप निर्धारित होगा।
+  </p>
+</div>
+      
+      <div class="form-row">
+        <div>
+          <label for="formType">रचना का रूप</label>
+          <select id="formType" required>
+            <option value="">चुनें</option>
+            <option>गद्य</option>
+            <option>पद्य</option>
+            <option>चंपू काव्य</option>
+          </select>
+        </div>
+        <div>
+          <label for="formSubType">उपप्रकार</label>
+          <select id="formSubType"><option value="">पहले रूप चुनें</option></select>
+        </div>
+      </div>
+      <label for="formCategory">श्रेणी (अधिकतम 4)</label>
+      <div class="category-checks" id="formCategories"></div>
+      <label for="storyLanguage">रचना की भाषा</label>
+      <select id="storyLanguage">
+        <option value="hi">हिंदी</option>
+        <option value="sa">संस्कृत</option>
+        <option value="mr">मराठी</option>
+        <option value="en">English</option>
+      </select>
+      <label for="storyCover">रचना का कवर (अनुपात 9:16)</label>
+      <input id="storyCover" type="file" accept="image/png,image/jpeg,image/webp">
+      <label for="storyBody">अपनी रचना लिखें</label>
+      <div class="toolbar" id="editorToolbar">
+        <button type="button" data-format="bold"><b>B</b></button>
+        <button type="button" data-format="italic"><i>I</i></button>
+        <button type="button" data-format="highlight">हाइलाइट</button>
+        <select id="editorFont" aria-label="फ़ॉन्ट चुनें">
+          <option value="serif">क्लासिक</option>
+          <option value="sans">सरल</option>
+          <option value="devotional">पारंपरिक</option>
+          <option value="poetic">काव्यात्मक</option>
+          <option value="mono">मोनो</option>
+          <option value="classic">क्लासिक मुद्रण</option>
+          <option value="handwritten">हस्तलिखित</option>
+          <option value="newspaper">समाचार-पत्र</option>
+          <option value="decorative">अलंकारिक</option>
+        </select>
+        <select id="editorColor" aria-label="अक्षर रंग">
+          <option value="">रंग</option>
+          <option value="royal-red">राजसी लाल</option>
+          <option value="dark-red">गहरा लाल</option>
+          <option value="saffron">राजसी केसरिया</option>
+          <option value="black">काला</option>
+          <option value="blue">नीला</option>
+          <option value="green">हरा</option>
+          <option value="white">सफ़ेद</option>
+          <option value="yellow">पीला</option>
+        </select>
+        <button type="button" id="applyEditorStyle">चयन पर लागू करें</button>
+      </div>
+      <p class="tiny-note">फ़ॉर्मेटिंग के लिए पहले पाठ चुनें, फिर विकल्प लागू करें।</p>
+      <textarea id="storyBody" name="body" rows="8" required placeholder="यहाँ लिखें… आपका मसौदा इसी डिवाइस पर अपने-आप सुरक्षित होता रहेगा।"></textarea>
+      <div class="editor-foot"><span id="charCount">0 अक्षर</span><span id="draftStatus">मसौदा सुरक्षित रहेगा</span></div>
+      <label class="checkline">
+        <input type="checkbox" id="rightsCheck" required>
+        मैं पुष्टि करता/करती हूँ कि यह सामग्री प्रकाशित करने का अधिकार मेरे पास है और यह लागू कानूनों व मंच की सामग्री नीति का उल्लंघन नहीं करती।
+      </label>
+      <div class="form-row">
+        <button class="secondary-button full-width" id="saveDraftCloud" type="button">ड्राफ्ट सेव करें</button>
+        <button class="primary-button full-width" type="submit">प्रकाशित करें</button>
+      </div>
+      <p class="tiny-note">ड्राफ्ट आपके Supabase खाते में निजी रूप से सुरक्षित होगा। प्रकाशित रचना सभी पाठकों को दिखाई देगी।</p>
+    </form>
+  </dialog>
+
+  <dialog id="readerDialog" class="modal reader-modal">
+    <div class="reader-top">
+      <button class="text-button" id="closeReader">← वापस</button>
+      <span id="readerMeta"></span>
+      <button class="icon-button" id="bookmarkButton" title="बुकमार्क">♧</button>
+    </div>
+    <div class="reader-pagination-controls">
+      <button id="readerPrevPage" class="secondary-button" type="button">‹ पिछला</button>
+      <span id="readerPageStatus" aria-live="polite">पृष्ठ 1 / 1</span>
+      <button id="readerNextPage" class="secondary-button" type="button">अगला ›</button>
+      <label>अक्षर <input id="readerFontSize" type="range" min="16" max="32" value="21"></label>
+    </div>
+    
+<div id="readerSeriesNav" class="reader-series-nav hidden">
+  <p id="readerSeriesTitle" class="reader-series-title"></p>
+  <p id="readerSeriesPart" class="tiny-note"></p>
+  <div class="reader-series-buttons">
+    <button id="readerPrevPart" class="secondary-button" type="button">
+      ‹ पिछला भाग
+    </button>
+    <button id="readerNextPart" class="secondary-button" type="button">
+      अगला भाग ›
+    </button>
+  </div>
+</div>
+    
+    <article class="reader-page">
+      <p class="eyebrow" id="readerCategory"></p>
+      <h1 id="readerTitle"></h1>
+      <div class="cover-grid">
+        <div id="readerCoverSlot" class="cover-placeholder">कवर नहीं</div>
+        <div>
+          <button class="author-inline" id="readerAuthorLink" type="button">
+            <span class="mini-avatar" id="readerAuthorAvatar">अ</span>
+            <span class="reader-author" id="readerAuthor"></span>
+          </button>
+          <p id="readerStats" class="muted"></p>
+        </div>
+      </div>
+      <div id="readerBody" class="reader-body"></div>
+    </article>
+    <button id="editWorkAction" class="secondary-button full-width owner-action hidden" type="button">रचना संपादित करें</button>
+    <button id="workOwnerAction" class="secondary-button full-width owner-action hidden" type="button">अप्रकाशित करके ड्राफ्ट में रखें</button>
+
+    <section id="feedbackPanel" class="feedback-panel hidden">
+      <h2>पाठकों की प्रतिक्रिया</h2>
+      <p id="ratingSummary" class="rating-summary">रेटिंग लोड हो रही है…</p>
+      <div class="feedback-form">
+        <label for="ratingInput">आपकी रेटिंग</label>
+        <select id="ratingInput">
+          <option value="">रेटिंग चुनें</option>
+          <option value="5">★★★★★ — उत्कृष्ट</option>
+          <option value="4">★★★★ — बहुत अच्छा</option>
+          <option value="3">★★★ — अच्छा</option>
+          <option value="2">★★ — ठीक</option>
+          <option value="1">★ — सुधार की गुंजाइश</option>
+        </select>
+        <label for="reviewInput">आपकी समीक्षा</label>
+        <textarea id="reviewInput" maxlength="5000" placeholder="रचना के बारे में अपनी राय लिखें…"></textarea>
+        <button id="submitFeedback" class="primary-button" type="button">रेटिंग / समीक्षा सुरक्षित करें</button>
+      </div>
+      <button id="deleteMyRating" class="secondary-button hidden" type="button">अपनी रेटिंग हटाएँ</button>
+      <button id="deleteMyReview" class="secondary-button hidden" type="button">अपनी समीक्षा हटाएँ</button>
+      <h3>समीक्षाएँ और उन पर टिप्पणियाँ</h3>
+      <div id="reviewsList"></div>
+    </section>
+
+    <div class="reader-bottom">
+      <span id="readerWords"></span>
+      <button class="secondary-button" id="workLikeButton" type="button">♡ पसंद करें <span id="workLikeCount">0</span></button>
+      <button class="secondary-button" id="shareWork">शेयर करें</button>
+      <button class="secondary-button" id="shareExcerptImage">चुना अंश चित्र में शेयर करें</button>
+      <button class="secondary-button" id="reportWork">रिपोर्ट</button>
+      <button class="primary-button" id="finishReading">पढ़ना पूरा किया</button>
+    </div>
+  </dialog>
+
+  
+  <section class="view hidden" id="communityView">
+    <p class="eyebrow">साहित्यिक संवाद</p>
+    <h1 id="communityTitle">संगोष्ठी</h1>
+    <p class="muted">विचार साझा करें, पाठकों से जुड़ें और साहित्य पर चर्चा करें।</p>
+    <div class="community-compose">
+      <textarea id="communityPostText" rows="4" maxlength="12000" placeholder="अपने विचार लिखें…"></textarea>
+      <label for="communityPostImage">तस्वीर जोड़ें (वैकल्पिक)</label>
+      <input id="communityPostImage" type="file" accept="image/jpeg,image/png,image/webp">
+      <div id="communityImagePreview"></div>
+      <button type="button" class="primary-button" id="publishCommunityPost">पोस्ट प्रकाशित करें</button>
+    </div>
+    <div id="communityPostsList" class="community-posts"><p class="muted">संगोष्ठी पोस्ट लोड हो रही हैं…</p></div>
+  </section>
+
+  <section class="view hidden" id="inboxView">
+    <p class="eyebrow">निजी साहित्यिक संवाद</p>
+    <h1>इनबॉक्स</h1>
+    <p class="muted">पाठकों और रचनाकारों के बीच निजी संदेश।</p>
+
+    <div class="inbox-tabs">
+      <button type="button" class="secondary-button" id="inboxMessagesTab">संदेश</button>
+      <button type="button" class="secondary-button" id="inboxRequestsTab">संदेश अनुरोध</button>
+      <button type="button" class="secondary-button" id="inboxNotificationsTab">सूचनाएँ <span id="notificationBadge" hidden>0</span></button>
+    </div>
+
+    <div id="inboxNotice" class="muted"></div>
+    <div id="inboxRequestsList"></div>
+    <div id="inboxConversationsList"></div>
+
+    <section id="inboxConversation" class="hidden">
+      <div class="inbox-conversation-heading">
+        <button type="button" class="secondary-button" id="inboxBack">← वापस</button>
+        <h2 id="inboxContactName">बातचीत</h2>
+      </div>
+
+      <div id="inboxMessagesList" class="inbox-messages"></div>
+
+      <form id="inboxMessageForm" class="inbox-compose">
+        <textarea id="inboxMessageText" rows="3" maxlength="5000"
+          placeholder="अपना संदेश लिखें…" required></textarea>
+        <button type="submit" class="primary-button">संदेश भेजें</button>
+      </form>
+    </section>
+  </section>
+
+  <section class="view hidden" id="libraryView">
+    <p class="eyebrow">आपकी किताबें</p>
+    <h1>पुस्तकालय</h1>
+    <p class="muted">आपकी सेव की गई और बुकमार्क की गई रचनाएँ यहाँ दिखेंगी।</p>
+    <div class="story-list" id="libraryList"></div>
+  </section>
+
+  <section class="view hidden" id="profileView">
+    <p class="eyebrow">आपका साहित्यिक परिचय</p>
+    <h1>प्रोफ़ाइल</h1>
+    <div class="profile-card">
+      <div class="profile-avatar" id="profileAvatar">अ</div>
+      <div><h2 id="profileName">अनाम पाठक</h2><p id="profileRole">पाठक</p></div>
+      <button class="text-button" id="editProfile">बदलें</button>
+    </div>
+    <input id="avatarUpload" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="प्रोफ़ाइल तस्वीर चुनें">
+    <label for="introInput">परिचय (अधिकतम 1,000 अक्षर)</label>
+    <textarea id="introInput" rows="4" maxlength="1000" placeholder="अपने बारे में लिखें…"></textarea>
+    <div class="editor-foot">
+      <span id="introCount">0/1000 अक्षर</span>
+      <button class="primary-button" id="saveProfile">परिचय सुरक्षित करें</button>
+    </div>
+
+    <!-- प्रोफ़ाइल आँकड़े: फ़ॉलोअर्स और फ़ॉलोइंग -->
+    <div class="stats-grid">
+      <div>
+        <strong id="wordsRead">0</strong>
+        <span>पढ़े गए कुल शब्द</span>
+      </div>
+      <div>
+        <strong id="publishedCount">0</strong>
+        <span>मेरी रचनाएँ</span>
+      </div>
+      <div>
+        <button type="button" class="profile-stat-button" id="myFollowerCount" data-follow-list="followers">0</button>
+        <span>फ़ॉलोअर्स</span>
+      </div>
+      <div>
+        <button type="button" class="profile-stat-button" id="myFollowingCount" data-follow-list="following">0</button>
+        <span>फ़ॉलोइंग</span>
+      </div>
+    </div>
+
+    <h2>मेरी प्रकाशित रचनाएँ</h2>
+    <div class="story-list" id="myStoryList"></div>
+    <h2 class="draft-heading">मेरे निजी ड्राफ्ट</h2>
+    <p class="muted">ये रचनाएँ केवल आपको दिखाई देती हैं।</p>
+    <div class="story-list" id="myDraftList"></div>
+  </section>
+
+  <section class="view hidden" id="settingsView">
+    <p class="eyebrow">अपनी पसंद</p>
+    <h1>सेटिंग्स</h1>
+    <div class="setting-row">
+      <div><strong>डार्क मोड</strong><p>रात में पढ़ने के लिए रंग बदलें।</p></div>
+      <button class="secondary-button" id="themeToggle2">थीम बदलें</button>
+    </div>
+    <div class="setting-row">
+      <div><strong>पठन भाषा</strong><p>इसी भाषा की रचनाएँ प्राथमिकता से दिखेंगी।</p></div>
+      <select id="readingLanguage">
+        <option value="hi">हिंदी</option>
+        <option value="sa">संस्कृत</option>
+        <option value="en">English</option>
+        <option value="mr">मराठी</option>
+        <option value="gu">ગુજરાતી</option>
+        <option value="pa">ਪੰਜਾਬੀ</option>
+        <option value="kn">ಕನ್ನಡ</option>
+        <option value="ta">தமிழ்</option>
+        <option value="ur">اردو</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div><strong>पसंदीदा श्रेणियाँ</strong><p>इन श्रेणियों की रचनाएँ प्राथमिकता से दिखेंगी।</p></div>
+      <div id="preferredCategories" class="category-checks"></div>
+    </div>
+    <div class="setting-row">
+      <div><strong>डेमो डेटा मिटाएँ</strong><p>इस डिवाइस पर सुरक्षित स्थानीय रचनाएँ और प्रोफ़ाइल हटेंगी।</p></div>
+      <button class="danger-button" id="resetData">रीसेट</button>
+    </div>
+    <div class="setting-row">
+      <div><strong>खाता</strong><p>लॉगिन, नया खाता या लॉगआउट।</p></div>
+      <button type="button" class="secondary-button" id="settingsAuthButton">लॉगिन / लॉगआउट</button>
+    </div>
+    <p class="tiny-note">लॉगिन और क्लाउड सिंक Supabase से जुड़े हैं।</p>
+  </section>
+
+  <!-- साहित्य सूत्रधार: शास्त्रीय राजसी Loading Animation -->
+  <div id="appLoader" class="app-loader" role="status" aria-live="polite">
+    <div class="loader-content">
+      <div class="manuscript-scene">
+        <div class="manuscript-glow"></div>
+        <div class="manuscript-book">
+          <div class="book-spine"></div>
+          <div class="book-page page-left">
+            <div class="page-border">
+              <span>ॐ</span>
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+          <div class="book-page page-right">
+            <div class="page-border">
+              <span>श्री</span>
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+          <div class="turning-page">
+            <div class="page-border">
+              <span>विद्या</span>
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+        </div>
+        <div class="book-shadow"></div>
+      </div>
+      <div class="loader-brand">
+        <span class="loader-brand-title">साहित्य सूत्रधार</span>
+        <span class="loader-brand-subtitle">शब्दों का अपना संसार</span>
+      </div>
+      <div class="quill-writing">
+        <div class="quill-line">
+          <span class="quill-feather">🪶</span>
+          <span class="quill-ink"></span>
+        </div>
+        <p id="loaderQuote" class="loader-quote"></p>
+        <span id="loaderAuthor" class="loader-author"></span>
+      </div>
+      <div class="loader-status">
+        <span class="loader-dot"></span>
+        साहित्य का संसार सज रहा है…
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<!-- प्रोफ़ाइल DP क्रॉप एडिटर -->
+<dialog id="avatarCropDialog" class="modal">
+  <div class="crop-editor">
+    <div class="modal-heading">
+      <h2>प्रोफ़ाइल DP तैयार करें</h2>
+      <button type="button" class="close-button" id="cropClose">×</button>
+    </div>
+
+    <p class="muted">तस्वीर को खिसकाकर सही जगह रखें।</p>
+
+    <div class="crop-preview">
+      <canvas id="avatarCropCanvas" width="400" height="400"></canvas>
+    </div>
+
+    <label for="avatarZoom">ज़ूम करें</label>
+    <input id="avatarZoom" type="range" min="1" max="3" step="0.01" value="1">
+
+    <div class="crop-actions">
+      <button type="button" class="secondary-button" id="cropRotateLeft">↶ घुमाएँ</button>
+      <button type="button" class="secondary-button" id="cropRotateRight">↷ घुमाएँ</button>
+    </div>
+
+    <div class="crop-footer">
+      <button type="button" class="secondary-button" id="cropCancel">रद्द करें</button>
+      <button type="button" class="primary-button" id="cropSave">DP सुरक्षित करें</button>
+    </div>
+  </div>
+</dialog>
+  <dialog id="authDialog">
+    <form id="authForm">
+      <h2 id="authHeading">साहित्य सूत्रधार में प्रवेश</h2>
+      <label for="authEmail">ईमेल</label>
+      <input id="authEmail" type="email" required autocomplete="email">
+      <label for="authPassword">पासवर्ड</label>
+      <input id="authPassword" type="password" required minlength="6" autocomplete="current-password">
+      <p id="authMessage" role="status"></p>
+      <button type="submit" id="authSubmit">लॉगिन करें</button>
+      <button type="button" id="authGoogle">🌐 Google से लॉगिन करें</button>
+      <button type="button" id="authRegister">नया खाता बनाएँ</button>
+      <button type="button" id="authClose">बंद करें</button>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js?v=20261107-mobile-complete-1"></script>
+  <script>
+    (() => {
+      const status = document.getElementById("networkStatus");
+      if (!status) return;
+      const updateNetworkStatus = () => { status.hidden = navigator.onLine; };
+      window.addEventListener("online", updateNetworkStatus);
+      window.addEventListener("offline", updateNetworkStatus);
+      updateNetworkStatus();
+    })();
+  </script>
+
+  <dialog id="mobileOnboarding" class="modal mobile-onboarding-modal">
+    <form id="mobileOnboardingForm">
+      <h2>अपना साहित्यिक संसार चुनें</h2>
+      <p class="muted">पठन भाषा और अपनी पसंदीदा श्रेणियाँ चुनें।</p>
+      <label for="mobileOnboardingLanguage">पठन भाषा</label>
+      <select id="mobileOnboardingLanguage">
+        <option value="hi">हिंदी</option><option value="sa">संस्कृत</option><option value="en">English</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="pa">ਪੰਜਾਬੀ</option><option value="kn">ಕನ್ನಡ</option><option value="ta">தமிழ்</option><option value="ur">اردو</option>
+      </select>
+      <p><strong>पसंदीदा श्रेणियाँ (अधिकतम 4)</strong></p>
+      <div id="mobileOnboardingCategories" class="category-checks">
+<label><input type="checkbox" value="रोमांटिक">रोमांटिक</label>
+<label><input type="checkbox" value="कॉमेडी">कॉमेडी</label>
+<label><input type="checkbox" value="हास्य-व्यंग्य">हास्य-व्यंग्य</label>
+<label><input type="checkbox" value="प्रेम">प्रेम</label>
+<label><input type="checkbox" value="सस्पेंस एवं थ्रिलर">सस्पेंस एवं थ्रिलर</label>
+<label><input type="checkbox" value="एडवेंचर">एडवेंचर</label>
+<label><input type="checkbox" value="साइंस फिक्शन">साइंस फिक्शन</label>
+<label><input type="checkbox" value="फैंटेसी">फैंटेसी</label>
+<label><input type="checkbox" value="देशप्रेम">देशप्रेम</label>
+<label><input type="checkbox" value="ऐतिहासिक">ऐतिहासिक</label>
+<label><input type="checkbox" value="पौराणिक">पौराणिक</label>
+<label><input type="checkbox" value="शिक्षाप्रद">शिक्षाप्रद</label>
+<label><input type="checkbox" value="मनोरंजन">मनोरंजन</label>
+<label><input type="checkbox" value="अन्य">अन्य</label>
+      </div>
+      <p id="mobileOnboardingMessage" class="tiny-note"></p>
+      <button type="submit" class="primary-button full-width">आगे बढ़ें</button>
+    </form>
+  </dialog>
+  <script src="mobile-app-enhancements.js?v=20261107-full-app-1"></script>
+
+</body>
+</html>
