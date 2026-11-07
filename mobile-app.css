@@ -136,3 +136,45 @@
     padding: 9px 10px calc(9px + env(safe-area-inset-bottom));
   }
 }
+
+
+/* Final integrated literary discovery interface */
+.mobile-home-switch{display:flex;gap:8px;margin:12px 13px 18px;padding:5px;background:var(--surface,#f5eeee);border-radius:14px}
+.mobile-home-switch-btn{flex:1;border:0;border-radius:10px;padding:11px 8px;background:transparent;color:inherit;font:inherit;font-weight:700}
+.mobile-home-switch-btn.active{background:var(--maroon,#641f2b);color:#fff;box-shadow:0 3px 12px #641f2b22}
+.mobile-category-screen{padding:0 13px 20px;max-width:760px;margin:auto}
+.mobile-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.mobile-category-card{min-height:112px;border:1px solid var(--line,#e5dadd);border-radius:16px;padding:13px;text-align:left;color:inherit;background:linear-gradient(145deg,var(--paper,#fff),var(--surface,#f8f1f2));display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 4px 15px #32121a0b}
+.mobile-category-card .category-symbol{font-size:27px;line-height:1.2}
+.mobile-category-card strong{font-size:14px}
+.mobile-category-card small{opacity:.68}
+.mobile-horizontal-shelf{display:flex;gap:11px;overflow-x:auto;padding:3px 1px 12px;scroll-snap-type:x mandatory}
+.mobile-horizontal-card{flex:0 0 150px;max-width:150px;border:1px solid var(--line,#e5dadd);border-radius:14px;overflow:hidden;background:var(--paper,#fff);scroll-snap-align:start;color:inherit;text-align:left}
+.mobile-horizontal-card img,.mobile-horizontal-cover{width:100%;height:190px;object-fit:cover;display:grid;place-items:center;background:var(--surface,#f5eeee);font-size:34px}
+.mobile-horizontal-card strong,.mobile-horizontal-card small{display:block;padding:0 9px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mobile-horizontal-card strong{padding-top:9px;font-size:13px}
+.mobile-horizontal-card small{font-size:11px;opacity:.7;padding-bottom:10px}
+.mobile-editorial-note{padding:16px;border:1px dashed var(--line,#cbb);border-radius:13px;color:var(--muted,#777);background:var(--surface,#faf7f7);font-size:13px;line-height:1.7}
+.mobile-work-detail-dialog{width:min(720px,calc(100vw - 18px));max-height:calc(100dvh - 18px);overflow:auto;border-radius:18px;padding:16px;background:var(--paper,#fff);color:var(--ink,#241a1b)}
+.mobile-detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.mobile-detail-cover{width:112px;aspect-ratio:9/16;object-fit:cover;border-radius:12px;background:var(--surface,#f3eeee)}
+.mobile-detail-hero{display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:start}
+.mobile-detail-hero h2{font-size:21px;line-height:1.35;margin:3px 0 8px}
+.mobile-detail-meta{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0;font-size:12px;color:var(--muted,#777)}
+.mobile-detail-summary{white-space:pre-wrap;line-height:1.75;margin:16px 0}
+.mobile-detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}
+.mobile-detail-parts{display:grid;gap:8px;margin:14px 0}
+.mobile-detail-part{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px;border:1px solid var(--line,#ddd);border-radius:11px;text-align:left;background:var(--surface,#faf7f7);color:inherit}
+.mobile-detail-part span{font-size:12px;opacity:.7}
+.mobile-full-app .discovery-search .search-control{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mobile-full-app #workSearchInput{flex:1;min-width:110px}
+.mobile-full-app #mobileSearchSubmit{padding:9px 13px;white-space:nowrap}
+@media(max-width:390px){.mobile-category-grid{gap:8px}.mobile-category-card{min-height:100px;padding:10px}.mobile-detail-hero{grid-template-columns:92px minmax(0,1fr)}.mobile-detail-cover{width:92px}}
+body.dark .mobile-category-card,body.dark .mobile-horizontal-card,body.dark .mobile-editorial-note,body.dark .mobile-detail-part{background:var(--surface,#241d1f);border-color:var(--line,#493b3e)}
+
+.ss-loader-seen #appLoader{display:none!important}
+
+.mobile-catalog-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}.mobile-catalog-pagination span{font-size:12px;color:var(--muted,#777)}.mobile-search-results{margin-top:12px;display:grid;gap:8px}.mobile-search-results h3{margin:8px 0 2px;font-size:15px}.mobile-search-author{display:grid;gap:4px;width:100%;padding:11px;border:1px solid var(--line,#ddd);border-radius:10px;background:var(--paper,#fff);color:inherit;text-align:left}
+.mobile-detail-part-row{display:grid;gap:4px}.mobile-part-reviews{justify-self:start;padding:4px 9px}
+
+.mobile-catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mobile-catalog-grid .mobile-horizontal-card{max-width:none;width:100%;flex:auto;display:block}.mobile-catalog-grid .mobile-horizontal-card img,.mobile-catalog-grid .mobile-horizontal-cover{height:170px}

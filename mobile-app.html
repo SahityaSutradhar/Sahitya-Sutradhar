@@ -10,10 +10,11 @@
   <link rel="apple-touch-icon" href="assets/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
   <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
+  <script>try{if(sessionStorage.getItem('ss_mobile_loader_seen_v1')==='1')document.documentElement.classList.add('ss-loader-seen');}catch(_){}</script>
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=20261106-series-reader-1">
-  <link rel="stylesheet" href="mobile-app.css?v=20261107-mobile-reader-vertical-1">
+  <link rel="stylesheet" href="styles.css?v=20261107-final-mobile-1">
+  <link rel="stylesheet" href="mobile-app.css?v=20261107-final-mobile-1">
   <style>
     #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
     #networkStatus[hidden]{display:none}
@@ -88,6 +89,15 @@
       <div class="lotus-art" aria-hidden="true"><span>❀</span><span>❀</span><span>❀</span></div>
     </section>
 
+    <section class="mobile-home-switch" aria-label="मुख्यपृष्ठ अनुभाग">
+      <button type="button" class="mobile-home-switch-btn active" data-home-mode="for-you">आपके लिए</button>
+      <button type="button" class="mobile-home-switch-btn" data-home-mode="categories">श्रेणियाँ</button>
+    </section>
+    <section id="mobileCategoryScreen" class="mobile-category-screen hidden" aria-label="साहित्यिक श्रेणियाँ">
+      <div class="section-heading"><div><p class="eyebrow">अपनी रुचि का संसार</p><h2>साहित्य की श्रेणियाँ</h2></div><button type="button" class="text-button" id="backToForYou">आपके लिए</button></div>
+      <div id="mobileCategoryGrid" class="mobile-category-grid"></div>
+    </section>
+
     <section class="discovery-search" aria-label="रचनाएँ खोजें">
       <div class="discovery-search-copy">
         <p class="eyebrow">अपनी अगली पसंद खोजें</p>
@@ -98,7 +108,9 @@
         <span aria-hidden="true">⌕</span>
         <input id="workSearchInput" type="search" placeholder="कहानी, कविता, लेखक का नाम…" aria-label="रचना या लेखक खोजें">
         <button id="workSearchClear" type="button" class="search-clear" aria-label="खोज मिटाएँ">×</button>
+        <button id="mobileSearchSubmit" type="button" class="primary-button">खोजें</button>
       </div>
+      <div id="mobileSearchStatus" class="tiny-note" aria-live="polite"></div>
     </section>
 
     <section class="section-block mobile-discovery-block">
@@ -110,6 +122,14 @@
       <div id="mobileTopReaders" class="writer-list"><p class="muted">पाठकों की सूची लोड हो रही है…</p></div>
     </section>
 
+    <section class="section-block mobile-editorial-section">
+      <div class="section-heading"><div><p class="eyebrow">पाठकों की दुनिया</p><h2>लोकप्रिय साहित्य</h2></div><button type="button" class="text-button" id="mobileAllStoriesButton">1000 तक रचनाएँ →</button></div>
+      <div id="mobilePopularShelf" class="mobile-horizontal-shelf"><p class="muted">लोकप्रिय रचनाएँ लोड हो रही हैं…</p></div>
+    </section>
+    <section class="section-block mobile-editorial-section">
+      <div class="section-heading"><div><p class="eyebrow">विशेष प्रस्तुति</p><h2>संपादकीय चयन</h2></div></div>
+      <div id="mobileEditorialShelf" class="mobile-editorial-note">संपादकीय चयन की सूची संपादक द्वारा उपलब्ध कराए जाने पर यहाँ दिखाई जाएगी।</div>
+    </section>
     <section class="section-block">
       <div class="section-heading">
         <div><p class="eyebrow">नवीन सृजन</p><h2 id="latestHeading">नई प्रकाशित रचनाएँ</h2></div>
@@ -507,6 +527,21 @@
     <p class="tiny-note">लॉगिन और क्लाउड सिंक Supabase से जुड़े हैं।</p>
   </section>
 
+  <dialog id="mobileAllStoriesDialog" class="modal mobile-work-detail-dialog">
+    <div class="mobile-detail-head"><button type="button" class="text-button" id="mobileAllStoriesClose">← वापस</button><span class="eyebrow">पाठकों की पसंद</span></div>
+    <h2>लोकप्रिय रचनाएँ</h2><p class="tiny-note" id="mobileAllStoriesStatus">सार्वजनिक पठन आँकड़े लोड हो रहे हैं…</p>
+    <div id="mobileAllStoriesList" class="mobile-catalog-grid"></div>
+    <div class="mobile-catalog-pagination"><button type="button" class="secondary-button" id="mobileCatalogPrev">← पिछला</button><span id="mobileCatalogPage">1 / 1</span><button type="button" class="secondary-button" id="mobileCatalogNext">अगला →</button></div>
+  </dialog>
+  <dialog id="mobileWorkDetailDialog" class="modal mobile-work-detail-dialog">
+    <div class="mobile-detail-head"><button type="button" class="text-button" id="mobileDetailClose">← वापस</button><span class="eyebrow">रचना परिचय</span></div>
+    <div id="mobileWorkDetailContent"></div>
+  </dialog>
+  <dialog id="mobileSeriesDetailDialog" class="modal mobile-work-detail-dialog">
+    <div class="mobile-detail-head"><button type="button" class="text-button" id="mobileSeriesClose">← वापस</button><span class="eyebrow">धारावाहिक</span></div>
+    <div id="mobileSeriesDetailContent"></div>
+  </dialog>
+
   <!-- साहित्य सूत्रधार: शास्त्रीय राजसी Loading Animation -->
   <div id="appLoader" class="app-loader" role="status" aria-live="polite">
     <div class="loader-content">
@@ -600,7 +635,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261107-mobile-reader-vertical-1"></script>
+  <script src="app.js?v=20261107-final-mobile-1"></script>
   <script>
     (() => {
       const status = document.getElementById("networkStatus");
@@ -641,7 +676,7 @@
       <button type="submit" class="primary-button full-width">आगे बढ़ें</button>
     </form>
   </dialog>
-  <script src="mobile-app-enhancements.js?v=20261107-mobile-reader-vertical-1"></script>
+  <script src="mobile-app-enhancements.js?v=20261107-final-mobile-1"></script>
 
 </body>
 </html>

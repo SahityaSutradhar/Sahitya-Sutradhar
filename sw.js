@@ -1,6 +1,6 @@
 /* साहित्य सूत्रधार PWA cache — versioned shell cache */
 const CACHE_PREFIX = "sahitya-sutradhar-";
-const CACHE_NAME = `${CACHE_PREFIX}shell-v14-mobile-reader-fix`;
+const CACHE_NAME = `${CACHE_PREFIX}shell-v15-final-integrated-mobile`;
 
 const PRECACHE_ASSETS = [
   "./",
@@ -8,6 +8,7 @@ const PRECACHE_ASSETS = [
   "./mobile-app.html",
   "./mobile-app.css",
   "./mobile-app.js",
+  "./mobile-app-enhancements.js",
   "./mobile-reader.html",
   "./mobile-reader.css",
   "./mobile-reader.js",

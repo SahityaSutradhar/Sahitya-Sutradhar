@@ -56,7 +56,14 @@ function emptyAccountState(){
 function accountStorageKey(userId=currentUserId){ return STORAGE + "." + (userId || "guest"); }
 function loadState(){
   try{
-    const saved = JSON.parse(localStorage.getItem(accountStorageKey(null)));
+    let saved = JSON.parse(localStorage.getItem(accountStorageKey(null)) || "null");
+    // पुराने साहित्य ग्राम खाते की कुंजी को हटाए बिना संगतता बनाए रखें।
+    if(!saved){
+      saved = JSON.parse(localStorage.getItem("sahityaGram.v1") || "null");
+      if(saved){
+        try{localStorage.setItem(accountStorageKey(null),JSON.stringify(saved));}catch(e){}
+      }
+    }
     if(saved) return {...emptyAccountState(), ...saved, stories:[], profile:{...emptyAccountState().profile,...(saved.profile||{})}};
   }catch(e){}
   return emptyAccountState();
@@ -103,7 +110,7 @@ function storyCard(s){
   const cats=(s.categories||[]).map(c=>`<span class="tag">${escapeHtml(c)}</span>`).join(" ");
   const excerpt=(s.body||"").replace(/\s+/g," ").slice(0,150);
   const isOwner = s.source === "supabase" && !!currentUserId && s.authorId === currentUserId;
-  return `<article class="story-card"><div class="cover-grid"><button class="cover-open" type="button" data-read="${escapeHtml(s.id)}" aria-label="${escapeHtml(s.title)} पढ़ें">${s.coverUrl?`<img class="cover-thumb" src="${escapeHtml(s.coverUrl)}" alt="${escapeHtml(s.title)} कवर">`:`<div class="cover-placeholder">❀</div>`}</button><div><div>${cats}</div><h3>${escapeHtml(s.title)}</h3><p><button class="story-author-link" type="button" data-story-author="${escapeHtml(s.authorId||"")}">${escapeHtml(s.author||"अनाम लेखक")}</button> · ${escapeHtml(s.type||"रचना")}${s.subtype?" / "+escapeHtml(s.subtype):""}</p><p class="excerpt">${escapeHtml(excerpt)}${excerpt.length>=150?"…":""}</p><div class="story-meta"><span>◉ ${s.reads||0} पाठक</span><button data-read="${escapeHtml(s.id)}">खोलें ↗</button>${isOwner && s.status === "published" ? `<button class="secondary-button" type="button" data-edit-work="${escapeHtml(s.id)}">संपादित करें ✎</button>` : ""}</div></div></div></article>`;
+  return `<article class="story-card"><div class="cover-grid"><button class="cover-open" type="button" data-read="${escapeHtml(s.id)}" aria-label="${escapeHtml(s.title)} पढ़ें">${s.coverUrl?`<img class="cover-thumb" src="${escapeHtml(s.coverUrl)}" alt="${escapeHtml(s.title)} कवर">`:`<div class="cover-placeholder">❀</div>`}</button><div><div>${cats}</div><h3>${escapeHtml(s.title)}</h3><p><button class="story-author-link" type="button" data-story-author="${escapeHtml(s.authorId||"")}">${escapeHtml(s.author||"अनाम लेखक")}</button> · ${escapeHtml(s.type||"रचना")}${s.subtype?" / "+escapeHtml(s.subtype):""}</p><p class="excerpt">${escapeHtml(excerpt)}${excerpt.length>=150?"…":""}</p><div class="story-meta"><span>◉ ${s.reads||0} पाठक</span><button type="button" data-work-detail="${escapeHtml(s.id)}">विवरण</button><button data-read="${escapeHtml(s.id)}">पढ़ें ↗</button>${isOwner && s.status === "published" ? `<button class="secondary-button" type="button" data-edit-work="${escapeHtml(s.id)}">संपादित करें ✎</button>` : ""}</div></div></div></article>`;
 }
 function renderStoryCards(items){
   const groups=new Map(), emitted=new Set(), output=[];
@@ -117,7 +124,7 @@ function renderStoryCards(items){
     const first=parts[0]||work, title=first.seriesTitle||first.title;
     const chapters=parts.map(part=>`<button type="button" class="series-part-link" data-read="${escapeHtml(part.id)}">भाग ${Number(part.partNumber)||1}: ${escapeHtml(part.title)}</button>`).join("");
     const cats=(first.categories||[]).map(c=>`<span class="tag">${escapeHtml(c)}</span>`).join(" ");
-    output.push(`<article class="story-card series-story-card"><div class="cover-grid"><button class="cover-open" type="button" data-read="${escapeHtml(first.id)}" aria-label="${escapeHtml(title)} पढ़ें">${first.coverUrl?`<img class="cover-thumb" src="${escapeHtml(first.coverUrl)}" alt="">`:`<div class="cover-placeholder">❀</div>`}</button><div><div>${cats}<span class="tag">धारावाहिक · ${parts.length} भाग</span></div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(first.author||"अनाम लेखक")}</p><div class="series-parts-list">${chapters}</div></div></div></article>`);
+    output.push(`<article class="story-card series-story-card"><div class="cover-grid"><button class="cover-open" type="button" data-read="${escapeHtml(first.id)}" aria-label="${escapeHtml(title)} पढ़ें">${first.coverUrl?`<img class="cover-thumb" src="${escapeHtml(first.coverUrl)}" alt="">`:`<div class="cover-placeholder">❀</div>`}</button><div><div>${cats}<span class="tag">धारावाहिक · ${parts.length} भाग</span></div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(first.author||"अनाम लेखक")}</p><div class="story-meta"><span>धारावाहिक · ${parts.length} भाग</span><button type="button" data-series-detail="${escapeHtml(key)}">विवरण और सभी भाग</button></div><div class="series-parts-list">${chapters}</div></div></div></article>`);
   }
   return output.join("");
 }
@@ -3253,13 +3260,16 @@ function hideAppLoader() {
   }, Math.max(0, minimumDisplay - elapsed));
 }
 
-// पहली बार ऐप/वेबसाइट खुलने पर Loader पहले से दिखाई देगा; इस पेज सत्र में दोबारा नहीं।
-window.__sutradharLoaderAlreadyShown = true;
-writeLoaderQuote();
-
-loaderQuoteTimer = setInterval(writeLoaderQuote, 8500);
-
-loaderFallbackTimer = setTimeout(hideAppLoader, 15000);
+// Loader प्रति ब्राउज़र/ऐप टैब सत्र में केवल पहली बार दिखेगा।
+const SUTRADHAR_LOADER_SESSION_KEY = "ss_mobile_loader_seen_v1";
+if (sessionStorage.getItem(SUTRADHAR_LOADER_SESSION_KEY) === "1") {
+  window.__sutradharLoaderAlreadyShown = true;
+  document.getElementById("appLoader")?.classList.add("loader-hidden");
+} else {
+  window.__sutradharLoaderAlreadyShown = false;
+  sessionStorage.setItem(SUTRADHAR_LOADER_SESSION_KEY, "1");
+  showAppLoader();
+}
 
 async function loadNotificationBadge(){
   if(!supabaseClient) return;
@@ -3737,7 +3747,7 @@ function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState
 init();
 /* साहित्य सूत्रधार: Supabase लॉगिन */
 
-(function setupSahityaSutradharAuth() {
+(function setupSahityaGramAuth() {
   const dialog = document.getElementById("authDialog");
   const form = document.getElementById("authForm");
 
@@ -3951,10 +3961,7 @@ google.addEventListener("click", async () => {
   
 supabaseClient.auth.onAuthStateChange((event, session) => {
 
-  // नए लॉगिन या लॉगआउट पर Loader दोबारा दिखाएँ।
-  if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-    showAppLoader();
-  }
+  // लॉगिन/लॉगआउट पर ऐप-लॉन्च Loader दोबारा नहीं दिखेगा।
 
   // Auth callback के बाहर डेटा लोड करें।
   setTimeout(() => {
