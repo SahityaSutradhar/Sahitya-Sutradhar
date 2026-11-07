@@ -363,3 +363,40 @@
     loadDiscovery(); setupLoginOnboarding();
   });
 })();
+
+/* केवल अधिकृत मुख्य एडमिन को सेटिंग्स में बल्क प्रकाशन केंद्र दिखाएँ। */
+(() => {
+  'use strict';
+  let adminEntryClient = null;
+  async function addAdminBulkEntry(){
+    const settings=document.getElementById('settingsView');
+    if(!settings||!window.supabase||!window.SUPABASE_URL||!window.SUPABASE_ANON_KEY)return;
+    try{
+      if(!adminEntryClient)adminEntryClient=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+      const {data:{user}}=await adminEntryClient.auth.getUser();
+      if(!user){document.getElementById('adminBulkUploadEntry')?.remove();return;}
+      const {data,error}=await adminEntryClient.rpc('is_sutradhar_admin');
+      if(error||data!==true)return;
+      if(document.getElementById('adminBulkUploadEntry'))return;
+      const row=document.createElement('div');
+      row.id='adminBulkUploadEntry';
+      row.className='setting-row';
+      row.innerHTML='<div><strong>एडमिन बल्क प्रकाशन</strong><p>PDF, फोटो, DOCX और अनेक रचनाओं का सुरक्षित प्रबंधन।</p></div><a class="secondary-button" href="admin-bulk-upload.html">एडमिन पैनल खोलें ↗</a>';
+      settings.insertBefore(row,settings.firstElementChild);
+    }catch(error){console.warn('एडमिन प्रवेश उपलब्ध नहीं:',error?.message||error);}
+  }
+  function startAdminEntryWatcher(){
+    addAdminBulkEntry();
+    try{
+      if(!adminEntryClient)adminEntryClient=window.supabase?.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+      adminEntryClient?.auth.onAuthStateChange((event)=>{
+        window.setTimeout(()=>{
+          if(event==='SIGNED_OUT')document.getElementById('adminBulkUploadEntry')?.remove();
+          else addAdminBulkEntry();
+        },50);
+      });
+    }catch(_){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startAdminEntryWatcher,{once:true});
+  else startAdminEntryWatcher();
+})();

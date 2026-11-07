@@ -1,6 +1,6 @@
 /* साहित्य सूत्रधार PWA cache — versioned shell cache */
 const CACHE_PREFIX = "sahitya-sutradhar-";
-const CACHE_NAME = `${CACHE_PREFIX}shell-v15-final-integrated-mobile`;
+const CACHE_NAME = `${CACHE_PREFIX}shell-v16-admin-bulk-upload`;
 
 const PRECACHE_ASSETS = [
   "./",
@@ -22,7 +22,10 @@ const PRECACHE_ASSETS = [
   "./assets/icon-maskable-512.png",
   "./shastriya.html",
   "./shastriya.css",
-  "./shastriya.js"
+  "./shastriya.js",
+  "./admin-bulk-upload.html",
+  "./admin-bulk-upload.css",
+  "./admin-bulk-upload.js"
 ];
 
 self.addEventListener("install", event => {
