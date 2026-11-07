@@ -13,7 +13,7 @@
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css?v=20261106-series-reader-1">
-  <link rel="stylesheet" href="mobile-app.css?v=20261107-full-app-1">
+  <link rel="stylesheet" href="mobile-app.css?v=20261107-mobile-reader-vertical-1">
   <style>
     #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
     #networkStatus[hidden]{display:none}
@@ -324,7 +324,7 @@
   </div>
 </div>
     
-    <article class="reader-page">
+    <article id="readerPage" class="reader-page">
       <p class="eyebrow" id="readerCategory"></p>
       <h1 id="readerTitle"></h1>
       <div class="cover-grid">
@@ -600,7 +600,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261107-mobile-complete-1"></script>
+  <script src="app.js?v=20261107-mobile-reader-vertical-1"></script>
   <script>
     (() => {
       const status = document.getElementById("networkStatus");
@@ -641,7 +641,7 @@
       <button type="submit" class="primary-button full-width">आगे बढ़ें</button>
     </form>
   </dialog>
-  <script src="mobile-app-enhancements.js?v=20261107-full-app-1"></script>
+  <script src="mobile-app-enhancements.js?v=20261107-mobile-reader-vertical-1"></script>
 
 </body>
 </html>

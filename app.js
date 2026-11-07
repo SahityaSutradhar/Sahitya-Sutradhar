@@ -1085,18 +1085,27 @@ async function loadCloudReaderProgressForUser(userId){
   saveAllReaderProgress(all);renderLibrary();
  }catch(error){reportReaderProgressCloudError(error);}
 }
+function readerUsesVerticalScroll(){
+ return document.body.classList.contains("mobile-full-app") && window.matchMedia("(max-width: 760px)").matches;
+}
 function readerPageMetrics(){
- const el=document.getElementById("readerBody");if(!el)return;
- readerPagesTotal=Math.max(1,Math.ceil(el.scrollWidth/Math.max(1,el.clientWidth)));
- readerPageIndex=Math.min(readerPagesTotal-1,Math.max(0,Math.round(el.scrollLeft/Math.max(1,el.clientWidth))));
- document.getElementById("readerPageStatus").textContent=`पृष्ठ ${readerPageIndex+1} / ${readerPagesTotal}`;
- document.getElementById("readerPrevPage").disabled=readerPageIndex===0;
- document.getElementById("readerNextPage").disabled=readerPageIndex>=readerPagesTotal-1;
+ const el=document.getElementById(readerUsesVerticalScroll()?"readerPage":"readerBody");if(!el)return;
+ const vertical=readerUsesVerticalScroll();
+ const extent=vertical?el.scrollHeight:el.scrollWidth;
+ const size=vertical?el.clientHeight:el.clientWidth;
+ const offset=vertical?el.scrollTop:el.scrollLeft;
+ readerPagesTotal=Math.max(1,Math.ceil(extent/Math.max(1,size)));
+ readerPageIndex=Math.min(readerPagesTotal-1,Math.max(0,Math.round(offset/Math.max(1,size))));
+ const status=document.getElementById("readerPageStatus");if(status)status.textContent=`पृष्ठ ${readerPageIndex+1} / ${readerPagesTotal}`;
+ const prev=document.getElementById("readerPrevPage"),next=document.getElementById("readerNextPage");
+ if(prev)prev.disabled=readerPageIndex===0;if(next)next.disabled=readerPageIndex>=readerPagesTotal-1;
 }
 function readerGoPage(index,direction){
- const el=document.getElementById("readerBody");if(!el)return;
- const next=Math.max(0,Math.min(readerPagesTotal-1,index));el.classList.remove("flip-next","flip-prev");void el.offsetWidth;el.classList.add(direction==="prev"?"flip-prev":"flip-next");
- el.scrollTo({left:next*el.clientWidth,behavior:"smooth"});readerPageIndex=next;readerPageMetrics();recordReaderPage(next);
+ const vertical=readerUsesVerticalScroll(),el=document.getElementById(vertical?"readerPage":"readerBody");if(!el)return;
+ const next=Math.max(0,Math.min(readerPagesTotal-1,index));
+ if(!vertical){el.classList.remove("flip-next","flip-prev");void el.offsetWidth;el.classList.add(direction==="prev"?"flip-prev":"flip-next");}
+ el.scrollTo(vertical?{top:next*el.clientHeight,behavior:"smooth"}:{left:next*el.clientWidth,behavior:"smooth"});
+ readerPageIndex=next;readerPageMetrics();recordReaderPage(next);
 }
 async function recordReaderPage(page){
  const id=String(currentReaderId),seen=readerSeenPages;
@@ -1118,14 +1127,16 @@ async function recordReaderPage(page){
 }
 function setupReaderPagination(id){
  const body=document.getElementById("readerBody"),saved=readerProgressFor(id);
+ const scroller=document.getElementById(readerUsesVerticalScroll()?"readerPage":"readerBody");
  readerSeenPages=new Set(saved.seen||[]);readerWordsTotal=wordCount(body.innerText||"");readerPagesTotal=1;readerPageIndex=0;
  const storedRatio=readerProgressRatio(saved),hasRatio=Number.isFinite(Number(saved.ratio))&&Number(saved.updatedAt)>0;
  const legacyPage=Number(saved.page)||0;
- body.scrollLeft=0;
+ if(readerUsesVerticalScroll())scroller.scrollTop=0;else scroller.scrollLeft=0;
  requestAnimationFrame(()=>{
   readerPageMetrics();
   const target=hasRatio?Math.round(storedRatio*Math.max(0,readerPagesTotal-1)):Math.min(legacyPage,readerPagesTotal-1);
-  body.scrollLeft=target*body.clientWidth;readerPageMetrics();recordReaderPage(target);
+  if(readerUsesVerticalScroll())scroller.scrollTop=target*scroller.clientHeight;else scroller.scrollLeft=target*scroller.clientWidth;
+  readerPageMetrics();recordReaderPage(target);
  });
 }
 
@@ -3620,7 +3631,8 @@ updateSeriesEditor();
 
 document.getElementById("readerNextPart")
   ?.addEventListener("click",()=>navigateReaderSeries(1));
-  document.getElementById("readerBody")?.addEventListener("scroll",()=>{readerPageMetrics();recordReaderPage(readerPageIndex);},{passive:true});
+  document.getElementById("readerBody")?.addEventListener("scroll",()=>{if(!readerUsesVerticalScroll()){readerPageMetrics();recordReaderPage(readerPageIndex);}},{passive:true});
+  document.getElementById("readerPage")?.addEventListener("scroll",()=>{if(readerUsesVerticalScroll()){readerPageMetrics();recordReaderPage(readerPageIndex);}},{passive:true});
   document.getElementById("readerFontSize")?.addEventListener("input",e=>{
     const body=document.getElementById("readerBody");
     const ratio=readerPagesTotal>1?readerPageIndex/(readerPagesTotal-1):0;
@@ -3628,7 +3640,9 @@ document.getElementById("readerNextPart")
     requestAnimationFrame(()=>{
       readerPageMetrics();
       const target=Math.round(ratio*Math.max(0,readerPagesTotal-1));
-      body.scrollLeft=target*body.clientWidth;readerPageMetrics();recordReaderPage(target);
+      const scroller=document.getElementById(readerUsesVerticalScroll()?"readerPage":"readerBody");
+      if(readerUsesVerticalScroll())scroller.scrollTop=target*scroller.clientHeight;else scroller.scrollLeft=target*scroller.clientWidth;
+      readerPageMetrics();recordReaderPage(target);
     });
   });
   let readerResizeTimer;
@@ -3640,11 +3654,13 @@ document.getElementById("readerNextPart")
       const body=document.getElementById("readerBody");
       readerPageMetrics();
       const target=Math.round(ratio*Math.max(0,readerPagesTotal-1));
-      body.scrollLeft=target*body.clientWidth;readerPageMetrics();recordReaderPage(target);
+      const scroller=document.getElementById(readerUsesVerticalScroll()?"readerPage":"readerBody");
+      if(readerUsesVerticalScroll())scroller.scrollTop=target*scroller.clientHeight;else scroller.scrollLeft=target*scroller.clientWidth;
+      readerPageMetrics();recordReaderPage(target);
     },180);
   });
-  document.getElementById("readerBody")?.addEventListener("touchstart",e=>{window.__readerTouchX=e.changedTouches[0].clientX;},{passive:true});
-  document.getElementById("readerBody")?.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-(window.__readerTouchX||e.changedTouches[0].clientX);if(Math.abs(dx)>55)readerGoPage(readerPageIndex+(dx<0?1:-1),dx<0?"next":"prev");},{passive:true});
+  document.getElementById("readerBody")?.addEventListener("touchstart",e=>{if(!readerUsesVerticalScroll())window.__readerTouchX=e.changedTouches[0].clientX;},{passive:true});
+  document.getElementById("readerBody")?.addEventListener("touchend",e=>{if(readerUsesVerticalScroll())return;const dx=e.changedTouches[0].clientX-(window.__readerTouchX||e.changedTouches[0].clientX);if(Math.abs(dx)>55)readerGoPage(readerPageIndex+(dx<0?1:-1),dx<0?"next":"prev");},{passive:true});
 
   document.getElementById("finishReading").addEventListener("click",finishReading);
   document.getElementById("bookmarkButton").addEventListener("click",toggleBookmark);

@@ -45,3 +45,94 @@
 @media(min-width:700px){.mobile-full-app .bottom-nav{max-width:760px;left:50%;right:auto;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0}}
 
 .mobile-onboarding-modal{z-index:100001}.mobile-onboarding-modal form{display:grid;gap:8px}.mobile-onboarding-modal .category-checks{max-height:34vh;overflow:auto;padding:5px}.mobile-onboarding-modal .category-checks label{font-size:12px}.mobile-full-app .app-loader{z-index:100000}
+
+/* Mobile reader recovery: keep the full work readable with ordinary vertical scrolling. */
+@media (max-width: 760px) {
+  .mobile-full-app dialog.reader-modal {
+    display: block;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mobile-full-app .reader-top,
+  .mobile-full-app .reader-pagination-controls {
+    position: relative;
+    z-index: 2;
+    background: var(--paper);
+  }
+  .mobile-full-app .reader-pagination-controls {
+    display: none !important;
+  }
+  .mobile-full-app .reader-series-nav {
+    padding: 7px 12px;
+  }
+  .mobile-full-app .reader-page {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: calc(100dvh - 116px);
+    max-height: calc(100dvh - 116px);
+    min-height: 180px;
+    margin: 0;
+    padding: 16px 16px 34px !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+  .mobile-full-app .reader-page .cover-grid {
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .mobile-full-app .reader-page .cover-grid .cover-thumb,
+  .mobile-full-app .reader-page .cover-grid .cover-placeholder {
+    width: 88px;
+    max-width: 88px;
+    height: auto;
+    aspect-ratio: 9 / 16;
+    object-fit: cover;
+  }
+  .mobile-full-app .reader-page h1 {
+    font-size: 23px;
+    line-height: 1.45;
+  }
+  .mobile-full-app .reader-body {
+    display: block;
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    column-width: auto !important;
+    column-count: 1 !important;
+    column-gap: 0 !important;
+    column-fill: auto !important;
+    padding: 12px 0 28px !important;
+    margin: 0;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+    line-height: 1.95 !important;
+    scroll-snap-type: none !important;
+    transform: none !important;
+    touch-action: pan-y;
+  }
+  .mobile-full-app .reader-body p {
+    margin: 0 0 1.1em;
+  }
+  .mobile-full-app .reader-bottom {
+    gap: 7px;
+    padding: 9px 10px calc(9px + env(safe-area-inset-bottom));
+  }
+}
