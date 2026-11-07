@@ -3522,7 +3522,6 @@ document.getElementById("inboxMessageForm")
   });
   document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
 
-  document.getElementById("profileShortcut").addEventListener("click",()=>switchTab("profile"));
 document.getElementById("inboxNotificationsTab")?.addEventListener("click",()=>{switchTab("inbox");openNotifications();});
 
 loadNotificationBadge();
