@@ -2799,7 +2799,7 @@ function renderProfile(){
   if(currentUserId&&supabaseClient){
     refreshFollowCounts(currentUserId);
   }
-  document.getElementById("myStoryList").innerHTML=mine.length?mine.map(storyCard).join(""):'<p class="muted">अभी आपने कोई रचना प्रकाशित नहीं की है।</p>';
+  document.getElementById("myStoryList").innerHTML=mine.length?renderStoryCards(mine):'<p class="muted">अभी आपने कोई रचना प्रकाशित नहीं की है।</p>';
   const draftBox=document.getElementById("myDraftList");
   if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><div class="story-meta"><button type="button" data-edit-work="${escapeHtml(d.id)}">संपादित करें</button><button type="button" data-republish="${escapeHtml(d.id)}">पुनः प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
   bindReadButtons();

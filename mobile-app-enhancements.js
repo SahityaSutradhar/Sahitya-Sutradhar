@@ -155,8 +155,42 @@
     $('mobileSeriesClose')?.addEventListener('click', () => $('mobileSeriesDetailDialog')?.close());
   }
 
+  // धारावाहिक के अलग-अलग भागों को हर सूची/रैंकिंग में एक ही कार्ड में समेटें।
+  function collapseSeries(works, readCounts = null) {
+    const groups = new Map();
+    (works || []).forEach((work, index) => {
+      const seriesId = work.seriesId || work.series_id;
+      const key = seriesId ? `series:${seriesId}` : `work:${work.id}`;
+      if (!groups.has(key)) groups.set(key, {key, seriesId: seriesId || null, items: [], firstIndex: index, totalReads: 0});
+      const group = groups.get(key);
+      group.items.push(work);
+      const reads = readCounts?.get(String(work.id));
+      group.totalReads += Number(reads ?? work.reads ?? 0);
+    });
+    return [...groups.values()].map(group => {
+      const parts = group.items.slice().sort((a,b) => Number(a.partNumber || a.part_number || 1) - Number(b.partNumber || b.part_number || 1));
+      const first = parts[0];
+      return {
+        ...first,
+        id: first.id,
+        seriesId: group.seriesId,
+        series_id: group.seriesId,
+        seriesTitle: group.seriesId ? (first.seriesTitle || first.series_title || first.title) : '',
+        partCount: group.seriesId ? parts.length : 0,
+        partIds: parts.map(part => String(part.id)),
+        reads: group.totalReads,
+        _seriesSortIndex: group.firstIndex
+      };
+    });
+  }
+
   function renderHorizontalCard(work) {
-    return `<button type="button" class="mobile-horizontal-card" data-work-detail="${esc(work.id)}">${work.coverUrl ? `<img src="${esc(work.coverUrl)}" alt="" loading="lazy">` : '<span class="mobile-horizontal-cover">❀</span>'}<strong>${esc(work.seriesTitle || work.title || 'शीर्षक रहित रचना')}</strong><small>${esc(work.author || 'अनाम रचनाकार')}</small></button>`;
+    const isSeries = Boolean(work.seriesId || work.series_id);
+    const title = isSeries ? (work.seriesTitle || work.series_title || work.title) : (work.title || 'शीर्षक रहित रचना');
+    const cover = work.coverUrl || work.cover_url;
+    const action = isSeries ? `data-series-detail="${esc(work.seriesId || work.series_id)}"` : `data-work-detail="${esc(work.id)}"`;
+    const label = isSeries ? `धारावाहिक · ${Number(work.partCount || 1)} भाग · विवरण और सभी भाग` : (work.type || work.main_form || 'रचना');
+    return `<button type="button" class="mobile-horizontal-card" ${action}>${cover ? `<img src="${esc(cover)}" alt="" loading="lazy">` : '<span class="mobile-horizontal-cover">❀</span>'}<strong>${esc(title)}</strong><small>${esc(work.author || 'अनाम रचनाकार')}</small>${isSeries ? `<small class="mobile-series-card-label">${esc(label)}</small>` : ''}</button>`;
   }
 
   function renderCatalogPage() {
@@ -194,24 +228,25 @@
       if (worksResult.error) throw worksResult.error;
       const works = worksResult.data || [];
       const hasPublicStats = !statsResult.error && Array.isArray(statsResult.data) && statsResult.data.length > 0;
-      let ranked = [];
-      if (hasPublicStats) {
-        const counts = new Map(statsResult.data.map(row => [String(row.work_id), Number(row.total_reads || 0)]));
-        ranked = [...works].sort((a,b) => (counts.get(String(b.id)) || 0) - (counts.get(String(a.id)) || 0));
-      }
-      const authorIds = [...new Set((hasPublicStats ? ranked : works).slice(0,1000).map(w => w.author_id).filter(Boolean))];
+      const counts = hasPublicStats ? new Map(statsResult.data.map(row => [String(row.work_id), Number(row.total_reads || 0)])) : new Map();
+      const ranked = hasPublicStats
+        ? [...works].sort((a,b) => (counts.get(String(b.id)) || 0) - (counts.get(String(a.id)) || 0))
+        : [...works];
+      const authorIds = [...new Set(ranked.slice(0,1000).map(w => w.author_id).filter(Boolean))];
       let profiles = [];
       if (authorIds.length) {
         const profileResult = await client.from('profiles').select('id,display_name,username').in('id', authorIds);
         if (!profileResult.error) profiles = profileResult.data || [];
       }
       const names = new Map(profiles.map(p => [p.id, p.display_name || p.username || 'अनाम रचनाकार']));
-      const hydrated = (hasPublicStats ? ranked : works).map(work => ({...work, author:names.get(work.author_id) || 'अनाम रचनाकार', authorId:work.author_id, body:work.content || '', type:work.main_form || 'रचना', language:work.content_language || 'hi', coverUrl:work.cover_url || '', seriesId:work.series_id || null, seriesTitle:work.series_title || '', partNumber:work.part_number || 1}));
-      window.__ssMobileWorkCache = hydrated;
+      const hydratedParts = ranked.map(work => ({...work, author:names.get(work.author_id) || 'अनाम रचनाकार', authorId:work.author_id, body:work.content || '', type:work.main_form || 'रचना', language:work.content_language || 'hi', coverUrl:work.cover_url || '', seriesId:work.series_id || null, seriesTitle:work.series_title || '', partNumber:work.part_number || 1, reads:counts.get(String(work.id)) || 0}));
+      // Detail dialog को धारावाहिक के सभी भाग उपलब्ध रहें; सूचियों में केवल एक धारावाहिक कार्ड दिखे।
+      window.__ssMobileWorkCache = hydratedParts;
+      const hydrated = collapseSeries(hydratedParts, counts);
       catalogRows = hydrated;
       catalogStatsAvailable = hasPublicStats;
       if (popularBox) popularBox.innerHTML = hasPublicStats && hydrated.length ? hydrated.slice(0,24).map(renderHorizontalCard).join('') : '<p class="muted">लोकप्रियता क्रम दिखाने के लिए सार्वजनिक समेकित पठन आँकड़े उपलब्ध नहीं हैं।</p>';
-      if (topWorksBox) topWorksBox.innerHTML = hasPublicStats && hydrated.length ? hydrated.slice(0,8).map(work => `<article class="story-card"><div class="cover-grid">${work.coverUrl ? `<img class="cover-thumb" src="${esc(work.coverUrl)}" alt="">` : '<div class="cover-placeholder">❀</div>'}<div><h3>${esc(work.seriesTitle || work.title)}</h3><p>${esc(work.author)}</p><button class="primary-button" type="button" data-work-detail="${esc(work.id)}">विवरण देखें</button></div></div></article>`).join('') : '<p class="muted">सार्वजनिक पठन आँकड़े उपलब्ध होने पर लोकप्रिय रचनाएँ यहाँ दिखाई जाएँगी।</p>';
+      if (topWorksBox) topWorksBox.innerHTML = hasPublicStats && hydrated.length ? hydrated.slice(0,8).map(work => `<article class="story-card"><div class="cover-grid">${work.coverUrl ? `<img class="cover-thumb" src="${esc(work.coverUrl)}" alt="">` : '<div class="cover-placeholder">❀</div>'}<div><h3>${esc(work.seriesId ? (work.seriesTitle || work.title) : work.title)}</h3><p>${esc(work.author)}</p>${work.seriesId ? `<p class="tiny-note">धारावाहिक · ${work.partCount} भाग</p><button class="primary-button" type="button" data-series-detail="${esc(work.seriesId)}">विवरण और सभी भाग</button>` : `<button class="primary-button" type="button" data-work-detail="${esc(work.id)}">विवरण देखें</button>`}</div></div></article>`).join('') : '<p class="muted">सार्वजनिक पठन आँकड़े उपलब्ध होने पर लोकप्रिय रचनाएँ यहाँ दिखाई जाएँगी।</p>';
       window.__ssPublicPublishedCatalog = hydrated;
       renderCatalogPage();
     } catch (error) {
@@ -264,7 +299,8 @@
             found = cached.filter(work => editDistance(query, work.title) <= 2 || editDistance(query, work.author) <= 2).slice(0,20);
           }
           window.__ssMobileWorkCache = [...new Map([...(window.__ssMobileWorkCache || []), ...found].map(work => [String(work.id),work])).values()];
-          workBox.innerHTML = `<h3>रचनाएँ (${found.length})</h3>${found.map(renderHorizontalCard).join('') || '<p class="muted">कोई रचना नहीं मिली।</p>'}`;
+          const groupedFound = collapseSeries(found);
+          workBox.innerHTML = `<h3>रचनाएँ (${groupedFound.length})</h3>${groupedFound.map(renderHorizontalCard).join('') || '<p class="muted">कोई रचना नहीं मिली।</p>'}`;
         }
         const authorBox = $('mobileSearchAuthors');
         if (authorBox) authorBox.innerHTML = `<h3>लेखक (${(profileResult.data || []).length})</h3>${(profileResult.data || []).map(p => `<button type="button" class="mobile-search-author" data-search-author="${esc(p.id)}"><strong>${esc(p.display_name || p.username || 'रचनाकार')}</strong><small>${esc((p.bio || '').slice(0,100))}</small></button>`).join('') || '<p class="muted">कोई लेखक नहीं मिला।</p>'}`;
