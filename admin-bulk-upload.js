@@ -62,31 +62,46 @@
   }
   async function getOcrWorker() {
     if(!window.Tesseract)throw new Error('OCR इंजन लोड नहीं हुआ। इंटरनेट जाँचें।');
-    const lang=$('ocrLanguage').value||'hin+san';
+    const lang=$('ocrLanguage').value||'hin+eng';
     return await Tesseract.createWorker(lang,1,{logger:m=>{if(m.status==='recognizing text'&&m.progress) $('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';}});
   }
   async function ocrImage(file) {
     const worker=await getOcrWorker();
     try { const result=await worker.recognize(file);return result.data.text||''; } finally { await worker.terminate(); }
   }
+  // पुराने/कस्टम देवनागरी फ़ॉन्ट की खराब ToUnicode mapping में PDF का
+  // selectable text 'Įी', 'Ʋोक' जैसे Latin Extended अक्षरों में बदल सकता है।
+  // ऐसे पन्नों पर उस टेक्स्ट को स्वीकार करने के बजाय दृश्य पन्ने का OCR करें।
+  function hasBrokenDevanagariMapping(text) {
+    const s=String(text||'');
+    const devanagari=(s.match(/[\u0900-\u097F]/g)||[]).length;
+    const suspicious=(s.match(/[\u0100-\u024F\u1E00-\u1EFF\uFFFD\uE000-\uF8FF]/g)||[]).length;
+    return devanagari>=5 && (suspicious>=2 || suspicious/Math.max(1,s.length)>0.012);
+  }
   async function readPdf(file) {
     if(!window.pdfjsLib)throw new Error('PDF रीडर लोड नहीं हुआ। इंटरनेट जाँचें।');
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
     if(pdf.numPages>100)throw new Error('PDF में 100 से अधिक पृष्ठ हैं; इसे छोटे भागों में बाँटें।');
-    let worker=null, parts=[];
+    let worker=null, parts=[], forcedOcrPages=0;
     try {
       for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
         const page=await pdf.getPage(pageNo);const textContent=await page.getTextContent();
         let text=textContent.items.map(x=>x.str||'').join(' ').replace(/[ \t]+/g,' ').trim();
-        if(text.length<35){
+        const brokenMapping=hasBrokenDevanagariMapping(text);
+        if(text.length<35 || brokenMapping){
           if(!worker)worker=await getOcrWorker();
-          const viewport=page.getViewport({scale:1.7});const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
-          await page.render({canvasContext:ctx,viewport}).promise;const ocr=await worker.recognize(canvas);text=ocr.data.text||'';canvas.width=canvas.height=1;
+          if(brokenMapping){forcedOcrPages++;progress(`PDF पृष्ठ ${pageNo}: खराब फ़ॉन्ट मैपिंग मिली; तस्वीर से दोबारा OCR किया जा रहा है।`);}
+          const viewport=page.getViewport({scale:2.2});const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:false});canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+          await page.render({canvasContext:ctx,viewport}).promise;
+          const ocr=await worker.recognize(canvas);const recognized=String(ocr.data.text||'').trim();
+          if(recognized.length>=10)text=recognized;
+          canvas.width=canvas.height=1;
         }
         if(text)parts.push(`\n\n[पृष्ठ ${pageNo}]\n${text}`);
         progress(`PDF: ${pageNo}/${pdf.numPages} पृष्ठ पढ़े।`);
       }
+      if(forcedOcrPages)progress(`${forcedOcrPages} पृष्ठों पर खराब PDF टेक्स्ट छोड़कर इमेज OCR इस्तेमाल किया गया।`);
     } finally { if(worker)await worker.terminate(); }
     return parts.join('\n').trim();
   }
