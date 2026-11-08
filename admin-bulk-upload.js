@@ -13,7 +13,7 @@
   const LANGS = [['hi','हिंदी'],['sa','संस्कृत'],['en','English'],['mr','मराठी'],['gu','ગુજરાતી'],['pa','ਪੰਜਾਬੀ'],['kn','ಕನ್ನಡ'],['ta','தமிழ்'],['ur','اردو']];
   const LOCAL_KEY = 'sahityaSutradhar.adminBulkDraft.v2';
   const MAX_FILES=100, MAX_BATCH_BYTES=500*1024*1024;
-  const FILE_LIMITS={pdf:50*1024*1024,docx:25*1024*1024,txt:10*1024*1024,md:10*1024*1024,rtf:10*1024*1024,html:10*1024*1024,htm:10*1024*1024,jpg:8*1024*1024,jpeg:8*1024*1024,png:8*1024*1024,webp:8*1024*1024};
+  const FILE_LIMITS={pdf:500*1024*1024,docx:25*1024*1024,txt:10*1024*1024,md:10*1024*1024,rtf:10*1024*1024,html:10*1024*1024,htm:10*1024*1024,jpg:8*1024*1024,jpeg:8*1024*1024,png:8*1024*1024,webp:8*1024*1024};
   const FILE_MIMES={pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',txt:'text/plain',md:'text/markdown',rtf:'application/rtf',html:'text/html',htm:'text/html',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp'};
   let client = null, adminUser = null, categories = [], authors = [], seriesRows = [], queue = [], groups = new Map(), existingWorks = [], pendingCoverPaths = [];
 
@@ -76,13 +76,14 @@
     const s=String(text||'');
     const devanagari=(s.match(/[\u0900-\u097F]/g)||[]).length;
     const suspicious=(s.match(/[\u0100-\u024F\u1E00-\u1EFF\uFFFD\uE000-\uF8FF]/g)||[]).length;
-    return devanagari>=5 && (suspicious>=2 || suspicious/Math.max(1,s.length)>0.012);
+    // कुछ पुराने PDF में पूरा देवनागरी पाठ Latin-जैसे गलत glyphs में बदल जाता है;
+    // इसलिए केवल देवनागरी अक्षरों की मौजूदगी पर निर्भर न रहें।
+    return suspicious>=2 && (devanagari>=2 || suspicious/Math.max(1,s.length)>0.008);
   }
   async function readPdf(file) {
     if(!window.pdfjsLib)throw new Error('PDF रीडर लोड नहीं हुआ। इंटरनेट जाँचें।');
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-    if(pdf.numPages>100)throw new Error('PDF में 100 से अधिक पृष्ठ हैं; इसे छोटे भागों में बाँटें।');
     let worker=null, parts=[], forcedOcrPages=0;
     try {
       for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
@@ -92,17 +93,18 @@
         if(text.length<35 || brokenMapping){
           if(!worker)worker=await getOcrWorker();
           if(brokenMapping){forcedOcrPages++;progress(`PDF पृष्ठ ${pageNo}: खराब फ़ॉन्ट मैपिंग मिली; तस्वीर से दोबारा OCR किया जा रहा है।`);}
-          const viewport=page.getViewport({scale:2.2});const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:false});canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+          const viewport=page.getViewport({scale:1.5});const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:false});canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
           await page.render({canvasContext:ctx,viewport}).promise;
           const ocr=await worker.recognize(canvas);const recognized=String(ocr.data.text||'').trim();
           if(recognized.length>=10)text=recognized;
           canvas.width=canvas.height=1;
         }
         if(text)parts.push(`\n\n[पृष्ठ ${pageNo}]\n${text}`);
+        page.cleanup();
         progress(`PDF: ${pageNo}/${pdf.numPages} पृष्ठ पढ़े।`);
       }
       if(forcedOcrPages)progress(`${forcedOcrPages} पृष्ठों पर खराब PDF टेक्स्ट छोड़कर इमेज OCR इस्तेमाल किया गया।`);
-    } finally { if(worker)await worker.terminate(); }
+    } finally { if(worker)await worker.terminate(); if(pdf)await pdf.destroy(); }
     return parts.join('\n').trim();
   }
 
