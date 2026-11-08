@@ -1,6 +1,6 @@
 /* साहित्य सूत्रधार PWA cache — versioned shell cache */
 const CACHE_PREFIX = "sahitya-sutradhar-";
-const CACHE_NAME = `${CACHE_PREFIX}shell-v16-admin-bulk-upload`;
+const CACHE_NAME = `${CACHE_PREFIX}shell-v17-admin-bulk-upload-v2`;
 
 const PRECACHE_ASSETS = [
   "./",
