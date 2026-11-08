@@ -62,7 +62,7 @@
   }
   async function getOcrWorker() {
     if(!window.Tesseract)throw new Error('OCR इंजन लोड नहीं हुआ। इंटरनेट जाँचें।');
-    const lang=$('ocrLanguage').value||'hin+eng';
+    const lang=$('ocrLanguage').value||'hin+san';
     return await Tesseract.createWorker(lang,1,{logger:m=>{if(m.status==='recognizing text'&&m.progress) $('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';}});
   }
   async function ocrImage(file) {
