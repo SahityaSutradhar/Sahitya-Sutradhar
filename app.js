@@ -475,7 +475,7 @@ async function saveCloudDraft(){
     const {data:{user},error:userError}=await supabaseClient.auth.getUser();
     if(userError)throw userError; if(!user){toast("क्लाउड ड्राफ्ट के लिए पहले लॉगिन करें।");return;}
     let coverUrl=null; if(coverFile)coverUrl=await uploadSutradharImage(coverFile,"covers");
-    const payload={author_id:user.id,title:title||"शीर्षक रहित मसौदा",content:body,work_type:getDatabaseWorkType(type,subtype),main_form:type||"गद्य",subtype:subtype||null,status:"draft",content_language:language};
+    const payload={author_id:user.id,title:title||"शीर्षक रहित मसौदा",content:body,work_type:getDatabaseWorkType(type,subtype),main_form:type||"गद्य",subtype:subtype||null,status:"draft",self_declaration_accepted:false,content_language:language};
     if(coverUrl)payload.cover_url=coverUrl;
     let work;
     if(editingWorkId){
@@ -629,6 +629,14 @@ async function publishStory(e) {
       return;
     }
 
+    const currentEditingWork = editingWorkId
+      ? state.stories.find(x => String(x.id) === String(editingWorkId))
+      : null;
+    const needsAuthorDeclaration = !editingWorkId || !currentEditingWork || currentEditingWork.status === "draft";
+    if (needsAuthorDeclaration && !window.confirm(
+      "लेखक की स्व-घोषणा\n\nमैं पुष्टि करता/करती हूँ कि यह रचना मेरी मौलिक रचना है, अथवा इसे साहित्य सूत्रधार पर प्रकाशित कराने की वैध अनुमति मेरे पास है। प्रस्तुत सामग्री के अधिकार और उसकी जिम्मेदारी मेरी है।\n\nक्या आप इस घोषणा से सहमत होकर रचना प्रकाशित करना चाहते हैं?"
+    )) return;
+
     const { data: categoryRows, error: categoryError } =
       await supabaseClient
         .from("categories")
@@ -765,7 +773,7 @@ async function publishStory(e) {
         main_form: type,
         subtype: subtype || null,
         content_language: contentLanguage,
-        status: "published"
+        status: existing.status === "draft" ? "draft" : "published"
       };
 
       if (coverUrl) updateData.cover_url = coverUrl;
@@ -804,7 +812,8 @@ if (editingWorkId && seriesMode === "standalone") {
           work_type: getDatabaseWorkType(type, subtype),
           main_form: type,
           subtype: subtype || null,
-          status: "published",
+          status: "draft",
+          self_declaration_accepted: false,
           content_language: contentLanguage,
           cover_url: coverUrl,
           series_id: seriesId,
@@ -889,16 +898,25 @@ if (editingWorkId && seriesMode === "standalone") {
 
     if (linkError) {
       console.error("श्रेणी लिंक सेव नहीं हुए:", linkError);
-      toast("रचना सुरक्षित हुई, लेकिन श्रेणियाँ पूरी तरह अपडेट नहीं हुईं: " + linkError.message);
-    } else {
-      toast(
-        editingWorkId
-          ? "पुरानी प्रकाशित रचना के बदलाव सुरक्षित हो गए।"
-          : seriesId
-            ? `धारावाहिक का भाग ${partNumber} प्रकाशित हो गया!`
-            : "रचना Supabase में सफलतापूर्वक प्रकाशित हो गई!"
-      );
+      throw new Error("रचना की श्रेणियाँ पूरी तरह सुरक्षित नहीं हुईं: " + linkError.message);
     }
+
+    if (needsAuthorDeclaration) {
+      const { error: declarationError } = await supabaseClient.rpc(
+        "confirm_own_work_publication",
+        { p_work_id: work.id }
+      );
+      if (declarationError) throw declarationError;
+      publishedWorkId = work.id;
+    }
+
+    toast(
+      editingWorkId
+        ? (needsAuthorDeclaration ? "आपकी स्व-घोषणा दर्ज हुई और रचना प्रकाशित हो गई।" : "आपकी प्रकाशित रचना के बदलाव सुरक्षित हो गए।")
+        : seriesId
+          ? `धारावाहिक का भाग ${partNumber} आपकी स्व-घोषणा के बाद प्रकाशित हो गया!`
+          : "आपकी स्व-घोषणा दर्ज हुई और रचना सफलतापूर्वक प्रकाशित हो गई!"
+    );
 
     editingWorkId = null;
 
@@ -1460,14 +1478,23 @@ async function deleteMyFeedback(type) {
 async function setCurrentWorkStatus(){
   const s=state.stories.find(x=>x.id===currentReaderId);if(!s||!s.authorId||!supabaseClient)return;
   const next=s.status==="draft"?"published":"draft";
-  const msg=next==="draft"?"क्या इस रचना को अप्रकाशित करके निजी ड्राफ्ट में रखना चाहते हैं?":"क्या इसी रचना को फिर से प्रकाशित करना चाहते हैं?";
+  const msg=next==="draft"
+    ? "क्या इस रचना को अप्रकाशित करके निजी ड्राफ्ट में रखना चाहते हैं?"
+    : "लेखक की स्व-घोषणा\n\nमैं पुष्टि करता/करती हूँ कि यह रचना मेरी मौलिक रचना है, अथवा इसे प्रकाशित कराने की वैध अनुमति मेरे पास है और सामग्री के अधिकारों की जिम्मेदारी मेरी है।\n\nक्या आप सहमत होकर इसे पुनः प्रकाशित करना चाहते हैं?";
   if(!confirm(msg))return;
   const {data:{user}}=await supabaseClient.auth.getUser();if(!user||user.id!==s.authorId){toast("केवल रचनाकार यह बदलाव कर सकता है।");return;}
-  const {error}=await supabaseClient.from("works").update({status:next,updated_at:new Date().toISOString()}).eq("id",s.id).eq("author_id",user.id);
+  let error=null;
+  if(next==="published"){
+    const result=await supabaseClient.rpc("confirm_own_work_publication",{p_work_id:s.id});
+    error=result.error;
+  }else{
+    const result=await supabaseClient.from("works").update({status:"draft",self_declaration_accepted:false,updated_at:new Date().toISOString()}).eq("id",s.id).eq("author_id",user.id);
+    error=result.error;
+  }
   if(error){toast("स्थिति नहीं बदली: "+error.message);return;}
   s.status=next;saveState();document.getElementById("readerDialog").close();await loadCloudWorks();
-  toast(next==="draft"?"रचना निजी ड्राफ्ट में चली गई।":"रचना पुनः प्रकाशित हो गई; पुराना फीडबैक सुरक्षित है।");
-      }
+  toast(next==="draft"?"रचना निजी ड्राफ्ट में चली गई।":"आपकी स्व-घोषणा दर्ज हुई और रचना पुनः प्रकाशित हो गई।");
+}
 async function submitReviewComment(form){
   const reviewId=Number(form.dataset.reviewComment), textValue=new FormData(form).get("comment")?.toString().trim();
   if(!textValue||!supabaseClient||!currentReaderId)return;
@@ -2801,7 +2828,7 @@ function renderProfile(){
   }
   document.getElementById("myStoryList").innerHTML=mine.length?renderStoryCards(mine):'<p class="muted">अभी आपने कोई रचना प्रकाशित नहीं की है।</p>';
   const draftBox=document.getElementById("myDraftList");
-  if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><div class="story-meta"><button type="button" data-edit-work="${escapeHtml(d.id)}">संपादित करें</button><button type="button" data-republish="${escapeHtml(d.id)}">पुनः प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
+  if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><div class="story-meta"><button type="button" data-edit-work="${escapeHtml(d.id)}">संपादित करें</button><button type="button" data-republish="${escapeHtml(d.id)}">स्व-घोषणा करके प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
   bindReadButtons();
   document.querySelectorAll("[data-republish]").forEach(b=>b.addEventListener("click",()=>{currentReaderId=b.dataset.republish;setCurrentWorkStatus();}));
 }
