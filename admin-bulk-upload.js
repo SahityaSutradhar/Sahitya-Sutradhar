@@ -13,7 +13,7 @@
   const LANGS = [['hi','हिंदी'],['sa','संस्कृत'],['en','English'],['mr','मराठी'],['gu','ગુજરાતી'],['pa','ਪੰਜਾਬੀ'],['kn','ಕನ್ನಡ'],['ta','தமிழ்'],['ur','اردو']];
   const LOCAL_KEY = 'sahityaSutradhar.adminBulkDraft.v2';
   const MAX_FILES=100, MAX_BATCH_BYTES=500*1024*1024;
-  const FILE_LIMITS={pdf:500*1024*1024,docx:25*1024*1024,txt:10*1024*1024,md:10*1024*1024,rtf:10*1024*1024,html:10*1024*1024,htm:10*1024*1024,jpg:8*1024*1024,jpeg:8*1024*1024,png:8*1024*1024,webp:8*1024*1024};
+  const FILE_LIMITS={pdf:100*1024*1024,docx:25*1024*1024,txt:10*1024*1024,md:10*1024*1024,rtf:10*1024*1024,html:10*1024*1024,htm:10*1024*1024,jpg:8*1024*1024,jpeg:8*1024*1024,png:8*1024*1024,webp:8*1024*1024};
   const FILE_MIMES={pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',txt:'text/plain',md:'text/markdown',rtf:'application/rtf',html:'text/html',htm:'text/html',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp'};
   let client = null, adminUser = null, categories = [], authors = [], seriesRows = [], queue = [], groups = new Map(), existingWorks = [], pendingCoverPaths = [];
 
@@ -28,20 +28,25 @@
     const first=String(content||'').split(/\r?\n/).map(x=>x.trim()).find(x=>x.length>=4&&x.length<=110&&!/^([0-9०-९]+|page\s+\d+)$/i.test(x));
     return first && first.length < base.length + 4 ? first.replace(/^#+\s*/,'') : (base || 'शीर्षक रहित रचना');
   }
+  function detectScript(text) {
+    const s=String(text||'');
+    const ranges=[
+      ['pa',/[\u0A00-\u0A7F]/g],['gu',/[\u0A80-\u0AFF]/g],
+      ['ta',/[\u0B80-\u0BFF]/g],['kn',/[\u0C80-\u0CFF]/g],
+      ['ur',/[\u0600-\u06FF]/g],['hi',/[\u0900-\u097F]/g],['en',/[A-Za-z]/g]
+    ];
+    let best='hi', count=0;
+    for(const [lang,re] of ranges){const n=(s.match(re)||[]).length;if(n>count){best=lang;count=n;}}
+    return count?best:'unknown';
+  }
   function detectLanguage(text) {
     const s=String(text||'');
-    if(/[\u0A00-\u0A7F]/.test(s))return 'pa';
-    if(/[\u0B80-\u0BFF]/.test(s))return 'ta';
-    if(/[\u0C80-\u0CFF]/.test(s))return 'kn';
-    if(/[\u0A80-\u0AFF]/.test(s))return 'gu';
-    if(/[\u0900-\u097F]/.test(s)){
-      const ocr=String($('ocrLanguage')?.value||'');
-      if(ocr.startsWith('san'))return 'sa';
-      if(ocr.startsWith('mar'))return 'mr';
-      return 'hi';
-    }
-    if(/[\u0600-\u06FF]/.test(s))return 'ur';
-    return 'en';
+    const script=detectScript(s);
+    if(script!=='hi')return script;
+    // एक ही देवनागरी लिपि में हिंदी/संस्कृत/मराठी का पूर्ण स्वचालित भेद विश्वसनीय नहीं है।
+    if(/(संस्कृत|sanskrit|रामायण|रामचरितमानस|वेद|उपनिषद|स्तोत्र|श्लोक)/iu.test(s.slice(0,3000)))return 'sa';
+    if(/(मराठी|महाराष्ट्र|आहे|आणि|करिता|म्हणून)/u.test(s.slice(0,3000)))return 'mr';
+    return 'hi';
   }
   function detectForm(text) { const s=String(text||'').trim(); const lines=s.split(/\r?\n/).filter(x=>x.trim()); if(lines.length>5){const short=lines.filter(x=>x.trim().length<45).length; if(short/lines.length>.58)return {main_form:'पद्य',subtype:'कविता'};} return {main_form:'गद्य',subtype:'कहानी'}; }
   function workType(main, subtype) { if(main==='पद्य')return 'poem';const m={कहानी:'story',लघुकथा:'story',उपन्यास:'novel',लेख:'article',निबंध:'essay'};return m[subtype]||'other'; }
@@ -60,51 +65,91 @@
     if(['jpg','jpeg','png','webp'].includes(ext)) return await ocrImage(file);
     throw new Error('यह फाइल प्रारूप समर्थित नहीं है।');
   }
-  async function getOcrWorker() {
+  let ocrWorker=null, ocrWorkerLang='';
+  function languageForOcr(script, fileName='') {
+    const selected=String($('ocrLanguage')?.value||'auto');
+    if(selected!=='auto')return selected;
+    if(script==='gu')return 'guj'; if(script==='pa')return 'pan'; if(script==='kn')return 'kan';
+    if(script==='ta')return 'tam'; if(script==='ur')return 'urd'; if(script==='en')return 'eng';
+    if(script==='hi' && /(संस्कृत|sanskrit|रामायण|रामचरितमानस|वेद|उपनिषद|स्तोत्र|श्लोक)/iu.test(fileName))return 'san';
+    if(script==='hi')return 'hin';
+    // स्कैन में टेक्स्ट-लेयर नहीं होती; ऐसे अज्ञात पन्नों के लिए भारतीय साहित्य का सुरक्षित डिफॉल्ट।
+    return /(ગુજરાતી|gujarati)/iu.test(fileName)?'guj':/(ਪੰਜਾਬੀ|punjabi)/iu.test(fileName)?'pan':/(தமிழ்|tamil)/iu.test(fileName)?'tam':/(ಕನ್ನಡ|kannada)/iu.test(fileName)?'kan':/(اردو|urdu)/iu.test(fileName)?'urd':'hin';
+  }
+  async function getOcrWorker(lang) {
     if(!window.Tesseract)throw new Error('OCR इंजन लोड नहीं हुआ। इंटरनेट जाँचें।');
-    const lang=$('ocrLanguage').value||'hin+eng';
-    return await Tesseract.createWorker(lang,1,{logger:m=>{if(m.status==='recognizing text'&&m.progress) $('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';}});
+    if(ocrWorker && ocrWorkerLang===lang)return ocrWorker;
+    if(ocrWorker){await ocrWorker.terminate();ocrWorker=null;ocrWorkerLang='';}
+    try {
+      ocrWorker=await Tesseract.createWorker(lang,1,{logger:m=>{if(m.status==='recognizing text'&&m.progress) $('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';}});
+      ocrWorkerLang=lang;
+    } catch(e) {
+      // Sanskrit traineddata/CDN उपलब्ध न होने पर देवनागरी हिंदी मॉडल से fallback.
+      if(lang!=='san')throw e;
+      progress('संस्कृत OCR मॉडल उपलब्ध नहीं हुआ; देवनागरी हिंदी मॉडल से वैकल्पिक OCR किया जा रहा है।',true);
+      ocrWorker=await Tesseract.createWorker('hin',1,{logger:m=>{if(m.status==='recognizing text'&&m.progress) $('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';}});
+      ocrWorkerLang='hin';
+    }
+    return ocrWorker;
   }
   async function ocrImage(file) {
-    const worker=await getOcrWorker();
-    try { const result=await worker.recognize(file);return result.data.text||''; } finally { await worker.terminate(); }
+    const script=languageForOcr('unknown',file.name);const worker=await getOcrWorker(script);
+    const result=await worker.recognize(file);return result.data.text||'';
   }
-  // पुराने/कस्टम देवनागरी फ़ॉन्ट की खराब ToUnicode mapping में PDF का
-  // selectable text 'Įी', 'Ʋोक' जैसे Latin Extended अक्षरों में बदल सकता है।
-  // ऐसे पन्नों पर उस टेक्स्ट को स्वीकार करने के बजाय दृश्य पन्ने का OCR करें।
-  function hasBrokenDevanagariMapping(text) {
+  function hasBadPdfText(text) {
     const s=String(text||'');
-    const devanagari=(s.match(/[\u0900-\u097F]/g)||[]).length;
+    if(!s.trim())return true;
     const suspicious=(s.match(/[\u0100-\u024F\u1E00-\u1EFF\uFFFD\uE000-\uF8FF]/g)||[]).length;
-    // कुछ पुराने PDF में पूरा देवनागरी पाठ Latin-जैसे गलत glyphs में बदल जाता है;
-    // इसलिए केवल देवनागरी अक्षरों की मौजूदगी पर निर्भर न रहें।
-    return suspicious>=2 && (devanagari>=2 || suspicious/Math.max(1,s.length)>0.008);
+    const replacement=(s.match(/[\uFFFD\u0000]/g)||[]).length;
+    const letters=(s.match(/[\p{L}]/gu)||[]).length;
+    const script=detectScript(s);
+    // पुराने PDF में देवनागरी glyph Latin Extended codepoints में लौटते हैं।
+    if(suspicious>=2 && (script==='en' || suspicious/Math.max(1,s.length)>0.006))return true;
+    if(replacement>=1 || (s.length>80 && letters/Math.max(1,s.length)<0.22))return true;
+    return s.trim().length<35;
   }
   async function readPdf(file) {
     if(!window.pdfjsLib)throw new Error('PDF रीडर लोड नहीं हुआ। इंटरनेट जाँचें।');
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-    let worker=null, parts=[], forcedOcrPages=0;
+    const parts=[];let ocrPages=0, textPages=0;
+    progress(`PDF में ${pdf.numPages.toLocaleString('hi-IN')} पृष्ठ मिले; क्रमशः पढ़ना शुरू।`);
     try {
       for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
-        const page=await pdf.getPage(pageNo);const textContent=await page.getTextContent();
-        let text=textContent.items.map(x=>x.str||'').join(' ').replace(/[ \t]+/g,' ').trim();
-        const brokenMapping=hasBrokenDevanagariMapping(text);
-        if(text.length<35 || brokenMapping){
-          if(!worker)worker=await getOcrWorker();
-          if(brokenMapping){forcedOcrPages++;progress(`PDF पृष्ठ ${pageNo}: खराब फ़ॉन्ट मैपिंग मिली; तस्वीर से दोबारा OCR किया जा रहा है।`);}
-          const viewport=page.getViewport({scale:1.5});const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:false});canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
-          await page.render({canvasContext:ctx,viewport}).promise;
-          const ocr=await worker.recognize(canvas);const recognized=String(ocr.data.text||'').trim();
-          if(recognized.length>=10)text=recognized;
-          canvas.width=canvas.height=1;
-        }
-        if(text)parts.push(`\n\n[पृष्ठ ${pageNo}]\n${text}`);
-        page.cleanup();
-        progress(`PDF: ${pageNo}/${pdf.numPages} पृष्ठ पढ़े।`);
+        let page=null;
+        try {
+          page=await pdf.getPage(pageNo);
+          const textContent=await page.getTextContent();
+          let text=textContent.items.map(x=>x.str||'').join(' ').replace(/[ \t]+/g,' ').trim();
+          if(hasBadPdfText(text)){
+            let script=detectScript(text);
+            // Latin-जैसे mojibake को English न मानें; पुरानी देवनागरी PDF में यही सामान्य संकेत है।
+            if(script==='unknown' || (script==='en' && /[\u0100-\u024F\u1E00-\u1EFF]/.test(text)))script='hi';
+            const lang=languageForOcr(script,file.name);
+            const worker=await getOcrWorker(lang);
+            const viewport=page.getViewport({scale:1.5});
+            const canvas=document.createElement('canvas');
+            const ctx=canvas.getContext('2d',{alpha:false});
+            canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+            try {
+              await page.render({canvasContext:ctx,viewport}).promise;
+              const result=await worker.recognize(canvas);
+              const recognized=String(result.data.text||'').trim();
+              if(recognized.length>0)text=recognized;
+              ocrPages++;
+            } finally {canvas.width=1;canvas.height=1;}
+          } else textPages++;
+          if(text)parts.push(`\n\n[पृष्ठ ${pageNo}]\n${text}`);
+          progress(`PDF: ${pageNo.toLocaleString('hi-IN')}/${pdf.numPages.toLocaleString('hi-IN')} पृष्ठ पढ़े (${ocrPages} OCR)।`);
+        } finally { if(page)page.cleanup(); }
+        // UI को साँस लेने दें; लंबे दस्तावेज़ में ब्राउज़र freeze कम होगा।
+        if(pageNo%3===0)await new Promise(resolve=>setTimeout(resolve,0));
       }
-      if(forcedOcrPages)progress(`${forcedOcrPages} पृष्ठों पर खराब PDF टेक्स्ट छोड़कर इमेज OCR इस्तेमाल किया गया।`);
-    } finally { if(worker)await worker.terminate(); if(pdf)await pdf.destroy(); }
+    } finally {
+      if(ocrWorker){await ocrWorker.terminate();ocrWorker=null;ocrWorkerLang='';}
+      await pdf.destroy();
+    }
+    progress(`समाप्त: ${pdf.numPages} पृष्ठ; ${ocrPages} पर OCR और ${textPages} पर PDF टेक्स्ट इस्तेमाल हुआ।`);
     return parts.join('\n').trim();
   }
 
