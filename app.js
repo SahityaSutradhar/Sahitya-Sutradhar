@@ -3826,7 +3826,7 @@ document.getElementById("editProfile").addEventListener("click",async()=>{const 
   // साहित्य सूत्रधार PWA Service Worker
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js?v=20261110-final-i18n-premium-1", {updateViaCache:"none"})
+      navigator.serviceWorker.register("./sw.js?v=20261110-login-resilience-2", {updateViaCache:"none"})
         .then(async registration => {
           console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
           try { await registration.update(); } catch (_) {}
@@ -3864,8 +3864,8 @@ function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState
   const dialog = document.getElementById("authDialog");
   const form = document.getElementById("authForm");
 
-  if (!dialog || !form || !window.supabase) {
-    console.error("लॉगिन फ़ॉर्म या Supabase उपलब्ध नहीं है।");
+  if (!dialog || !form) {
+    console.error("लॉगिन फ़ॉर्म उपलब्ध नहीं है।");
     return;
   }
 
@@ -3906,6 +3906,10 @@ function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState
   }
 
   async function refreshAuth() {
+    if (!supabaseClient?.auth) {
+      showMessage("लॉगिन सेवा अभी उपलब्ध नहीं है। इंटरनेट कनेक्शन जाँचकर पृष्ठ फिर खोलें।");
+      return null;
+    }
     const { data, error } = await supabaseClient.auth.getUser();
 
     if (error) console.error("खाता जाँच:", error.message);
@@ -3979,6 +3983,11 @@ google.addEventListener("click", async () => {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    event.stopPropagation();
+    if (!supabaseClient?.auth) {
+      showMessage("लॉगिन सेवा से संपर्क नहीं हो पा रहा है। इंटरनेट कनेक्शन जाँचें और पुनः प्रयास करें।");
+      return;
+    }
     showMessage("कृपया प्रतीक्षा करें…");
     submit.disabled = true;
 
@@ -4084,7 +4093,13 @@ google.addEventListener("click", async () => {
   }
 
   
-supabaseClient.auth.onAuthStateChange((event, session) => {
+if (!supabaseClient?.auth) {
+    showMessage("लॉगिन सेवा लोड नहीं हुई। कृपया इंटरनेट कनेक्शन जाँचें और पृष्ठ पुनः खोलें।");
+    console.error("Supabase client उपलब्ध नहीं है; लॉगिन फ़ॉर्म सक्रिय है लेकिन प्रमाणीकरण संभव नहीं।");
+    return;
+  }
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
 
   // लॉगिन/लॉगआउट पर ऐप-लॉन्च Loader दोबारा नहीं दिखेगा।
 

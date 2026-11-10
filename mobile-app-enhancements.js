@@ -347,6 +347,15 @@
       if (typeof loadCloudWorks === 'function') await loadCloudWorks();
     });
     async function gate() {
+      if (!client?.auth) {
+        const dialog = $('authDialog');
+        const close = $('authClose');
+        if (close) close.hidden = true;
+        const message = $('authMessage');
+        if (message) message.textContent = 'लॉगिन सेवा लोड नहीं हुई। इंटरनेट कनेक्शन जाँचकर पृष्ठ पुनः खोलें।';
+        if (dialog && !dialog.open) dialog.showModal();
+        return;
+      }
       const {data} = await client.auth.getSession();
       if (!data.session) { const dialog = $('authDialog'); const close = $('authClose'); if (close) close.hidden = true; if (dialog && !dialog.open) dialog.showModal(); }
       else await showOnboardingIfNeeded(data.session.user);
