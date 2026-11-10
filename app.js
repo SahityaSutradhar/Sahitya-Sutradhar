@@ -1,7 +1,3 @@
-const supabaseClient = window.supabase?.createClient(
-  window.SUPABASE_URL,
-  window.SUPABASE_ANON_KEY
-);
 const CATEGORIES = ["रोमांटिक","कॉमेडी","हास्य-व्यंग्य","प्रेम","सस्पेंस एवं थ्रिलर","एडवेंचर","साइंस फिक्शन","फैंटेसी","देशप्रेम","शौर्य","ओज","ऐतिहासिक","पौराणिक","मिश्रित","रेखाचित्र","बालकथा","मनोरंजन","शिक्षाप्रद","अन्य"];
 const SUBTYPES = {
   "गद्य":["कहानी","लघुकथा","उपन्यास","लेख","निबंध","नाटक","संस्मरण","यात्रा वृत्तांत","आत्मकथा","हास्य-व्यंग्य","जीवनी","अन्य"],
@@ -76,6 +72,9 @@ function uiTranslate(value,lang=state?.profile?.uiLanguage||"hi"){
  for(const [src,dst] of Object.entries(words).sort((a,b)=>b[0].length-a[0].length))out=out.replaceAll(src,dst);
  return out;
 }
+// Text nodes are DOM Node objects, not Elements: preserve their source text in a WeakMap.
+// Using node.dataset here throws on the first ordinary text node and prevents init() entirely.
+const SS_ORIGINAL_TEXT_NODES = new WeakMap();
 function applyUILanguage(){
  const lang=state?.profile?.uiLanguage||"hi";
  document.documentElement.lang=lang;
@@ -88,8 +87,8 @@ function applyUILanguage(){
  const translateNode=node=>{
   if(node.nodeType!==Node.TEXT_NODE||!node.nodeValue.trim())return;
   const parent=node.parentElement;if(!parent||parent.closest(protectedSelector))return;
-  if(!node.dataset.ssOriginalText)node.dataset.ssOriginalText=node.nodeValue;
-  const original=node.dataset.ssOriginalText;
+  if(!SS_ORIGINAL_TEXT_NODES.has(node))SS_ORIGINAL_TEXT_NODES.set(node,node.nodeValue);
+  const original=SS_ORIGINAL_TEXT_NODES.get(node);
   const translated=uiTranslate(original,lang);
   if(node.nodeValue!==translated)node.nodeValue=translated;
  };
@@ -98,8 +97,8 @@ function applyUILanguage(){
  document.querySelectorAll("input[placeholder],textarea[placeholder],button[aria-label],*[title],select[aria-label]").forEach(el=>{
   for(const attr of ["placeholder","aria-label","title"]){if(!el.hasAttribute(attr))continue;const key="ssOriginal"+attr;if(!el.dataset[key])el.dataset[key]=el.getAttribute(attr);el.setAttribute(attr,uiTranslate(el.dataset[key],lang));}
  });
- const authHeading=document.getElementById("authHeading");if(authHeading){const register=authHeading.dataset.authMode==="register";authHeading.textContent=uiTranslate(register?"नया खाता बनाएँ":"साहित्य सूत्रधार में प्रवेश",lang);}
- const authSubtitle=document.getElementById("authSubtitle");if(authSubtitle)authSubtitle.textContent=uiTranslate("साहित्य, संवेदना और सृजन का आपका अपना संसार",lang);
+ const authHeading=document.getElementById("authHeading");if(authHeading){const register=authHeading.dataset.authMode==="register";const nextHeading=uiTranslate(register?"नया खाता बनाएँ":"साहित्य सूत्रधार में प्रवेश",lang);if(authHeading.textContent!==nextHeading)authHeading.textContent=nextHeading;}
+ const authSubtitle=document.getElementById("authSubtitle");if(authSubtitle){const nextSubtitle=uiTranslate("साहित्य, संवेदना और सृजन का आपका अपना संसार",lang);if(authSubtitle.textContent!==nextSubtitle)authSubtitle.textContent=nextSubtitle;}
 }
 
 function emptyAccountState(){
@@ -3852,7 +3851,7 @@ document.getElementById("editProfile")?.addEventListener("click",async()=>{const
   // साहित्य सूत्रधार PWA Service Worker
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js?v=20261110-interaction-resilience-3", {updateViaCache:"none"})
+      navigator.serviceWorker.register("./sw.js?v=20261110-dom-textnode-fix-1", {updateViaCache:"none"})
         .then(async registration => {
           console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
           try { await registration.update(); } catch (_) {}
