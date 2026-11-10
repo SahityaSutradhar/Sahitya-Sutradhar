@@ -1,7 +1,7 @@
-/* साहित्य सूत्रधार — global refresh worker (20261110-global-refresh-4) */
-const BUILD = '20261110-global-refresh-4';
+/* साहित्य सूत्रधार — global refresh worker (20261110-button-recovery-1) */
+const BUILD = '20261110-button-recovery-1';
 const CACHE_PREFIX = 'sahitya-sutradhar-';
-const CACHE_NAME = `${CACHE_PREFIX}20261110-global-refresh-4`;
+const CACHE_NAME = `${CACHE_PREFIX}20261110-button-recovery-1`;
 const PRECACHE_ASSETS = [
   './', './index.html', './mobile-app.html', './mobile-reader.html', './shastriya.html', './admin-bulk-upload.html',
   './styles.css', './mobile-app.css', './mobile-reader.css', './shastriya.css', './admin-bulk-upload.css',

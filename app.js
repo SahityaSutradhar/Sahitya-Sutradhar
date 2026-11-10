@@ -3471,19 +3471,31 @@ function showInboxMode(mode){
 function switchTab(tab){
   activeTab=tab;
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  document.querySelector(".app-shell").classList.toggle("hidden",tab!=="home");
+  document.querySelector(".app-shell")?.classList.toggle("hidden",tab!=="home");
   ["library","profile","settings","inbox","community"].forEach(t=>{
   const view=document.getElementById(t+"View");
   if(view) view.classList.toggle("hidden",tab!==t);
 });
   if(tab==="community")loadCommunityPosts();
-  if(tab==="write"){openWrite();document.querySelector('[data-tab="home"]').classList.remove("active");}
+  if(tab==="write"){openWrite();document.querySelector('[data-tab="home"]')?.classList.remove("active");}
   if(tab==="library")renderLibrary();
   if(tab==="inbox")loadInbox();
   if(tab==="settings")renderPreferredCategories();
   if(tab==="profile")renderProfile();
   window.scrollTo({top:0,behavior:"smooth"});
 }
+function bindSutradharNavigationFallback(){
+  if(window.__ssNavigationFallbackBound)return;
+  window.__ssNavigationFallbackBound=true;
+  document.addEventListener("click",event=>{
+    const control=event.target?.closest?.(".nav-item[data-tab], [data-go]");
+    if(!control||control.dataset.ssNavigationBound==="1")return;
+    const tab=control.dataset.tab||control.dataset.go;
+    if(!tab)return;
+    try{switchTab(tab);}catch(error){console.error("Navigation fallback:",error);toast("यह पृष्ठ अभी नहीं खुल सका। कृपया पुनः प्रयास करें।");}
+  },true);
+}
+
 function applyTheme(){document.body.classList.toggle("dark",state.theme==="dark");}
 
 /* =========================================
@@ -3818,9 +3830,23 @@ if(["new_work","rating","review","work_comment","review_comment"].includes(type)
 }
 
 function init(){
-  applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
+  const runInitStep = (name, task) => {
+    try { task(); }
+    catch (error) {
+      console.error(`[Sahitya Sutradhar] प्रारंभिक चरण विफल: ${name}`, error);
+      window.__SS_INIT_ERRORS = window.__SS_INIT_ERRORS || [];
+      window.__SS_INIT_ERRORS.push({ step: name, message: error?.message || String(error) });
+    }
+  };
+  runInitStep("theme", applyTheme);
+  runInitStep("category form", renderCategoriesForm);
+  runInitStep("category chips", renderChips);
+  runInitStep("stories", renderStories);
+  runInitStep("profile", renderProfile);
+  runInitStep("library", renderLibrary);
+  runInitStep("localization", applyUILanguage);
 
-  document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+  document.querySelectorAll(".nav-item").forEach(b=>{b.addEventListener("click",()=>switchTab(b.dataset.tab));b.dataset.ssNavigationBound="1";});
   document.getElementById("inboxMessagesTab")
   ?.addEventListener("click",()=>showInboxMode("messages"));
 
@@ -3841,11 +3867,11 @@ document.getElementById("inboxMessageForm")
   document.getElementById("workSearchClear")?.addEventListener("click",()=>{
     if(workSearchInput){workSearchInput.value="";renderStories();workSearchInput.focus();}
   });
-  document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.go)));
+  document.querySelectorAll("[data-go]").forEach(b=>{b.addEventListener("click",()=>switchTab(b.dataset.go));b.dataset.ssNavigationBound="1";});
 
 document.getElementById("inboxNotificationsTab")?.addEventListener("click",()=>{switchTab("inbox");openNotifications();});
 
-loadNotificationBadge();
+loadNotificationBadge().catch(error=>console.warn("Notification badge startup:",error));
 
 if(supabaseClient){
   supabaseClient.auth.onAuthStateChange(()=>{
@@ -3930,29 +3956,29 @@ if(supabaseClient){
   e.target.value = "";
 });
   document.getElementById("readingLanguage")?.addEventListener("change",async e=>{if(!supabaseClient)return;const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({reading_language:e.target.value}).eq("id",user.id);if(error)toast(error.message);else{state.profile.readingLanguage=e.target.value;saveState();renderStories();toast("पठन भाषा सुरक्षित हुई।");}}});
-  document.getElementById("themeToggle").addEventListener("click",toggleTheme);
+  document.getElementById("themeToggle")?.addEventListener("click",toggleTheme);
   document.getElementById("writerSort")?.addEventListener("change",loadHomepageStats);
-  renderPreferredCategories();
+  runInitStep("preferred categories", renderPreferredCategories);
   document.getElementById("editorToolbar")?.querySelectorAll("[data-format]").forEach(b=>b.addEventListener("click",()=>{const m={bold:["**","**"],italic:["*","*"],highlight:["[[highlight]]","[[/highlight]]"]}[b.dataset.format];wrapEditorSelection(...m);}));
-  document.getElementById("applyEditorStyle")?.addEventListener("click",()=>{const font=document.getElementById("editorFont").value,color=document.getElementById("editorColor").value;if(color)wrapEditorSelection(`[[color:${color}]]`,`[[/color]]`);else wrapEditorSelection(`[[font:${font}]]`,`[[/font]]`);});
-  document.getElementById("themeToggle2").addEventListener("click",toggleTheme);
+  document.getElementById("applyEditorStyle")?.addEventListener("click",()=>{const font=document.getElementById("editorFont")?.value||"serif",color=document.getElementById("editorColor")?.value||"";if(color)wrapEditorSelection(`[[color:${color}]]`,`[[/color]]`);else wrapEditorSelection(`[[font:${font}]]`,`[[/font]]`);});
+  document.getElementById("themeToggle2")?.addEventListener("click",toggleTheme);
   const uiSelect=document.getElementById("layoutLanguage");
   if(uiSelect){uiSelect.value=state.profile.uiLanguage||"hi";uiSelect.addEventListener("change",async()=>{state.profile.uiLanguage=uiSelect.value;saveState();if(supabaseClient){const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({ui_language:uiSelect.value}).eq("id",user.id);if(error)toast("इस डिवाइस पर भाषा बदली गई, क्लाउड सेव नहीं हुई: "+error.message);}}applyUILanguage();toast("प्रदर्शन भाषा बदल दी गई।");});}
   applyUILanguage();
-  document.getElementById("formType").addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
+  document.getElementById("formType")?.addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
   document.getElementById("seriesMode")?.addEventListener("change",updateSeriesEditor);
 
 document.getElementById("existingSeries")?.addEventListener("change",updateSelectedSeriesStatus);
 
-updateSeriesEditor();
- document.getElementById("storyForm").addEventListener("submit",publishStory);
+runInitStep("series editor", updateSeriesEditor);
+ document.getElementById("storyForm")?.addEventListener("submit",publishStory);
   document.getElementById("saveDraftCloud")?.addEventListener("click",saveCloudDraft);
-  document.getElementById("storyTitle").addEventListener("input",saveDraftFromForm);
-  document.getElementById("storyBody").addEventListener("input",saveDraftFromForm);
-  document.getElementById("formSubType").addEventListener("change",saveDraftFromForm);
-  document.getElementById("formCategories").addEventListener("change",saveDraftFromForm);
-  document.getElementById("closeWrite").addEventListener("click",()=>document.getElementById("writeDialog").close());
-  document.getElementById("closeReader").addEventListener("click",()=>finishReading());
+  document.getElementById("storyTitle")?.addEventListener("input",saveDraftFromForm);
+  document.getElementById("storyBody")?.addEventListener("input",saveDraftFromForm);
+  document.getElementById("formSubType")?.addEventListener("change",saveDraftFromForm);
+  document.getElementById("formCategories")?.addEventListener("change",saveDraftFromForm);
+  document.getElementById("closeWrite")?.addEventListener("click",()=>document.getElementById("writeDialog").close());
+  document.getElementById("closeReader")?.addEventListener("click",()=>finishReading());
   document.getElementById("readerDialog")?.addEventListener("cancel",event=>{event.preventDefault();finishReading();});
   document.getElementById("readerPrevPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex-1,"prev"));
   document.getElementById("readerNextPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex+1,"next"));
@@ -3992,19 +4018,19 @@ document.getElementById("readerNextPart")
   document.getElementById("readerBody")?.addEventListener("touchstart",e=>{if(!readerUsesVerticalScroll())window.__readerTouchX=e.changedTouches[0].clientX;},{passive:true});
   document.getElementById("readerBody")?.addEventListener("touchend",e=>{if(readerUsesVerticalScroll())return;const dx=e.changedTouches[0].clientX-(window.__readerTouchX||e.changedTouches[0].clientX);if(Math.abs(dx)>55)readerGoPage(readerPageIndex+(dx<0?1:-1),dx<0?"next":"prev");},{passive:true});
 
-  document.getElementById("finishReading").addEventListener("click",finishReading);
-  document.getElementById("bookmarkButton").addEventListener("click",toggleBookmark);
+  document.getElementById("finishReading")?.addEventListener("click",finishReading);
+  document.getElementById("bookmarkButton")?.addEventListener("click",toggleBookmark);
   document.getElementById("submitFeedback")?.addEventListener("click",submitRatingReview);
   document.getElementById("deleteMyRating")?.addEventListener("click", () => deleteMyFeedback("rating"));
 document.getElementById("deleteMyReview")?.addEventListener("click", () => deleteMyFeedback("review"));
   document.getElementById("workOwnerAction")?.addEventListener("click",setCurrentWorkStatus);
   document.getElementById("editWorkAction")?.addEventListener("click",()=>openEditWork(currentReaderId));
   document.getElementById("reviewsList")?.addEventListener("submit",e=>{if(e.target.matches("[data-review-comment]")){e.preventDefault();submitReviewComment(e.target);}});
-  document.getElementById("clearCategory").addEventListener("click",()=>{activeCategory="सभी";renderChips();renderStories();});
-  document.getElementById("introInput").addEventListener("input",e=>document.getElementById("introCount").textContent=`${e.target.value.length}/1000 अक्षर`);
+  document.getElementById("clearCategory")?.addEventListener("click",()=>{activeCategory="सभी";renderChips();renderStories();});
+  document.getElementById("introInput")?.addEventListener("input",e=>{const count=document.getElementById("introCount");if(count)count.textContent=`${e.target.value.length}/1000 अक्षर`; });
   
-document.getElementById("saveProfile").addEventListener("click", async () => {
-  const intro = document.getElementById("introInput").value.slice(0, 1000);
+document.getElementById("saveProfile")?.addEventListener("click", async () => {
+  const intro = (document.getElementById("introInput")?.value||"").slice(0, 1000);
 
   if (!supabaseClient) {
     toast("डेटाबेस से कनेक्शन उपलब्ध नहीं है।");
@@ -4036,13 +4062,13 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
 });
 
   
-document.getElementById("editProfile").addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
-  document.getElementById("resetData").addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
-  document.getElementById("writeDialog").addEventListener("close",saveDraftFromForm);
+document.getElementById("editProfile")?.addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
+  document.getElementById("resetData")?.addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
+  document.getElementById("writeDialog")?.addEventListener("close",saveDraftFromForm);
   // साहित्य सूत्रधार PWA Service Worker
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js?v=20261110-recovery-1", {updateViaCache:"none"})
+      navigator.serviceWorker.register("./sw.js?v=20261110-button-recovery-1", {updateViaCache:"none"})
         .then(async registration => {
           console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
           try { await registration.update(); } catch (_) {}
@@ -4074,6 +4100,16 @@ if(state.stories.some(x=>String(x.id)===String(id))){
 }
 }
 function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState();applyTheme();}
+/* प्रारंभिक त्रुटि सुरक्षा: एक JS त्रुटि से पूरी स्क्रीन स्थायी रूप से अवरुद्ध न हो। */
+window.addEventListener("error",event=>{
+  console.error("[Sahitya Sutradhar] Runtime error:",event.message,event.filename,event.lineno);
+  const loader=document.getElementById("appLoader");
+  if(loader&&event.message)loader.classList.add("loader-hidden");
+});
+window.addEventListener("unhandledrejection",event=>{
+  console.error("[Sahitya Sutradhar] Unhandled async error:",event.reason);
+});
+
 /* साहित्य सूत्रधार: Supabase लॉगिन */
 
 (function setupSahityaGramAuth() {
@@ -4429,23 +4465,23 @@ async function openAvatarCropEditor(file) {
     if (!dialog.dataset.bound) {
       dialog.dataset.bound = "true";
 
-      document.getElementById("avatarZoom").addEventListener("input", e => {
+      document.getElementById("avatarZoom")?.addEventListener("input", e => {
         avatarCropZoom = Number(e.target.value);
         renderAvatarCrop();
       });
 
-      document.getElementById("cropRotateLeft").addEventListener("click", () => {
+      document.getElementById("cropRotateLeft")?.addEventListener("click", () => {
         avatarCropRotation = (avatarCropRotation - 90 + 360) % 360;
         renderAvatarCrop();
       });
 
-      document.getElementById("cropRotateRight").addEventListener("click", () => {
+      document.getElementById("cropRotateRight")?.addEventListener("click", () => {
         avatarCropRotation = (avatarCropRotation + 90) % 360;
         renderAvatarCrop();
       });
 
-      document.getElementById("cropClose").addEventListener("click", closeAvatarCropEditor);
-      document.getElementById("cropCancel").addEventListener("click", closeAvatarCropEditor);
+      document.getElementById("cropClose")?.addEventListener("click", closeAvatarCropEditor);
+      document.getElementById("cropCancel")?.addEventListener("click", closeAvatarCropEditor);
 
       const canvas = document.getElementById("avatarCropCanvas");
 
@@ -4481,7 +4517,7 @@ async function openAvatarCropEditor(file) {
         avatarCropDragging = false;
       });
 
-      document.getElementById("cropSave").addEventListener("click", async () => {
+      document.getElementById("cropSave")?.addEventListener("click", async () => {
         if (!avatarCropImage) return;
 
         const button = document.getElementById("cropSave");
@@ -4571,8 +4607,9 @@ async function openAvatarCropEditor(file) {
  window.prompt=(message,defaultValue)=>nativePrompt(uiTranslate(message),defaultValue);
  window.addEventListener("pageshow",refresh);
  window.addEventListener("focus",refresh);
- applyUILanguage();
+ try{applyUILanguage();}catch(error){console.error("प्रारंभिक UI localization विफल:",error);}
 })();
 
 // पहले सभी आवश्यक इवेंट-हैंडलर (विशेषकर लॉगिन) रजिस्टर हों, फिर ऐप initialize हो।
-init();
+try{bindSutradharNavigationFallback();}catch(error){console.error("Navigation fallback binding failed:",error);}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",()=>{try{init();}catch(error){console.error("App initialization failed:",error);document.getElementById("appLoader")?.classList.add("loader-hidden");}}, {once:true});}else{try{init();}catch(error){console.error("App initialization failed:",error);document.getElementById("appLoader")?.classList.add("loader-hidden");}}
