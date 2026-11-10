@@ -7,13 +7,13 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <meta name="theme-color" content="#641f2b">
   <title>एडमिन बल्क अपलोड — साहित्य सूत्रधार</title>
-  <link rel="stylesheet" href="admin-bulk-upload.css?v=20261110-final-i18n-premium-1">
+  <link rel="stylesheet" href="admin-bulk-upload.css?v=20261110-global-refresh-4">
 </head>
 <body>
-  <header class="admin-top"><a href="mobile-app.html">← ऐप पर लौटें</a><div><strong>साहित्य सूत्रधार</strong><small>एडमिन आयात केंद्र</small></div><button id="signOutBtn" type="button" class="quiet hidden">लॉगआउट</button></header>
+  <header class="admin-top"><a href="mobile-app.html?v=20261110-global-refresh-4">← ऐप पर लौटें</a><div><strong>साहित्य सूत्रधार</strong><small>एडमिन आयात केंद्र</small></div><button id="signOutBtn" type="button" class="quiet hidden">लॉगआउट</button></header>
   <main class="admin-wrap">
     <section id="loadingState" class="panel"><p>आपकी पहचान और एडमिन अनुमति जाँची जा रही है…</p></section>
-    <section id="deniedState" class="panel hidden"><h1>एडमिन अनुमति आवश्यक</h1><p id="deniedMessage">यह पैनल केवल अधिकृत एडमिन के लिए है।</p><p>पहले अपने साहित्य सूत्रधार खाते से लॉगिन करें। एडमिन अनुमति पहले से सर्वर पर जाँची जाती है। यदि अनुमति नहीं मिल रही, तो अभी कोई SQL दोबारा न चलाएँ; पहले एडमिन सेटअप की जाँच करें।</p><div id="setupUuidBox" class="hidden"><p>तुम्हारे लॉगिन खाते का UUID:</p><code id="currentUserUuid"></code> <button type="button" id="copyAdminUuid" class="secondary">UUID कॉपी करें</button></div><a class="button-link" href="mobile-app.html">ऐप पर लौटें / लॉगिन करें</a></section>
+    <section id="deniedState" class="panel hidden"><h1>एडमिन अनुमति आवश्यक</h1><p id="deniedMessage">यह पैनल केवल अधिकृत एडमिन के लिए है।</p><p>पहले अपने साहित्य सूत्रधार खाते से लॉगिन करें। एडमिन अनुमति पहले से सर्वर पर जाँची जाती है। यदि अनुमति नहीं मिल रही, तो अभी कोई SQL दोबारा न चलाएँ; पहले एडमिन सेटअप की जाँच करें।</p><div id="setupUuidBox" class="hidden"><p>तुम्हारे लॉगिन खाते का UUID:</p><code id="currentUserUuid"></code> <button type="button" id="copyAdminUuid" class="secondary">UUID कॉपी करें</button></div><a class="button-link" href="mobile-app.html?v=20261110-global-refresh-4">ऐप पर लौटें / लॉगिन करें</a></section>
     <div id="adminApp" class="hidden">
       <section class="hero panel"><p class="eyebrow">केवल मुख्य एडमिन के लिए</p><h1>बल्क रचना आयात केंद्र</h1><p>PDF, स्कैन PDF, फोटो, TXT, DOCX और समर्थित दस्तावेज़ों से रचना तैयार करें। पहचान और धारावाहिक समूह के सुझाव सिस्टम देगा। आयात की गई रचनाएँ पहले संबंधित लेखक के खाते में निजी ड्राफ्ट बनेंगी।</p><div class="security-note">🔒 एडमिन किसी लेखक की ओर से स्व-घोषणा नहीं कर सकता। हर आयातित रचना निजी ड्राफ्ट रहेगी; लेखक अपने खाते से स्वयं समीक्षा और स्व-घोषणा करके प्रकाशित करेगा।</div></section>
       <section class="panel step-panel"><div class="section-head"><div><p class="eyebrow">चरण 1</p><h2>फाइलें चुनें</h2></div><span class="pill" id="fileCount">0 फाइलें</span></div><label class="dropzone" for="bulkFiles"><span class="drop-icon">＋</span><strong>एक या अनेक फाइलें चुनें</strong><small>PDF · JPG · PNG · WebP · TXT · DOCX · MD · RTF · HTML</small><input id="bulkFiles" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,.docx,.md,.rtf,.html,.htm"></label><div class="toolbar-row"><label>OCR भाषा <select id="ocrLanguage"><option value="auto" selected>स्वचालित पहचान (अनुशंसित)</option><option value="hin">हिंदी</option><option value="san">संस्कृत</option><option value="mar">मराठी</option><option value="eng">English</option><option value="guj">ગુજરાતી</option><option value="pan">ਪੰਜਾਬੀ</option><option value="kan">ಕನ್ನಡ</option><option value="tam">தமிழ்</option><option value="urd">اردو</option><option value="ben">বাংলা</option><option value="ori">ଓଡ଼ିଆ</option><option value="tel">తెలుగు</option><option value="mal">മലയാളം</option><option value="ara">العربية</option><option value="fas">فارسی</option><option value="fra">Français</option><option value="deu">Deutsch</option><option value="spa">Español</option><option value="ita">Italiano</option><option value="por">Português</option><option value="rus">Русский</option><option value="ukr">Українська</option><option value="ell">Ελληνικά</option><option value="heb">עברית</option><option value="chi_sim">中文简体</option><option value="chi_tra">中文繁體</option><option value="jpn">日本語</option><option value="kor">한국어</option><option value="tha">ไทย</option><option value="vie">Tiếng Việt</option><option value="ind">Bahasa Indonesia</option><option value="tur">Türkçe</option><option value="sin">සිංහල</option><option value="mya">မြန်မာ</option><option value="khm">ខ្មែរ</option><option value="lao">ລາວ</option><option value="amh">አማርኛ</option><option value="kat">ქართული</option><option value="hye">Հայերեն</option></select></label><button id="extractBtn" class="primary" type="button" disabled>टेक्स्ट निकालें</button></div><p class="hint">PDF 100 MB तक · DOCX 25 MB · TXT/MD/RTF/HTML 10 MB · फोटो 8 MB। कुल बैच सीमा 500 MB। OCR लिपि पहचानकर उपलब्ध मॉडल चुनेगा; मिश्रित पृष्ठों में अंग्रेज़ी सहायक मॉडल लगेगा। आवश्यकता पर भाषा स्वयं चुनें। कम विश्वास वाले पृष्ठों को प्रकाशित करने से पहले मूल PDF से मिलाएँ। PDF पृष्ठ क्रमशः पढ़े जाते हैं—बहुत बड़ी फाइलों में टैबलेट की मेमोरी और ब्राउज़र की क्षमता सीमा हो सकती है।<div id="extractProgress" class="progress-area" aria-live="polite"></div></section>
@@ -24,12 +24,31 @@
     </div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+  <script src="supabase-config.js?v=20261110-global-refresh-4"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4/dist/tus.min.js"></script>
-  <script src="ui-localization.js?v=20261110-final-i18n-premium-1"></script>
-  <script src="admin-bulk-upload.js?v=20261110-final-i18n-premium-1"></script>
+  <script src="ui-localization.js?v=20261110-global-refresh-4"></script>
+  <script src="admin-bulk-upload.js?v=20261110-global-refresh-4"></script>
+
+
+
+<script>
+// Global update bootstrap: independent of app.js, so it runs even if app initialization fails.
+(()=>{
+ if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
+ const BUILD='20261110-global-refresh-4', KEY='ss_applied_build';
+ const reloadOnce=()=>{try{if(sessionStorage.getItem(KEY)!==BUILD){sessionStorage.setItem(KEY,BUILD);location.reload();}}catch(_){}};
+ navigator.serviceWorker.addEventListener('controllerchange',reloadOnce);
+ navigator.serviceWorker.addEventListener('message',event=>{if(event.data?.type==='SS_APP_UPDATED'&&event.data.build===BUILD)reloadOnce();});
+ window.addEventListener('load',async()=>{try{
+  const registration=await navigator.serviceWorker.register('./sw.js?v='+BUILD,{updateViaCache:'none'});
+  await registration.update();
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')registration.update().catch(()=>{});});
+  window.addEventListener('focus',()=>registration.update().catch(()=>{}));
+ }catch(error){console.error('साहित्य सूत्रधार अपडेट जाँच विफल:',error);}});
+})();
+</script>
 </body>
 </html>

@@ -3837,28 +3837,7 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
 document.getElementById("editProfile").addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
   document.getElementById("resetData").addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
   document.getElementById("writeDialog").addEventListener("close",saveDraftFromForm);
-  // साहित्य सूत्रधार PWA Service Worker
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js?v=20261110-stability-2", {updateViaCache:"none"})
-        .then(async registration => {
-          console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
-          try { await registration.update(); } catch (_) {}
-          navigator.serviceWorker.addEventListener("controllerchange",()=>{
-            try {
-              const activeScript=registration.active?.scriptURL||"sahitya-sutradhar-v20";
-              const key="ss_sw_controller_script";
-              if(sessionStorage.getItem(key)!==activeScript){sessionStorage.setItem(key,activeScript);location.reload();}
-            } catch (_) {}
-          });
-          document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")registration.update().catch(()=>{});});
-          window.addEventListener("focus",()=>registration.update().catch(()=>{}));
-        })
-        .catch(error => {
-          console.error("PWA Service Worker रजिस्टर नहीं हुआ:", error);
-        });
-    });
-  }
+
 }
 function openWorkFromHash(){
   const match=location.hash.match(/^#work-(.+)$/);

@@ -42,7 +42,7 @@
     if(error||!data?.length)return;
     $("seriesPanel").hidden=false;$("seriesTitle").textContent=work.series_title||"धारावाहिक के भाग";
     $("seriesLinks").className="series-links";
-    $("seriesLinks").innerHTML=data.map(x=>`<a class="series-link ${x.id===work.id?"current":""}" href="mobile-reader.html?id=${encodeURIComponent(x.id)}"><span>भाग ${esc(x.part_number||"—")} · ${esc(x.title)}</span><span>${x.id===work.id?"पढ़ रहे हैं":"पढ़ें →"}</span></a>`).join("");
+    $("seriesLinks").innerHTML=data.map(x=>`<a class="series-link ${x.id===work.id?"current":""}" href="mobile-reader.html?id=${encodeURIComponent(x.id)}&v=20261110-global-refresh-4"><span>भाग ${esc(x.part_number||"—")} · ${esc(x.title)}</span><span>${x.id===work.id?"पढ़ रहे हैं":"पढ़ें →"}</span></a>`).join("");
   }
   async function loadLikes(){
     const [{count,error},mine]=await Promise.all([

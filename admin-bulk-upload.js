@@ -310,7 +310,7 @@
     $('existingSearch').addEventListener('input',renderExistingWorks);$('existingList').addEventListener('change',updateExistingButtons);$('existingList').addEventListener('click',e=>{const b=e.target.closest('[data-existing-move]');if(b){e.preventDefault();moveExistingPart(b.dataset.existingMove,Number(b.dataset.delta));}});
     $('reloadExisting').addEventListener('click',loadExistingWorks);$('makeExistingSeries').addEventListener('click',groupExistingSelected);$('detachExisting').addEventListener('click',detachExistingSelected);
     $('publishAllBtn').addEventListener('click',publishQueue);$('saveLocalDraft').addEventListener('click',saveLocalDraft);
-    $('signOutBtn').addEventListener('click',async()=>{await client.auth.signOut();location.href='mobile-app.html';});
+    $('signOutBtn').addEventListener('click',async()=>{await client.auth.signOut();location.href='mobile-app.html?v=20261110-global-refresh-4';});
   }
   document.addEventListener('DOMContentLoaded',()=>init().catch(err=>showDenied('एडमिन पैनल शुरू नहीं हो सका: '+(err.message||err))));
 })();

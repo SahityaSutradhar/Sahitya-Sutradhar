@@ -7,7 +7,7 @@
   let searchTimer = null;
   let searchVersion = 0;
   function render(items) {
-    grid.innerHTML = items.map(w => `<article class="work-card"><div class="cover">${w.cover_url ? `<img loading="lazy" src="${escapeHTML(w.cover_url)}" alt="${escapeHTML(w.title)} का आवरण">` : '<span class="cover-placeholder">❀</span>'}</div><div class="work-info"><h3>${escapeHTML(w.title || 'शीर्षक रहित रचना')}</h3><p class="work-author">${escapeHTML(w.author_name || 'अनाम रचनाकार')}</p><small>${escapeHTML(w.main_form||w.work_type||'रचना')}${w.subtype?' · '+escapeHTML(w.subtype):''}</small><p>${escapeHTML((w.content||'').replace(/\s+/g,' ').slice(0,100))}</p><a class="open-work" href="mobile-reader.html?id=${encodeURIComponent(w.id)}">रचना पढ़ें ↗</a></div></article>`).join('');
+    grid.innerHTML = items.map(w => `<article class="work-card"><div class="cover">${w.cover_url ? `<img loading="lazy" src="${escapeHTML(w.cover_url)}" alt="${escapeHTML(w.title)} का आवरण">` : '<span class="cover-placeholder">❀</span>'}</div><div class="work-info"><h3>${escapeHTML(w.title || 'शीर्षक रहित रचना')}</h3><p class="work-author">${escapeHTML(w.author_name || 'अनाम रचनाकार')}</p><small>${escapeHTML(w.main_form||w.work_type||'रचना')}${w.subtype?' · '+escapeHTML(w.subtype):''}</small><p>${escapeHTML((w.content||'').replace(/\s+/g,' ').slice(0,100))}</p><a class="open-work" href="mobile-reader.html?id=${encodeURIComponent(w.id)}&v=20261110-global-refresh-4">रचना पढ़ें ↗</a></div></article>`).join('');
     state.textContent = items.length ? `${items.length} नवीन रचनाएँ` : 'अभी कोई प्रकाशित रचना उपलब्ध नहीं है।';
   }
   async function load() {

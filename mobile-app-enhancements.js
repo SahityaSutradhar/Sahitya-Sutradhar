@@ -441,7 +441,7 @@
         <strong>एडमिन बल्क प्रकाशन</strong>
         <p>PDF, फोटो, DOCX और अनेक रचनाओं का सुरक्षित प्रबंधन।</p>
       </div>
-      <a class="secondary-button" href="admin-bulk-upload.html">
+      <a class="secondary-button" href="admin-bulk-upload.html?v=20261110-global-refresh-4">
         एडमिन पैनल खोलें ↗
       </a>
     `;

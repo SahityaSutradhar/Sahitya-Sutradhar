@@ -8,15 +8,15 @@
 <meta name="theme-color" content="#641f2b">
 <meta name="description" content="साहित्य सूत्रधार — मोबाइल साहित्यिक रीडर">
 <title>रचना पढ़ें — साहित्य सूत्रधार</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="mobile-app.css?v=20261110-final-i18n-premium-1">
-<link rel="stylesheet" href="mobile-reader.css?v=20261110-final-i18n-premium-1">
+<link rel="manifest" href="manifest.webmanifest?v=20261110-global-refresh-4">
+<link rel="stylesheet" href="mobile-app.css?v=20261110-global-refresh-4">
+<link rel="stylesheet" href="mobile-reader.css?v=20261110-global-refresh-4">
 </head>
 <body class="reader-page">
 <div class="app-frame reader-frame">
   <header class="app-header reader-header">
-    <a class="back-link" href="mobile-app.html" aria-label="वापस">←</a>
-    <a class="brand" href="mobile-app.html"><span class="brand-symbol">❀</span><span><b>साहित्य सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a>
+    <a class="back-link" href="mobile-app.html?v=20261110-global-refresh-4" aria-label="वापस">←</a>
+    <a class="brand" href="mobile-app.html?v=20261110-global-refresh-4"><span class="brand-symbol">❀</span><span><b>साहित्य सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a>
     <button id="readerTextSettings" class="round-btn" type="button" aria-label="पाठ सेटिंग">अ</button>
   </header>
   <main id="readerMain" class="reader-main">
@@ -60,7 +60,7 @@
         </div>
         <div id="reviewsList"></div>
       </section>
-      <div class="reader-bottom"><a href="mobile-app.html">← मोबाइल होम</a><span>— रचना समाप्त —</span></div>
+      <div class="reader-bottom"><a href="mobile-app.html?v=20261110-global-refresh-4">← मोबाइल होम</a><span>— रचना समाप्त —</span></div>
     </article>
   </main>
   <div id="readerSettings" class="reader-settings" hidden>
@@ -70,8 +70,27 @@
   <div id="readerToast" class="reader-toast" role="status" aria-live="polite"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script src="ui-localization.js?v=20261110-final-i18n-premium-1"></script>
-<script src="mobile-reader.js?v=20261110-final-i18n-premium-1"></script>
+<script src="supabase-config.js?v=20261110-global-refresh-4"></script>
+<script src="ui-localization.js?v=20261110-global-refresh-4"></script>
+<script src="mobile-reader.js?v=20261110-global-refresh-4"></script>
+
+
+
+<script>
+// Global update bootstrap: independent of app.js, so it runs even if app initialization fails.
+(()=>{
+ if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
+ const BUILD='20261110-global-refresh-4', KEY='ss_applied_build';
+ const reloadOnce=()=>{try{if(sessionStorage.getItem(KEY)!==BUILD){sessionStorage.setItem(KEY,BUILD);location.reload();}}catch(_){}};
+ navigator.serviceWorker.addEventListener('controllerchange',reloadOnce);
+ navigator.serviceWorker.addEventListener('message',event=>{if(event.data?.type==='SS_APP_UPDATED'&&event.data.build===BUILD)reloadOnce();});
+ window.addEventListener('load',async()=>{try{
+  const registration=await navigator.serviceWorker.register('./sw.js?v='+BUILD,{updateViaCache:'none'});
+  await registration.update();
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')registration.update().catch(()=>{});});
+  window.addEventListener('focus',()=>registration.update().catch(()=>{}));
+ }catch(error){console.error('साहित्य सूत्रधार अपडेट जाँच विफल:',error);}});
+})();
+</script>
 </body>
 </html>
