@@ -364,39 +364,131 @@
   });
 })();
 
-/* केवल अधिकृत मुख्य एडमिन को सेटिंग्स में बल्क प्रकाशन केंद्र दिखाएँ। */
+/* साहित्य सूत्रधार — केवल संस्थापक खाते के लिए Admin Panel प्रवेश */
 (() => {
   'use strict';
-  let adminEntryClient = null;
-  async function addAdminBulkEntry(){
-    const settings=document.getElementById('settingsView');
-    if(!settings||!window.supabase||!window.SUPABASE_URL||!window.SUPABASE_ANON_KEY)return;
-    try{
-      if(!adminEntryClient)adminEntryClient=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
-      const {data:{user}}=await adminEntryClient.auth.getUser();
-      if(!user){document.getElementById('adminBulkUploadEntry')?.remove();return;}
-      const {data,error}=await adminEntryClient.rpc('is_sutradhar_admin');
-      if(error||data!==true)return;
-      if(document.getElementById('adminBulkUploadEntry'))return;
-      const row=document.createElement('div');
-      row.id='adminBulkUploadEntry';
-      row.className='setting-row';
-      row.innerHTML='<div><strong>एडमिन बल्क प्रकाशन</strong><p>PDF, फोटो, DOCX और अनेक रचनाओं का सुरक्षित प्रबंधन।</p></div><a class="secondary-button" href="admin-bulk-upload.html">एडमिन पैनल खोलें ↗</a>';
-      settings.insertBefore(row,settings.firstElementChild);
-    }catch(error){console.warn('एडमिन प्रवेश उपलब्ध नहीं:',error?.message||error);}
+
+  const FOUNDER_ID = '51dcef91-419e-4470-b300-85abc8b1d830';
+  const ENTRY_ID = 'adminBulkUploadEntry';
+  let adminClient = null;
+  let observer = null;
+  let currentUserId = null;
+
+  function removeAdminEntry() {
+    document.getElementById(ENTRY_ID)?.remove();
   }
-  function startAdminEntryWatcher(){
-    addAdminBulkEntry();
-    try{
-      if(!adminEntryClient)adminEntryClient=window.supabase?.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
-      adminEntryClient?.auth.onAuthStateChange((event)=>{
-        window.setTimeout(()=>{
-          if(event==='SIGNED_OUT')document.getElementById('adminBulkUploadEntry')?.remove();
-          else addAdminBulkEntry();
-        },50);
-      });
-    }catch(_){}
+
+  async function checkFounder() {
+    if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      removeAdminEntry();
+      return;
+    }
+
+    try {
+      if (!adminClient) {
+        adminClient = window.supabase.createClient(
+          window.SUPABASE_URL,
+          window.SUPABASE_ANON_KEY
+        );
+      }
+
+      const { data: { user }, error } = await adminClient.auth.getUser();
+
+      if (error || !user || user.id !== FOUNDER_ID) {
+        currentUserId = null;
+        removeAdminEntry();
+        return;
+      }
+
+      currentUserId = user.id;
+
+      // सर्वर की मौजूदा एडमिन जाँच भी चलाएँ।
+      // UI का UUID check केवल बटन दिखाने के लिए है।
+      const { data, error: rpcError } =
+        await adminClient.rpc('is_sutradhar_admin');
+
+      if (rpcError) {
+        console.warn('Admin RPC जाँच:', rpcError.message);
+      } else if (data !== true) {
+        console.warn('संस्थापक खाते की Admin RPC अनुमति सत्यापित नहीं हुई।');
+      }
+
+      renderAdminEntry();
+
+    } catch (error) {
+      console.error('Admin Panel प्रवेश जाँच:', error);
+      removeAdminEntry();
+    }
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startAdminEntryWatcher,{once:true});
-  else startAdminEntryWatcher();
+
+  function renderAdminEntry() {
+    if (currentUserId !== FOUNDER_ID) {
+      removeAdminEntry();
+      return;
+    }
+
+    const settings = document.getElementById('settingsView');
+    if (!settings) return;
+
+    if (document.getElementById(ENTRY_ID)) return;
+
+    const row = document.createElement('div');
+    row.id = ENTRY_ID;
+    row.className = 'setting-row';
+
+    row.innerHTML = `
+      <div>
+        <strong>एडमिन बल्क प्रकाशन</strong>
+        <p>PDF, फोटो, DOCX और अनेक रचनाओं का सुरक्षित प्रबंधन।</p>
+      </div>
+      <a class="secondary-button" href="admin-bulk-upload.html">
+        एडमिन पैनल खोलें ↗
+      </a>
+    `;
+
+    settings.insertBefore(row, settings.firstElementChild);
+  }
+
+  function startAdminEntryWatcher() {
+    checkFounder();
+
+    if (observer) observer.disconnect();
+
+    observer = new MutationObserver(() => {
+      if (currentUserId === FOUNDER_ID) {
+        renderAdminEntry();
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
+    if (!adminClient) {
+      adminClient = window.supabase?.createClient(
+        window.SUPABASE_URL,
+        window.SUPABASE_ANON_KEY
+      );
+    }
+
+    adminClient?.auth.onAuthStateChange((event, session) => {
+      currentUserId = session?.user?.id || null;
+
+      if (currentUserId !== FOUNDER_ID) {
+        removeAdminEntry();
+      } else {
+        renderAdminEntry();
+        checkFounder();
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startAdminEntryWatcher, {
+      once: true
+    });
+  } else {
+    startAdminEntryWatcher();
+  }
 })();
