@@ -1,6 +1,6 @@
 /* साहित्य सूत्रधार PWA cache — versioned shell cache */
 const CACHE_PREFIX = "sahitya-sutradhar-";
-const CACHE_NAME = `${CACHE_PREFIX}shell-v18-author-declaration-and-bulk-drafts`;
+const CACHE_NAME = `${CACHE_PREFIX}shell-v19-founder-admin-entry`;
 
 const PRECACHE_ASSETS = [
   "./",
