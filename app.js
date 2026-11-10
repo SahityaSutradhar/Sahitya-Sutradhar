@@ -3602,7 +3602,21 @@ if(["new_work","rating","review","work_comment","review_comment"].includes(type)
 }
 
 function init(){
-  applyTheme();renderCategoriesForm();renderChips();renderStories();renderProfile();renderLibrary();applyUILanguage();
+  const runInitStep = (name, task) => {
+    try { task(); }
+    catch (error) {
+      console.error(`[Sahitya Sutradhar] प्रारंभिक चरण विफल: ${name}`, error);
+      window.__SS_INIT_ERRORS = window.__SS_INIT_ERRORS || [];
+      window.__SS_INIT_ERRORS.push({ step: name, message: error?.message || String(error) });
+    }
+  };
+  runInitStep("theme", applyTheme);
+  runInitStep("category form", renderCategoriesForm);
+  runInitStep("category chips", renderChips);
+  runInitStep("stories", renderStories);
+  runInitStep("profile", renderProfile);
+  runInitStep("library", renderLibrary);
+  runInitStep("localization", applyUILanguage);
 
   document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
   document.getElementById("inboxMessagesTab")
@@ -3714,29 +3728,29 @@ if(supabaseClient){
   e.target.value = "";
 });
   document.getElementById("readingLanguage")?.addEventListener("change",async e=>{if(!supabaseClient)return;const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({reading_language:e.target.value}).eq("id",user.id);if(error)toast(error.message);else{state.profile.readingLanguage=e.target.value;saveState();renderStories();toast("पठन भाषा सुरक्षित हुई।");}}});
-  document.getElementById("themeToggle").addEventListener("click",toggleTheme);
+  document.getElementById("themeToggle")?.addEventListener("click",toggleTheme);
   document.getElementById("writerSort")?.addEventListener("change",loadHomepageStats);
   renderPreferredCategories();
   document.getElementById("editorToolbar")?.querySelectorAll("[data-format]").forEach(b=>b.addEventListener("click",()=>{const m={bold:["**","**"],italic:["*","*"],highlight:["[[highlight]]","[[/highlight]]"]}[b.dataset.format];wrapEditorSelection(...m);}));
   document.getElementById("applyEditorStyle")?.addEventListener("click",()=>{const font=document.getElementById("editorFont").value,color=document.getElementById("editorColor").value;if(color)wrapEditorSelection(`[[color:${color}]]`,`[[/color]]`);else wrapEditorSelection(`[[font:${font}]]`,`[[/font]]`);});
-  document.getElementById("themeToggle2").addEventListener("click",toggleTheme);
+  document.getElementById("themeToggle2")?.addEventListener("click",toggleTheme);
   const uiSelect=document.getElementById("layoutLanguage");
   if(uiSelect){uiSelect.value=state.profile.uiLanguage||"hi";uiSelect.addEventListener("change",async()=>{state.profile.uiLanguage=uiSelect.value;saveState();if(supabaseClient){const {data:{user}}=await supabaseClient.auth.getUser();if(user){const {error}=await supabaseClient.from("profiles").update({ui_language:uiSelect.value}).eq("id",user.id);if(error)toast("इस डिवाइस पर भाषा बदली गई, क्लाउड सेव नहीं हुई: "+error.message);}}applyUILanguage();toast("प्रदर्शन भाषा बदल दी गई।");});}
   applyUILanguage();
-  document.getElementById("formType").addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
+  document.getElementById("formType")?.addEventListener("change",()=>{updateSubtypes();saveDraftFromForm();});
   document.getElementById("seriesMode")?.addEventListener("change",updateSeriesEditor);
 
 document.getElementById("existingSeries")?.addEventListener("change",updateSelectedSeriesStatus);
 
 updateSeriesEditor();
- document.getElementById("storyForm").addEventListener("submit",publishStory);
+ document.getElementById("storyForm")?.addEventListener("submit",publishStory);
   document.getElementById("saveDraftCloud")?.addEventListener("click",saveCloudDraft);
-  document.getElementById("storyTitle").addEventListener("input",saveDraftFromForm);
-  document.getElementById("storyBody").addEventListener("input",saveDraftFromForm);
-  document.getElementById("formSubType").addEventListener("change",saveDraftFromForm);
-  document.getElementById("formCategories").addEventListener("change",saveDraftFromForm);
-  document.getElementById("closeWrite").addEventListener("click",()=>document.getElementById("writeDialog").close());
-  document.getElementById("closeReader").addEventListener("click",()=>finishReading());
+  document.getElementById("storyTitle")?.addEventListener("input",saveDraftFromForm);
+  document.getElementById("storyBody")?.addEventListener("input",saveDraftFromForm);
+  document.getElementById("formSubType")?.addEventListener("change",saveDraftFromForm);
+  document.getElementById("formCategories")?.addEventListener("change",saveDraftFromForm);
+  document.getElementById("closeWrite")?.addEventListener("click",()=>document.getElementById("writeDialog").close());
+  document.getElementById("closeReader")?.addEventListener("click",()=>finishReading());
   document.getElementById("readerDialog")?.addEventListener("cancel",event=>{event.preventDefault();finishReading();});
   document.getElementById("readerPrevPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex-1,"prev"));
   document.getElementById("readerNextPage")?.addEventListener("click",()=>readerGoPage(readerPageIndex+1,"next"));
@@ -3776,18 +3790,18 @@ document.getElementById("readerNextPart")
   document.getElementById("readerBody")?.addEventListener("touchstart",e=>{if(!readerUsesVerticalScroll())window.__readerTouchX=e.changedTouches[0].clientX;},{passive:true});
   document.getElementById("readerBody")?.addEventListener("touchend",e=>{if(readerUsesVerticalScroll())return;const dx=e.changedTouches[0].clientX-(window.__readerTouchX||e.changedTouches[0].clientX);if(Math.abs(dx)>55)readerGoPage(readerPageIndex+(dx<0?1:-1),dx<0?"next":"prev");},{passive:true});
 
-  document.getElementById("finishReading").addEventListener("click",finishReading);
-  document.getElementById("bookmarkButton").addEventListener("click",toggleBookmark);
+  document.getElementById("finishReading")?.addEventListener("click",finishReading);
+  document.getElementById("bookmarkButton")?.addEventListener("click",toggleBookmark);
   document.getElementById("submitFeedback")?.addEventListener("click",submitRatingReview);
   document.getElementById("deleteMyRating")?.addEventListener("click", () => deleteMyFeedback("rating"));
 document.getElementById("deleteMyReview")?.addEventListener("click", () => deleteMyFeedback("review"));
   document.getElementById("workOwnerAction")?.addEventListener("click",setCurrentWorkStatus);
   document.getElementById("editWorkAction")?.addEventListener("click",()=>openEditWork(currentReaderId));
   document.getElementById("reviewsList")?.addEventListener("submit",e=>{if(e.target.matches("[data-review-comment]")){e.preventDefault();submitReviewComment(e.target);}});
-  document.getElementById("clearCategory").addEventListener("click",()=>{activeCategory="सभी";renderChips();renderStories();});
-  document.getElementById("introInput").addEventListener("input",e=>document.getElementById("introCount").textContent=`${e.target.value.length}/1000 अक्षर`);
+  document.getElementById("clearCategory")?.addEventListener("click",()=>{activeCategory="सभी";renderChips();renderStories();});
+  document.getElementById("introInput")?.addEventListener("input",e=>document.getElementById("introCount").textContent=`${e.target.value.length}/1000 अक्षर`);
   
-document.getElementById("saveProfile").addEventListener("click", async () => {
+document.getElementById("saveProfile")?.addEventListener("click", async () => {
   const intro = document.getElementById("introInput").value.slice(0, 1000);
 
   if (!supabaseClient) {
@@ -3820,13 +3834,13 @@ document.getElementById("saveProfile").addEventListener("click", async () => {
 });
 
   
-document.getElementById("editProfile").addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
-  document.getElementById("resetData").addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
-  document.getElementById("writeDialog").addEventListener("close",saveDraftFromForm);
+document.getElementById("editProfile")?.addEventListener("click",async()=>{const name=prompt("अपना प्रदर्शित नाम लिखें:",state.profile.name||"अनाम पाठक");if(name&&name.trim()){if(!supabaseClient){toast("Supabase उपलब्ध नहीं है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("पहले लॉगिन करें।");return;}const {error}=await supabaseClient.from("profiles").update({display_name:name.trim().slice(0,60)}).eq("id",user.id);if(error){toast("नाम अपडेट नहीं हुआ: "+error.message);return;}state.profile.name=name.trim().slice(0,60);saveState();renderProfile();toast("नाम अपडेट हो गया।");}});
+  document.getElementById("resetData")?.addEventListener("click",()=>{if(confirm("क्या स्थानीय डेमो डेटा मिटाकर शुरुआत करें?")){localStorage.removeItem(STORAGE);state=loadState();init();switchTab("home");toast("डेमो रीसेट हो गया।");}});
+  document.getElementById("writeDialog")?.addEventListener("close",saveDraftFromForm);
   // साहित्य सूत्रधार PWA Service Worker
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js?v=20261110-login-resilience-2", {updateViaCache:"none"})
+      navigator.serviceWorker.register("./sw.js?v=20261110-final-i18n-premium-1", {updateViaCache:"none"})
         .then(async registration => {
           console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
           try { await registration.update(); } catch (_) {}
@@ -3864,8 +3878,8 @@ function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState
   const dialog = document.getElementById("authDialog");
   const form = document.getElementById("authForm");
 
-  if (!dialog || !form) {
-    console.error("लॉगिन फ़ॉर्म उपलब्ध नहीं है।");
+  if (!dialog || !form || !window.supabase) {
+    console.error("लॉगिन फ़ॉर्म या Supabase उपलब्ध नहीं है।");
     return;
   }
 
@@ -3906,10 +3920,6 @@ function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState
   }
 
   async function refreshAuth() {
-    if (!supabaseClient?.auth) {
-      showMessage("लॉगिन सेवा अभी उपलब्ध नहीं है। इंटरनेट कनेक्शन जाँचकर पृष्ठ फिर खोलें।");
-      return null;
-    }
     const { data, error } = await supabaseClient.auth.getUser();
 
     if (error) console.error("खाता जाँच:", error.message);
@@ -3983,11 +3993,6 @@ google.addEventListener("click", async () => {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    event.stopPropagation();
-    if (!supabaseClient?.auth) {
-      showMessage("लॉगिन सेवा से संपर्क नहीं हो पा रहा है। इंटरनेट कनेक्शन जाँचें और पुनः प्रयास करें।");
-      return;
-    }
     showMessage("कृपया प्रतीक्षा करें…");
     submit.disabled = true;
 
@@ -4093,13 +4098,7 @@ google.addEventListener("click", async () => {
   }
 
   
-if (!supabaseClient?.auth) {
-    showMessage("लॉगिन सेवा लोड नहीं हुई। कृपया इंटरनेट कनेक्शन जाँचें और पृष्ठ पुनः खोलें।");
-    console.error("Supabase client उपलब्ध नहीं है; लॉगिन फ़ॉर्म सक्रिय है लेकिन प्रमाणीकरण संभव नहीं।");
-    return;
-  }
-
-  supabaseClient.auth.onAuthStateChange((event, session) => {
+supabaseClient.auth.onAuthStateChange((event, session) => {
 
   // लॉगिन/लॉगआउट पर ऐप-लॉन्च Loader दोबारा नहीं दिखेगा।
 

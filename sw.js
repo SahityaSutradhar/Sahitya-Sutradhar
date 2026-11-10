@@ -1,6 +1,6 @@
 /* साहित्य सूत्रधार — update-aware cache strategy */
 const CACHE_PREFIX = "sahitya-sutradhar-";
-const CACHE_NAME = `${CACHE_PREFIX}shell-v21-login-resilience`;
+const CACHE_NAME = `${CACHE_PREFIX}shell-v21-interaction-resilience`;
 const PRECACHE_ASSETS = [
   "./", "./index.html", "./mobile-app.html", "./styles.css", "./mobile-app.css",
   "./app.js", "./mobile-app.js", "./mobile-app-enhancements.js", "./ui-localization.js",
