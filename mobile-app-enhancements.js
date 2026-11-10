@@ -359,23 +359,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    const safeStart = (name, task) => {
-      try { task(); }
-      catch (error) {
-        console.error(`[Sahitya Sutradhar Mobile] ${name} प्रारंभ नहीं हुआ:`, error);
-        window.__SS_MOBILE_INIT_ERRORS = window.__SS_MOBILE_INIT_ERRORS || [];
-        window.__SS_MOBILE_INIT_ERRORS.push({ step: name, message: error?.message || String(error) });
-      }
-    };
-    // प्रत्येक मोबाइल मॉड्यूल स्वतंत्र रूप से शुरू हो; एक मॉड्यूल की त्रुटि बाकी UI न रोके।
-    safeStart('श्रेणियाँ', renderCategoryCards);
-    safeStart('होम नेविगेशन', bindHomeSwitches);
-    safeStart('रचना विवरण', bindDetailActions);
-    safeStart('खोज', bindSearch);
-    safeStart('रचना सूची', bindCatalog);
-    safeStart('श्रेणी डीप-लिंक', categoryFromSearch);
-    safeStart('नई रचनाएँ', loadDiscovery);
-    safeStart('लॉगिन/ऑनबोर्डिंग', setupLoginOnboarding);
+    renderCategoryCards(); bindHomeSwitches(); bindDetailActions(); bindSearch(); bindCatalog(); categoryFromSearch();
+    loadDiscovery(); setupLoginOnboarding();
   });
 })();
 

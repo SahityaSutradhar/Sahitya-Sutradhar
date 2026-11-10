@@ -1,12 +1,12 @@
 /* साहित्य सूत्रधार — update-aware cache strategy */
-const CACHE_PREFIX = "sahitya-sutradhar-";
-const CACHE_NAME = `${CACHE_PREFIX}shell-v24-supabase-client-binding`;
+const CACHE_PREFIX = "sahitya-sutradhar-recovery-";
+const CACHE_NAME = `${CACHE_PREFIX}shell-v1`;
 const PRECACHE_ASSETS = [
   "./", "./index.html", "./mobile-app.html", "./styles.css", "./mobile-app.css",
   "./app.js", "./mobile-app.js", "./mobile-app-enhancements.js", "./ui-localization.js",
   "./mobile-reader.html", "./mobile-reader.css", "./mobile-reader.js",
   "./supabase-config.js", "./manifest.webmanifest",
-  "./assets/sahitya-sutradhar-logo.png", "./assets/icon-192.png", "./assets/icon-512.png",
+  "./assets/sahitya-sutradhar-recovery-logo.png", "./assets/icon-192.png", "./assets/icon-512.png",
   "./assets/icon-maskable-512.png", "./shastriya.html", "./shastriya.css", "./shastriya.js",
   "./admin-bulk-upload.html", "./admin-bulk-upload.css", "./admin-bulk-upload.js"
 ];
