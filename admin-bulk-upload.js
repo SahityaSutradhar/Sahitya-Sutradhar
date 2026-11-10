@@ -10,7 +10,7 @@
     'पद्य':['कविता','गीत','मुक्तक','छंद','नई कविता','अन्य'],
     'चंपू काव्य':['अन्य']
   };
-  const LANGS = [['hi','हिंदी'],['sa','संस्कृत'],['en','English'],['mr','मराठी'],['gu','ગુજરાતી'],['pa','ਪੰਜਾਬੀ'],['kn','ಕನ್ನಡ'],['ta','தமிழ்'],['ur','اردو']];
+  const LANGS = [['hi','हिंदी'],['sa','संस्कृत'],['mr','मराठी'],['ne','नेपाली'],['bn','বাংলা'],['gu','ગુજરાતી'],['pa','ਪੰਜਾਬੀ'],['or','ଓଡ଼ିଆ'],['as','অসমীয়া'],['ta','தமிழ்'],['te','తెలుగు'],['kn','ಕನ್ನಡ'],['ml','മലയാളം'],['ur','اردو'],['ar','العربية'],['fa','فارسی'],['en','English'],['fr','Français'],['de','Deutsch'],['es','Español'],['it','Italiano'],['pt','Português'],['ru','Русский'],['uk','Українська'],['el','Ελληνικά'],['he','עברית'],['zh','中文简体'],['zh-TW','中文繁體'],['ja','日本語'],['ko','한국어'],['th','ไทย'],['vi','Tiếng Việt'],['id','Bahasa Indonesia'],['tr','Türkçe'],['si','සිංහල'],['my','မြန်မာ'],['km','ខ្មែរ'],['lo','ລາວ'],['am','አማርኛ'],['ka','ქართული'],['hy','Հայերեն']];
   const LOCAL_KEY = 'sahityaSutradhar.adminBulkDraft.v2';
   const MAX_FILES=100, MAX_BATCH_BYTES=500*1024*1024;
   const FILE_LIMITS={pdf:100*1024*1024,docx:25*1024*1024,txt:10*1024*1024,md:10*1024*1024,rtf:10*1024*1024,html:10*1024*1024,htm:10*1024*1024,jpg:8*1024*1024,jpeg:8*1024*1024,png:8*1024*1024,webp:8*1024*1024};
@@ -28,25 +28,31 @@
     const first=String(content||'').split(/\r?\n/).map(x=>x.trim()).find(x=>x.length>=4&&x.length<=110&&!/^([0-9०-९]+|page\s+\d+)$/i.test(x));
     return first && first.length < base.length + 4 ? first.replace(/^#+\s*/,'') : (base || 'शीर्षक रहित रचना');
   }
-  function detectScript(text) {
-    const s=String(text||'');
-    const ranges=[
-      ['pa',/[\u0A00-\u0A7F]/g],['gu',/[\u0A80-\u0AFF]/g],
-      ['ta',/[\u0B80-\u0BFF]/g],['kn',/[\u0C80-\u0CFF]/g],
-      ['ur',/[\u0600-\u06FF]/g],['hi',/[\u0900-\u097F]/g],['en',/[A-Za-z]/g]
-    ];
-    let best='hi', count=0;
-    for(const [lang,re] of ranges){const n=(s.match(re)||[]).length;if(n>count){best=lang;count=n;}}
-    return count?best:'unknown';
+  // Unicode block आधारित लिपि पहचान; मिश्रित पृष्ठ में सभी प्रमुख लिपियाँ रखी जाती हैं।
+  const SCRIPT_RULES = [
+    ['pa',/[\u0A00-\u0A7F]/g,'pan'],['gu',/[\u0A80-\u0AFF]/g,'guj'],['or',/[\u0B00-\u0B7F]/g,'ori'],
+    ['ta',/[\u0B80-\u0BFF]/g,'tam'],['te',/[\u0C00-\u0C7F]/g,'tel'],['kn',/[\u0C80-\u0CFF]/g,'kan'],
+    ['ml',/[\u0D00-\u0D7F]/g,'mal'],['si',/[\u0D80-\u0DFF]/g,'sin'],['hi',/[\u0900-\u097F]/g,'hin'],
+    ['bn',/[\u0980-\u09FF]/g,'ben'],['as',/[\u0980-\u09FF]/g,'ben'],['ur',/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/g,'urd'],
+    ['th',/[\u0E00-\u0E7F]/g,'tha'],['lo',/[\u0E80-\u0EFF]/g,'lao'],['my',/[\u1000-\u109F]/g,'mya'],
+    ['km',/[\u1780-\u17FF]/g,'khm'],['ja',/[\u3040-\u30FF\u31F0-\u31FF]/g,'jpn'],['zh',/[\u3400-\u4DBF\u4E00-\u9FFF]/g,'chi_sim'],
+    ['ko',/[\uAC00-\uD7AF\u1100-\u11FF]/g,'kor'],['he',/[\u0590-\u05FF]/g,'heb'],['ru',/[\u0400-\u052F]/g,'rus'],
+    ['el',/[\u0370-\u03FF]/g,'ell'],['am',/[\u1200-\u137F]/g,'amh'],['ka',/[\u10A0-\u10FF]/g,'kat'],['hy',/[\u0530-\u058F]/g,'hye'],
+    ['en',/[A-Za-z]/g,'eng']
+  ];
+  function detectScripts(text) {
+    const s=String(text||''), found=[];
+    for(const [id,re,model] of SCRIPT_RULES){const count=(s.match(re)||[]).length;if(count)found.push({id,model,count});}
+    return found.sort((a,b)=>b.count-a.count);
   }
+  function detectScript(text) { return detectScripts(text)[0]?.id || 'unknown'; }
   function detectLanguage(text) {
-    const s=String(text||'');
-    const script=detectScript(s);
-    if(script!=='hi')return script;
-    // एक ही देवनागरी लिपि में हिंदी/संस्कृत/मराठी का पूर्ण स्वचालित भेद विश्वसनीय नहीं है।
-    if(/(संस्कृत|sanskrit|रामायण|रामचरितमानस|वेद|उपनिषद|स्तोत्र|श्लोक)/iu.test(s.slice(0,3000)))return 'sa';
-    if(/(मराठी|महाराष्ट्र|आहे|आणि|करिता|म्हणून)/u.test(s.slice(0,3000)))return 'mr';
-    return 'hi';
+    const s=String(text||''), script=detectScript(s);
+    if(script==='hi'){
+      if(/(मराठी|महाराष्ट्र|आहे|आणि|करिता|म्हणून)/u.test(s.slice(0,5000)))return 'mr';
+      if(/(संस्कृत|sanskrit|रामायण|रामचरितमानस|वेद|उपनिषद|स्तोत्र|श्लोक)/iu.test(s.slice(0,5000)))return 'sa';
+    }
+    return script==='unknown'?'en':script;
   }
   function detectForm(text) { const s=String(text||'').trim(); const lines=s.split(/\r?\n/).filter(x=>x.trim()); if(lines.length>5){const short=lines.filter(x=>x.trim().length<45).length; if(short/lines.length>.58)return {main_form:'पद्य',subtype:'कविता'};} return {main_form:'गद्य',subtype:'कहानी'}; }
   function workType(main, subtype) { if(main==='पद्य')return 'poem';const m={कहानी:'story',लघुकथा:'story',उपन्यास:'novel',लेख:'article',निबंध:'essay'};return m[subtype]||'other'; }
@@ -66,34 +72,39 @@
     throw new Error('यह फाइल प्रारूप समर्थित नहीं है।');
   }
   let ocrWorker=null, ocrWorkerLang='';
+  const MODEL_BY_ID={hi:'hin',sa:'san',mr:'mar',ne:'nep',bn:'ben',as:'ben',gu:'guj',pa:'pan',or:'ori',ta:'tam',te:'tel',kn:'kan',ml:'mal',ur:'urd',ar:'ara',fa:'fas',en:'eng',fr:'fra',de:'deu',es:'spa',it:'ita',pt:'por',ru:'rus',uk:'ukr',el:'ell',he:'heb',zh:'chi_sim', 'zh-TW':'chi_tra',ja:'jpn',ko:'kor',th:'tha',vi:'vie',id:'ind',tr:'tur',si:'sin',my:'mya',km:'khm',lo:'lao',am:'amh',ka:'kat',hy:'hye'};
   function languageForOcr(script, fileName='') {
     const selected=String($('ocrLanguage')?.value||'auto');
     if(selected!=='auto')return selected;
-    if(script==='gu')return 'guj'; if(script==='pa')return 'pan'; if(script==='kn')return 'kan';
-    if(script==='ta')return 'tam'; if(script==='ur')return 'urd'; if(script==='en')return 'eng';
+    if(script==='unknown'){
+      const n=String(fileName||'').toLowerCase();
+      const hints=[[/sanskrit|संस्कृत|रामायण|रामचरितमानस|वेद|उपनिषद/,'san'],[/hindi|हिंदी/,'hin'],[/marathi|मराठी/,'mar'],[/gujarati|ગુજરાતી/,'guj'],[/punjabi|ਪੰਜਾਬੀ/,'pan'],[/tamil|தமிழ்/,'tam'],[/telugu|తెలుగు/,'tel'],[/kannada|ಕನ್ನಡ/,'kan'],[/malayalam|മലയാളം/,'mal'],[/odia|ଓଡ଼ିଆ/,'ori'],[/bengali|বাংলা/,'ben'],[/urdu|اردو/,'urd'],[/arabic|العربية/,'ara'],[/japanese|日本語/,'jpn'],[/chinese|中文/,'chi_sim'],[/korean|한국어/,'kor'],[/russian|русский/,'rus']];
+      for(const [re,model] of hints)if(re.test(n))return model;
+      return 'hin+eng';
+    }
     if(script==='hi' && /(संस्कृत|sanskrit|रामायण|रामचरितमानस|वेद|उपनिषद|स्तोत्र|श्लोक)/iu.test(fileName))return 'san';
-    if(script==='hi')return 'hin';
-    // स्कैन में टेक्स्ट-लेयर नहीं होती; ऐसे अज्ञात पन्नों के लिए भारतीय साहित्य का सुरक्षित डिफॉल्ट।
-    return /(ગુજરાતી|gujarati)/iu.test(fileName)?'guj':/(ਪੰਜਾਬੀ|punjabi)/iu.test(fileName)?'pan':/(தமிழ்|tamil)/iu.test(fileName)?'tam':/(ಕನ್ನಡ|kannada)/iu.test(fileName)?'kan':/(اردو|urdu)/iu.test(fileName)?'urd':'hin';
+    const primary=MODEL_BY_ID[script]||'eng';
+    // मिश्रित भारतीय/अंग्रेज़ी पृष्ठ पर English को साथ पढ़ने दें।
+    if(['hin','san','mar','guj','pan','ori','tam','tel','kan','mal','urd','ben'].includes(primary))return primary+'+eng';
+    return primary;
   }
   async function getOcrWorker(lang) {
     if(!window.Tesseract)throw new Error('OCR इंजन लोड नहीं हुआ। इंटरनेट जाँचें।');
     if(ocrWorker && ocrWorkerLang===lang)return ocrWorker;
     if(ocrWorker){await ocrWorker.terminate();ocrWorker=null;ocrWorkerLang='';}
+    const logger=m=>{if(m.status==='recognizing text'&&m.progress)$('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';};
     try {
-      ocrWorker=await Tesseract.createWorker(lang,1,{logger:m=>{if(m.status==='recognizing text'&&m.progress) $('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';}});
-      ocrWorkerLang=lang;
+      ocrWorker=await Tesseract.createWorker(lang,1,{logger}); ocrWorkerLang=lang;
     } catch(e) {
-      // Sanskrit traineddata/CDN उपलब्ध न होने पर देवनागरी हिंदी मॉडल से fallback.
-      if(lang!=='san')throw e;
-      progress('संस्कृत OCR मॉडल उपलब्ध नहीं हुआ; देवनागरी हिंदी मॉडल से वैकल्पिक OCR किया जा रहा है।',true);
-      ocrWorker=await Tesseract.createWorker('hin',1,{logger:m=>{if(m.status==='recognizing text'&&m.progress) $('extractProgress').dataset.ocr=Math.round(m.progress*100)+'%';}});
-      ocrWorkerLang='hin';
+      const fallback=lang.includes('san')?'hin+eng':lang.includes('+eng')?lang.split('+')[0]:'eng';
+      if(fallback===lang)throw new Error(`OCR मॉडल “${lang}” लोड नहीं हुआ। इंटरनेट/मॉडल उपलब्धता जाँचें।`);
+      progress(`OCR मॉडल ${lang} उपलब्ध नहीं हुआ; ${fallback} से वैकल्पिक प्रयास।`,true);
+      ocrWorker=await Tesseract.createWorker(fallback,1,{logger});ocrWorkerLang=fallback;
     }
     return ocrWorker;
   }
   async function ocrImage(file) {
-    const script=languageForOcr('unknown',file.name);const worker=await getOcrWorker(script);
+    const worker=await getOcrWorker(languageForOcr('unknown',file.name));
     const result=await worker.recognize(file);return result.data.text||'';
   }
   function hasBadPdfText(text) {
@@ -127,7 +138,7 @@
             if(script==='unknown' || (script==='en' && /[\u0100-\u024F\u1E00-\u1EFF]/.test(text)))script='hi';
             const lang=languageForOcr(script,file.name);
             const worker=await getOcrWorker(lang);
-            const viewport=page.getViewport({scale:1.5});
+            const viewport=page.getViewport({scale:2.25});
             const canvas=document.createElement('canvas');
             const ctx=canvas.getContext('2d',{alpha:false});
             canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
@@ -135,7 +146,9 @@
               await page.render({canvasContext:ctx,viewport}).promise;
               const result=await worker.recognize(canvas);
               const recognized=String(result.data.text||'').trim();
-              if(recognized.length>0)text=recognized;
+              const confidence=Number(result.data.confidence||0);
+              if(recognized.length>0){text=recognized; if(confidence<65)progress(`⚠ पृष्ठ ${pageNo}: OCR विश्वास ${Math.round(confidence)}% — प्रकाशन से पहले मूल पृष्ठ से मिलान करें।`,true);}
+              else progress(`⚠ पृष्ठ ${pageNo}: OCR से पाठ नहीं मिला; इस पृष्ठ को जाँचें।`,true);
               ocrPages++;
             } finally {canvas.width=1;canvas.height=1;}
           } else textPages++;
