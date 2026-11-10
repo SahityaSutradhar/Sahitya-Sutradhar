@@ -30,29 +30,16 @@ let inboxRequestsCache = [];
 let inboxMessagesCache = [];
 
 const UI_TEXT={
-  en:{home:"Home",library:"Library",write:"Write",profile:"Profile",settings:"Settings",latest:"Newly published works",newWriters:"New writers",activeWriters:"Active and popular writers",categories:"Literary categories",readWorld:"Explore works",all:"View all",yourLibrary:"Your library",myWorks:"My published works",myDrafts:"My private drafts",wordsRead:"Total words read",myFollowers:"Followers",readingLanguage:"Reading language",preferred:"Preferred categories",darkMode:"Dark mode",edit:"Edit",login:"Login / Account",logout:"Log out",publish:"Publish",saveChanges:"Save changes",saveDraft:"Save draft",newWork:"New work",workTitle:"Work title",workBody:"Write your work",cover:"Work cover (9:16 ratio)",workLanguage:"Work language",writerOrder:"Writer ranking",mostRead:"Most read",mostWorks:"Most works",mostFollowers:"Most followers",read:"Open",report:"Report",share:"Share",finish:"Finish reading",ratingReview:"Reader feedback",yourRating:"Your rating",yourReview:"Your review",saveFeedback:"Save rating / review",profileIntro:"Introduction (up to 1,000 characters)",changeDP:"Change profile picture",chooseCategories:"Choose preferred categories",welcomeTitle:"Where words come together.",welcomeText:"Read, write and share your creations with readers.",communityTitle:"Community posts",communityPlaceholder:"Share your thoughts…",communityPublish:"Publish to the Literary Forum",categoryHeading:"Literary categories"},
-  mr:{home:"मुख्यपृष्ठ",library:"वाचनालय",write:"लिहा",profile:"प्रोफाइल",settings:"सेटिंग्ज",latest:"नवीन प्रकाशित साहित्य",newWriters:"नवे लेखक",activeWriters:"सक्रिय आणि लोकप्रिय लेखक",categories:"साहित्य प्रकार",readWorld:"साहित्य वाचा",all:"सर्व पहा",yourLibrary:"तुमचे वाचनालय",myWorks:"माझ्या प्रकाशित रचना",myDrafts:"माझे खाजगी मसुदे",wordsRead:"वाचलेले एकूण शब्द",myFollowers:"अनुयायी",readingLanguage:"वाचनाची भाषा",preferred:"आवडते प्रकार",darkMode:"डार्क मोड",edit:"बदला",login:"लॉगिन / खाते",logout:"बाहेर पडा",publish:"प्रकाशित करा",saveChanges:"बदल जतन करा",saveDraft:"मसुदा जतन करा",newWork:"नवीन रचना",workTitle:"रचनेचे शीर्षक",workBody:"तुमची रचना लिहा",cover:"रचनेचे मुखपृष्ठ (9:16)",workLanguage:"रचनेची भाषा",writerOrder:"लेखक क्रमवारी",mostRead:"सर्वाधिक वाचलेले",mostWorks:"सर्वाधिक रचना",mostFollowers:"सर्वाधिक अनुयायी",read:"उघडा",report:"तक्रार",share:"शेअर करा",finish:"वाचन पूर्ण",ratingReview:"वाचकांचा अभिप्राय",yourRating:"तुमचे मूल्यांकन",yourReview:"तुमचा अभिप्राय",saveFeedback:"मूल्यांकन / अभिप्राय जतन करा",profileIntro:"परिचय (कमाल 1,000 अक्षरे)",changeDP:"प्रोफाइल फोटो बदला",chooseCategories:"आवडते प्रकार निवडा",welcomeTitle:"जिथे शब्द एकत्र येतात.",welcomeText:"वाचा, लिहा आणि आपल्या रचना वाचकांपर्यंत पोहोचवा.",communityTitle:"समुदाय पोस्ट",communityPlaceholder:"आपले विचार मांडा…",communityPublish:"साहित्यिक चर्चा प्रकाशित करा",categoryHeading:"साहित्य प्रकार"},
-  sa:{home:"मुखपृष्ठम्",library:"पुस्तकालयः",write:"लिखतु",profile:"परिचयः",settings:"व्यवस्थाः",latest:"नवीनाः प्रकाशिताः रचनाः",newWriters:"नवीनाः लेखकाः",activeWriters:"सक्रियाः लोकप्रियाः लेखकाः",categories:"साहित्यवर्गाः",readWorld:"रचनाः पठन्तु",all:"सर्वं पश्यतु",yourLibrary:"भवतः पुस्तकालयः",myWorks:"मम प्रकाशिताः रचनाः",myDrafts:"मम गोपनीयाः प्रारूपाः",wordsRead:"पठिताः कुलशब्दाः",myFollowers:"अनुयायिनः",readingLanguage:"पठनभाषा",preferred:"प्रियाः वर्गाः",darkMode:"रात्रिवर्णः",edit:"सम्पादयतु",login:"प्रवेशः / खाता",logout:"निर्गच्छतु",publish:"प्रकाशयतु",saveChanges:"परिवर्तनानि रक्षतु",saveDraft:"प्रारूपं रक्षतु",newWork:"नवीनरचना",workTitle:"रचनायाः शीर्षकम्",workBody:"रचनां लिखतु",cover:"रचनाचित्रम् (9:16)",workLanguage:"रचनायाः भाषा",writerOrder:"लेखकक्रमः",mostRead:"अधिकं पठिताः",mostWorks:"अधिकरचनाः",mostFollowers:"अधिकानुयायिनः",read:"उद्घाटयतु",report:"सूचयतु",share:"वितरतु",finish:"पठनं समाप्तम्",ratingReview:"पाठकप्रतिक्रिया",yourRating:"भवतः मूल्याङ्कनम्",yourReview:"भवतः समीक्षा",saveFeedback:"मूल्याङ्कनं समीक्षां च रक्षतु",profileIntro:"परिचयः (अधिकतमं १००० अक्षराणि)",changeDP:"चित्रं परिवर्तयतु",chooseCategories:"प्रियवर्गान् चिनोतु",welcomeTitle:"यत्र शब्दाः मिलन्ति।",welcomeText:"पठतु, लिखतु, स्वकीयाः रचनाः पाठकेभ्यः प्रेषयतु।",communityTitle:"समुदायलेखाः",communityPlaceholder:"स्वविचारान् लिखतु…",communityPublish:"साहित्यगोष्ठीं प्रकाशयतु",categoryHeading:"साहित्यवर्गाः"}
+  en:{home:"Home",library:"Library",write:"Write",profile:"Profile",settings:"Settings",latest:"Newly published works",newWriters:"New writers",activeWriters:"Active and popular writers",categories:"Literary categories",readWorld:"Explore works",all:"View all",yourLibrary:"Your library",myWorks:"My published works",myDrafts:"My private drafts",wordsRead:"Total words read",myFollowers:"Followers",readingLanguage:"Reading language",preferred:"Preferred categories",darkMode:"Dark mode",edit:"Edit",login:"Login / Account",logout:"Log out",publish:"Publish",saveChanges:"Save changes",saveDraft:"Save draft",newWork:"New work",workTitle:"Work title",workBody:"Write your work",cover:"Work cover (9:16 ratio)",workLanguage:"Work language",writerOrder:"Writer ranking",mostRead:"Most read",mostWorks:"Most works",mostFollowers:"Most followers",read:"Open",report:"Report",share:"Share",finish:"Finish reading",ratingReview:"Reader feedback",yourRating:"Your rating",yourReview:"Your review",saveFeedback:"Save rating / review",profileIntro:"Introduction (up to 1,000 characters)",changeDP:"Change profile picture",chooseCategories:"Choose preferred categories",welcomeTitle:"Where words come together.",welcomeText:"Read, write and share your creations with readers.",communityTitle:"Community posts",communityPlaceholder:"Share your thoughts…",categoryHeading:"Literary categories"},
+  mr:{home:"मुख्यपृष्ठ",library:"वाचनालय",write:"लिहा",profile:"प्रोफाइल",settings:"सेटिंग्ज",latest:"नवीन प्रकाशित साहित्य",newWriters:"नवे लेखक",activeWriters:"सक्रिय आणि लोकप्रिय लेखक",categories:"साहित्य प्रकार",readWorld:"साहित्य वाचा",all:"सर्व पहा",yourLibrary:"तुमचे वाचनालय",myWorks:"माझ्या प्रकाशित रचना",myDrafts:"माझे खाजगी मसुदे",wordsRead:"वाचलेले एकूण शब्द",myFollowers:"अनुयायी",readingLanguage:"वाचनाची भाषा",preferred:"आवडते प्रकार",darkMode:"डार्क मोड",edit:"बदला",login:"लॉगिन / खाते",logout:"बाहेर पडा",publish:"प्रकाशित करा",saveChanges:"बदल जतन करा",saveDraft:"मसुदा जतन करा",newWork:"नवीन रचना",workTitle:"रचनेचे शीर्षक",workBody:"तुमची रचना लिहा",cover:"रचनेचे मुखपृष्ठ (9:16)",workLanguage:"रचनेची भाषा",writerOrder:"लेखक क्रमवारी",mostRead:"सर्वाधिक वाचलेले",mostWorks:"सर्वाधिक रचना",mostFollowers:"सर्वाधिक अनुयायी",read:"उघडा",report:"तक्रार",share:"शेअर करा",finish:"वाचन पूर्ण",ratingReview:"वाचकांचा अभिप्राय",yourRating:"तुमचे मूल्यांकन",yourReview:"तुमचा अभिप्राय",saveFeedback:"मूल्यांकन / अभिप्राय जतन करा",profileIntro:"परिचय (कमाल 1,000 अक्षरे)",changeDP:"प्रोफाइल फोटो बदला",chooseCategories:"आवडते प्रकार निवडा",welcomeTitle:"जिथे शब्द एकत्र येतात.",welcomeText:"वाचा, लिहा आणि आपल्या रचना वाचकांपर्यंत पोहोचवा.",communityTitle:"समुदाय पोस्ट",communityPlaceholder:"आपले विचार मांडा…",categoryHeading:"साहित्य प्रकार"},
+  sa:{home:"मुखपृष्ठम्",library:"पुस्तकालयः",write:"लिखतु",profile:"परिचयः",settings:"व्यवस्थाः",latest:"नवीनाः प्रकाशिताः रचनाः",newWriters:"नवीनाः लेखकाः",activeWriters:"सक्रियाः लोकप्रियाः लेखकाः",categories:"साहित्यवर्गाः",readWorld:"रचनाः पठन्तु",all:"सर्वं पश्यतु",yourLibrary:"भवतः पुस्तकालयः",myWorks:"मम प्रकाशिताः रचनाः",myDrafts:"मम गोपनीयाः प्रारूपाः",wordsRead:"पठिताः कुलशब्दाः",myFollowers:"अनुयायिनः",readingLanguage:"पठनभाषा",preferred:"प्रियाः वर्गाः",darkMode:"रात्रिवर्णः",edit:"सम्पादयतु",login:"प्रवेशः / खाता",logout:"निर्गच्छतु",publish:"प्रकाशयतु",saveChanges:"परिवर्तनानि रक्षतु",saveDraft:"प्रारूपं रक्षतु",newWork:"नवीनरचना",workTitle:"रचनायाः शीर्षकम्",workBody:"रचनां लिखतु",cover:"रचनाचित्रम् (9:16)",workLanguage:"रचनायाः भाषा",writerOrder:"लेखकक्रमः",mostRead:"अधिकं पठिताः",mostWorks:"अधिकरचनाः",mostFollowers:"अधिकानुयायिनः",read:"उद्घाटयतु",report:"सूचयतु",share:"वितरतु",finish:"पठनं समाप्तम्",ratingReview:"पाठकप्रतिक्रिया",yourRating:"भवतः मूल्याङ्कनम्",yourReview:"भवतः समीक्षा",saveFeedback:"मूल्याङ्कनं समीक्षां च रक्षतु",profileIntro:"परिचयः (अधिकतमं १००० अक्षराणि)",changeDP:"चित्रं परिवर्तयतु",chooseCategories:"प्रियवर्गान् चिनोतु",welcomeTitle:"यत्र शब्दाः मिलन्ति।",welcomeText:"पठतु, लिखतु, स्वकीयाः रचनाः पाठकेभ्यः प्रेषयतु।",communityTitle:"समुदायलेखाः",communityPlaceholder:"स्वविचारान् लिखतु…",categoryHeading:"साहित्यवर्गाः"}
 };
-const UI_TEXT_HI={
-  home:"मुखपृष्ठ",library:"पुस्तकालय",write:"लिखें",profile:"प्रोफ़ाइल",settings:"सेटिंग्स",
-  latest:"नई प्रकाशित रचनाएँ",newWriters:"नए लेखक",activeWriters:"सक्रिय एवं लोकप्रिय लेखक",
-  categories:"साहित्यिक श्रेणियाँ",readWorld:"रचनाएँ पढ़ें",all:"सभी देखें",
-  yourLibrary:"आपका पुस्तकालय",myWorks:"मेरी प्रकाशित रचनाएँ",myDrafts:"मेरे निजी ड्राफ्ट",
-  wordsRead:"कुल पढ़े गए शब्द",myFollowers:"अनुयायी",readingLanguage:"पठन भाषा",
-  preferred:"पसंदीदा श्रेणियाँ",darkMode:"डार्क मोड",edit:"संपादित करें",
-  login:"लॉगिन / खाता",logout:"लॉगआउट",publish:"प्रकाशित करें",
-  communityPublish:"संगोष्ठी प्रकाशित करें",communityTitle:"संगोष्ठी",
-  communityPlaceholder:"साहित्यिक विचार साझा करें…",categoryHeading:"साहित्यिक श्रेणियाँ",
-  welcomeTitle:"जहाँ शब्द मिलते हैं।",welcomeText:"पढ़िए, लिखिए और अपनी रचनाएँ पाठकों तक पहुँचाइए।"
-};
-
 function applyUILanguage(){
-  const lang=state.profile.uiLanguage||"hi", t=lang==="hi"?UI_TEXT_HI:(UI_TEXT[lang]||UI_TEXT_HI);
+  const lang=state.profile.uiLanguage||"hi", t=UI_TEXT[lang]||{};
   const set=(selector,key)=>{const el=document.querySelector(selector);if(el&&t[key])el.textContent=t[key];};
   const navKeys=[['home','home'],['library','library'],['write','write'],['profile','profile'],['settings','settings']];
   navKeys.forEach(([tab,key])=>{const el=document.querySelector(`[data-tab="${tab}"]`);if(el&&t[key]){const node=[...el.childNodes].find(n=>n.nodeType===Node.TEXT_NODE);if(node)node.nodeValue=" "+t[key];}});
-  set('#welcomeTitle','welcomeTitle');set('#welcomeText','welcomeText');set('#communityTitle','communityTitle');set('#categoryHeading','categoryHeading');set('#storyHeading','readWorld');set('#clearCategory','all');set('#publishCommunityPost','communityPublish');
+  set('#welcomeTitle','welcomeTitle');set('#welcomeText','welcomeText');set('#communityTitle','communityTitle');set('#categoryHeading','categoryHeading');set('#storyHeading','readWorld');set('#clearCategory','all');set('#publishCommunityPost','publish');
   const headings=[['#latestHeading','latest'],['#newWritersHeading','newWriters'],['#activeWritersHeading','activeWriters'],['#libraryView h1','yourLibrary'],['#profileView h1','profile'],['#settingsView h1','settings']];
   headings.forEach(([s,k])=>set(s,k));
   const ids=[['#wordsRead+span','wordsRead'],['#myFollowerCount+span','myFollowers'],['#saveDraftCloud','saveDraft'],['#submitFeedback','saveFeedback'],['#reportWork','report'],['#shareWork','share'],['#finishReading','finish'],['#feedbackPanel h2','ratingReview']];
@@ -2844,6 +2831,32 @@ function renderProfile(){
   if(draftBox) draftBox.innerHTML=drafts.length?drafts.map(d=>`<article class="story-card"><h3>${escapeHtml(d.title)}</h3><p>निजी ड्राफ्ट</p><div class="story-meta"><button type="button" data-edit-work="${escapeHtml(d.id)}">संपादित करें</button><button type="button" data-republish="${escapeHtml(d.id)}">स्व-घोषणा करके प्रकाशित करें</button></div></article>`).join(""):'<p class="muted">कोई निजी ड्राफ्ट नहीं।</p>';
   bindReadButtons();
   document.querySelectorAll("[data-republish]").forEach(b=>b.addEventListener("click",()=>{currentReaderId=b.dataset.republish;setCurrentWorkStatus();}));
+  const profileRoot=document.getElementById("profileView");
+  profileRoot?.querySelectorAll("[data-own-profile-pane]").forEach(tab=>tab.onclick=()=>{
+    const pane=tab.dataset.ownProfilePane;
+    profileRoot.querySelectorAll("[data-own-profile-pane]").forEach(x=>x.classList.toggle("active",x===tab));
+    profileRoot.querySelectorAll("[data-own-profile-panel]").forEach(x=>x.classList.toggle("hidden",x.dataset.ownProfilePanel!==pane));
+    if(pane==="community")loadOwnCommunityPosts();
+  });
+  const publishBtn=document.getElementById("ownCommunityPublish");
+  if(publishBtn)publishBtn.onclick=publishOwnCommunityPost;
+} 
+
+async function loadOwnCommunityPosts(){
+  const box=document.getElementById("ownCommunityPosts"); if(!box)return;
+  if(!currentUserId||!supabaseClient){box.innerHTML='<p class="muted">संगोष्ठी के लिए लॉगिन करें।</p>';return;}
+  box.innerHTML='<p class="muted">संगोष्ठी पोस्ट लोड हो रही हैं…</p>';
+  const {data,error}=await supabaseClient.from("community_posts").select("id,body,image_url,created_at").eq("author_id",currentUserId).eq("status","published").order("created_at",{ascending:false});
+  if(error){box.innerHTML='<p class="muted">संगोष्ठी पोस्ट लोड नहीं हो सकीं।</p>';return;}
+  box.innerHTML=(data||[]).map(post=>`<article class="community-post"><p>${escapeHtml(post.body||"")}</p>${post.image_url?`<img src="${escapeHtml(post.image_url)}" alt="संगोष्ठी पोस्ट" loading="lazy">`:""}<small>${new Date(post.created_at).toLocaleString()}</small></article>`).join("")||'<p class="muted">अभी आपकी कोई संगोष्ठी पोस्ट नहीं है।</p>';
+}
+async function publishOwnCommunityPost(){
+  const field=document.getElementById("ownCommunityPostText"),body=field?.value.trim();
+  if(!body){toast("कृपया संगोष्ठी के लिए कुछ लिखें।");return;}
+  if(!supabaseClient||!currentUserId){toast("संगोष्ठी प्रकाशित करने के लिए पहले लॉगिन करें।");return;}
+  const {error}=await supabaseClient.from("community_posts").insert({author_id:currentUserId,body,status:"published"});
+  if(error){toast("संगोष्ठी प्रकाशित नहीं हुई: "+error.message);return;}
+  field.value="";await loadOwnCommunityPosts();toast("संगोष्ठी प्रकाशित हो गई।");
 }
 
 async function loadInbox(){
@@ -3185,57 +3198,6 @@ function showInboxMode(mode){
 
   if(mode==="requests") loadInboxRequests();
   else loadInboxConversations();
-}
-
-
-async function runWebsiteSearch(){
-  const input=document.getElementById("workSearchInput");
-  const query=(input?.value||"").trim();
-  if(!query){renderStories();return;}
-  renderStories();
-  if(!supabaseClient)return;
-  const status=document.getElementById("websiteSearchStatus");
-  if(status)status.textContent="ऑनलाइन खोज जारी है…";
-  try{
-    const safe=query.replace(/[,%()]/g," ").trim();
-    if(!safe)return;
-    const pattern=`%${safe}%`;
-    const {data:works,error}=await supabaseClient.from("works")
-      .select("id,author_id,title,content,work_type,main_form,subtype,status,created_at")
-      .eq("status","published")
-      .or(`title.ilike.${pattern},content.ilike.${pattern},main_form.ilike.${pattern},subtype.ilike.${pattern}`)
-      .order("created_at",{ascending:false}).limit(100);
-    if(error)throw error;
-    const authorIds=[...new Set((works||[]).map(w=>w.author_id).filter(Boolean))];
-    let profiles=[];
-    if(authorIds.length){
-      const result=await supabaseClient.from("profiles").select("id,display_name,username")
-        .in("id",authorIds);
-      if(result.error)throw result.error;
-      profiles=result.data||[];
-    }
-    const names=new Map(profiles.map(p=>[p.id,p.display_name||p.username||"अनाम रचनाकार"]));
-    const remote=(works||[]).map(w=>({
-      id:w.id,title:w.title,body:w.content,author:names.get(w.author_id)||"अनाम रचनाकार",
-      authorId:w.author_id,type:w.main_form||(w.work_type==="poem"?"पद्य":"गद्य"),
-      subtype:w.subtype||"",categories:[],created:new Date(w.created_at).getTime(),
-      reads:0,source:"supabase",status:"published"
-    }));
-    const local=state.stories.filter(w=>[w.title,w.author,w.body,w.subtype]
-      .some(v=>String(v||"").toLocaleLowerCase().includes(query.toLocaleLowerCase())));
-    const merged=[...remote,...local.filter(x=>!remote.some(y=>String(y.id)===String(x.id)))];
-    const list=document.getElementById("storyList");
-    if(list)list.innerHTML=renderStoryCards(merged);
-    const count=document.getElementById("storyCount");
-    if(count)count.textContent=`${merged.length} परिणाम`;
-    const empty=document.getElementById("emptyState");
-    if(empty)empty.classList.toggle("hidden",merged.length>0);
-    if(status)status.textContent=merged.length?`${merged.length} रचनाएँ मिलीं।`:"कोई रचना नहीं मिली।";
-    bindReadButtons();
-  }catch(error){
-    console.error("Website search:",error);
-    if(status)status.textContent="ऑनलाइन खोज पूरी नहीं हो सकी। कृपया पुनः प्रयास करें।";
-  }
 }
 
 function switchTab(tab){
@@ -3606,19 +3568,8 @@ document.getElementById("inboxBack")
 document.getElementById("inboxMessageForm")
   ?.addEventListener("submit",sendInboxMessage);
 
-  const uiLanguageSelect=document.getElementById("layoutLanguage");
-  if(uiLanguageSelect){
-    uiLanguageSelect.value=state.profile.uiLanguage||"hi";
-    uiLanguageSelect.addEventListener("change",()=>{
-      state.profile.uiLanguage=uiLanguageSelect.value||"hi";
-      saveState(); applyUILanguage();
-    });
-  }
-
   const workSearchInput=document.getElementById("workSearchInput");
   workSearchInput?.addEventListener("input",renderStories);
-  document.getElementById("workSearchSubmit")?.addEventListener("click",runWebsiteSearch);
-  workSearchInput?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();runWebsiteSearch();}});
   document.getElementById("workSearchClear")?.addEventListener("click",()=>{
     if(workSearchInput){workSearchInput.value="";renderStories();workSearchInput.focus();}
   });

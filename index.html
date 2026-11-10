@@ -96,10 +96,8 @@
       <div class="search-control">
         <span aria-hidden="true">⌕</span>
         <input id="workSearchInput" type="search" placeholder="कहानी, कविता, लेखक का नाम…" aria-label="रचना या लेखक खोजें">
-        <button id="workSearchSubmit" type="button" class="primary-button search-submit">खोजें</button>
         <button id="workSearchClear" type="button" class="search-clear" aria-label="खोज मिटाएँ">×</button>
       </div>
-      <p id="websiteSearchStatus" class="search-status" aria-live="polite"></p>
     </section>
 
     <section class="section-block">
@@ -408,6 +406,11 @@
   <section class="view hidden" id="profileView">
     <p class="eyebrow">आपका साहित्यिक परिचय</p>
     <h1>प्रोफ़ाइल</h1>
+    <div class="profile-section-tabs own-profile-tabs" role="tablist" aria-label="प्रोफ़ाइल अनुभाग">
+      <button type="button" class="profile-section-tab active" data-own-profile-pane="works">रचनाएँ और परिचय</button>
+      <button type="button" class="profile-section-tab" data-own-profile-pane="community">संगोष्ठी</button>
+    </div>
+    <div data-own-profile-panel="works">
     <div class="profile-card">
       <div class="profile-avatar" id="profileAvatar">अ</div>
       <div><h2 id="profileName">अनाम पाठक</h2><p id="profileRole">पाठक</p></div>
@@ -446,6 +449,15 @@
     <h2 class="draft-heading">मेरे निजी ड्राफ्ट</h2>
     <p class="muted">ये रचनाएँ केवल आपको दिखाई देती हैं।</p>
     <div class="story-list" id="myDraftList"></div>
+    </div>
+    <section data-own-profile-panel="community" class="own-profile-community hidden">
+      <div class="community-compose">
+        <h2>संगोष्ठी प्रकाशित करें</h2>
+        <textarea id="ownCommunityPostText" rows="4" maxlength="12000" placeholder="अपने विचार लिखें…"></textarea>
+        <button type="button" class="primary-button" id="ownCommunityPublish">संगोष्ठी प्रकाशित करें</button>
+      </div>
+      <div id="ownCommunityPosts" class="community-posts"><p class="muted">आपकी संगोष्ठी पोस्ट यहाँ दिखाई देंगी।</p></div>
+    </section>
   </section>
 
   <section class="view hidden" id="settingsView">
@@ -577,8 +589,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261110-ui-search-inbox-1"></script>
-  <script src="mobile-app-enhancements.js?v=20261110-ui-search-inbox-1"></script>
+  <script src="app.js?v=20261108-author-declaration-1"></script>
+  <script src="mobile-app-enhancements.js?v=20261110-admin-entry-1"></script>
   <script>
     (() => {
       const status = document.getElementById("networkStatus");
