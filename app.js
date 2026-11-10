@@ -84,7 +84,8 @@ function applyUILanguage(){
  document.documentElement.lang=lang;
  document.documentElement.dataset.uiLanguage=lang;
  if(!document.documentElement.dataset.ssTitleOriginal)document.documentElement.dataset.ssTitleOriginal=document.title;
- document.title=uiTranslate(document.documentElement.dataset.ssTitleOriginal,lang);
+ const translatedTitle=uiTranslate(document.documentElement.dataset.ssTitleOriginal,lang);
+ if(document.title!==translatedTitle)document.title=translatedTitle;
  const description=document.querySelector('meta[name="description"]');
  if(description){if(!description.dataset.ssOriginal)description.dataset.ssOriginal=description.content;description.content=uiTranslate(description.dataset.ssOriginal,lang);}
  const protectedSelector=".story-card h3,.story-card .excerpt,.story-card .story-author-link,.writer-card strong,.profile-card h2,.community-post-head strong,.reader-body,.reader-title,#readerTitle,#readerAuthor,.reader-author,.profile-name,.author-name,.user-content,.community-post p,.community-post-body,.post-body,.own-community-post p,.profile-bio,.story-excerpt,textarea,input,script,style,code";
@@ -101,8 +102,17 @@ function applyUILanguage(){
  document.querySelectorAll("input[placeholder],textarea[placeholder],button[aria-label],*[title],select[aria-label]").forEach(el=>{
   for(const attr of ["placeholder","aria-label","title"]){if(!el.hasAttribute(attr))continue;const key="ssOriginal"+attr;if(!el.dataset[key])el.dataset[key]=el.getAttribute(attr);el.setAttribute(attr,uiTranslate(el.dataset[key],lang));}
  });
- const authHeading=document.getElementById("authHeading");if(authHeading){const register=authHeading.dataset.authMode==="register";authHeading.textContent=uiTranslate(register?"नया खाता बनाएँ":"साहित्य सूत्रधार में प्रवेश",lang);}
- const authSubtitle=document.getElementById("authSubtitle");if(authSubtitle)authSubtitle.textContent=uiTranslate("साहित्य, संवेदना और सृजन का आपका अपना संसार",lang);
+ const authHeading=document.getElementById("authHeading");
+ if(authHeading){
+  const register=authHeading.dataset.authMode==="register";
+  const newText=uiTranslate(register?"नया खाता बनाएँ":"साहित्य सूत्रधार में प्रवेश",lang);
+  if(authHeading.textContent!==newText)authHeading.textContent=newText;
+ }
+ const authSubtitle=document.getElementById("authSubtitle");
+ if(authSubtitle){
+  const newText=uiTranslate("साहित्य, संवेदना और सृजन का आपका अपना संसार",lang);
+  if(authSubtitle.textContent!==newText)authSubtitle.textContent=newText;
+ }
 }
 
 function emptyAccountState(){
