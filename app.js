@@ -99,9 +99,31 @@ function applyUILanguage(){
  };
  const walk=root=>{if(root.nodeType===Node.TEXT_NODE){translateNode(root);return;}if(root.nodeType!==Node.ELEMENT_NODE)return;if(root.closest?.(protectedSelector))return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=walker.nextNode()))translateNode(n);};
  walk(document.body);
- document.querySelectorAll("input[placeholder],textarea[placeholder],button[aria-label],*[title],select[aria-label]").forEach(el=>{
-  for(const attr of ["placeholder","aria-label","title"]){if(!el.hasAttribute(attr))continue;const key="ssOriginal"+attr;if(!el.dataset[key])el.dataset[key]=el.getAttribute(attr);el.setAttribute(attr,uiTranslate(el.dataset[key],lang));}
- });
+ 
+document.querySelectorAll(
+  'input[placeholder],textarea[placeholder],button[aria-label],*[title],select[aria-label]'
+).forEach(el => {
+  for (const attr of ["placeholder", "aria-label", "title"]) {
+    if (!el.hasAttribute(attr)) continue;
+
+    const key = attr === "aria-label"
+      ? "ssOriginalAriaLabel"
+      : attr === "placeholder"
+        ? "ssOriginalPlaceholder"
+        : "ssOriginalTitle";
+
+    if (!el.dataset[key]) {
+      el.dataset[key] = el.getAttribute(attr);
+    }
+
+    const translated = uiTranslate(el.dataset[key], lang);
+
+    if (el.getAttribute(attr) !== translated) {
+      el.setAttribute(attr, translated);
+    }
+  }
+});
+  
  const authHeading=document.getElementById("authHeading");
  if(authHeading){
   const register=authHeading.dataset.authMode==="register";
