@@ -3661,6 +3661,7 @@ if(supabaseClient){
   });
   
   
+  document.getElementById("profileShortcut")?.addEventListener("click",()=>switchTab("profile"));
   document.getElementById("settingsShortcut")?.addEventListener("click",()=>switchTab("settings"));
   document.getElementById("readerAuthorLink")?.addEventListener("click",()=>openAuthorProfile());
   document.getElementById("reportWork")?.addEventListener("click",async()=>{const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;const reason=prompt("समस्या का प्रकार लिखें (आपत्तिजनक/कॉपीराइट/अन्य):");if(!reason)return;const details=prompt("अपनी समस्या अधिकतम 100 शब्दों में लिखें:");if(!details)return;if(wordCount(details)>100){toast("रिपोर्ट अधिकतम 100 शब्दों की हो सकती है।");return;}const {data:{user}}=await supabaseClient.auth.getUser();if(!user){toast("रिपोर्ट के लिए लॉगिन करें।");return;}const {error}=await supabaseClient.from("content_reports").insert({reporter_id:user.id,target_type:"work",target_work_id:s.id,reason:reason.slice(0,100),details});toast(error?"रिपोर्ट नहीं भेजी: "+error.message:"रिपोर्ट भेज दी गई।");});
@@ -3839,7 +3840,7 @@ document.getElementById("editProfile").addEventListener("click",async()=>{const 
   // साहित्य सूत्रधार PWA Service Worker
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js?v=20261110-recovery-1", {updateViaCache:"none"})
+      navigator.serviceWorker.register("./sw.js?v=20261110-stability-2", {updateViaCache:"none"})
         .then(async registration => {
           console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
           try { await registration.update(); } catch (_) {}
