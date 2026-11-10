@@ -1103,3 +1103,36 @@ body.dark .resume-progress-track{background:#473832}
 .own-profile-community textarea{width:100%;box-sizing:border-box;}
 .own-profile-community .community-post{margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface,transparent);}
 .own-profile-community .community-post img{display:block;max-width:100%;max-height:360px;object-fit:contain;border-radius:10px;margin-top:10px;}
+
+/* FINAL PREMIUM AUTH EXPERIENCE */
+#authDialog.premium-auth-dialog{width:min(440px,calc(100vw - 28px));max-width:440px;padding:0;border:1px solid #c6a15e;border-radius:28px;overflow:visible;background:#fffaf0;color:#382326;box-shadow:0 28px 100px #16090bb8}
+#authDialog.premium-auth-dialog::backdrop{background:rgba(23,9,12,.78);backdrop-filter:blur(8px)}
+#authDialog .premium-auth-card{position:relative;padding:30px clamp(22px,6vw,38px) 25px;background:radial-gradient(ellipse at 50% -15%,#fff4d7 0,#fffaf0 48%,#f5ead7 100%);border-radius:28px;text-align:center;overflow:hidden}
+#authDialog .premium-auth-card:before,#authDialog .premium-auth-card:after{content:"";position:absolute;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,#b98c45,transparent)}
+#authDialog .premium-auth-card:before{top:13px}#authDialog .premium-auth-card:after{bottom:13px}
+#authDialog .premium-auth-close{position:absolute;right:13px;top:13px;width:36px;height:36px;border:1px solid #ddc99f;border-radius:50%;background:#fff8e8;color:#672631;font-size:25px;line-height:1}
+#authDialog .premium-auth-ornament{width:76px;height:76px;margin:4px auto 10px;border-radius:50%;display:grid;place-items:center;border:1px solid #b78a45;background:linear-gradient(145deg,#762b38,#431821);box-shadow:0 8px 22px #5b253333,inset 0 0 0 5px #ffffff12}
+#authDialog .premium-auth-ornament span{font-size:43px;color:#f2d89e;text-shadow:0 2px 8px #1e0d10}
+#authDialog .premium-auth-kicker{margin:0;color:#a27b3f;font-size:11px;font-weight:800;letter-spacing:2.4px}
+#authDialog #authHeading{margin:5px 0 4px;color:#5b202b;font-family:Georgia,"Nirmala UI",serif;font-size:clamp(23px,6vw,29px);line-height:1.35}
+#authDialog .premium-auth-subtitle{margin:0 0 20px;color:#826d5a;font-size:12px}
+#authDialog .premium-auth-fields{text-align:left}
+#authDialog .premium-auth-fields label{margin:12px 0 5px;color:#67313a;font-size:12px}
+#authDialog .premium-auth-fields input{width:100%;height:47px;padding:11px 14px;border:1px solid #dfcfb0;border-radius:13px;background:#fffdf8;color:#382326;box-shadow:inset 0 1px 2px #44230b0b}
+#authDialog .premium-auth-fields input:focus{outline:2px solid #bd9654;outline-offset:1px;border-color:#a77a3e}
+#authDialog #authMessage{min-height:20px;margin:10px 0;color:#8a3038;font-size:12px;overflow-wrap:anywhere}
+#authDialog .premium-auth-primary,#authDialog .premium-auth-google{width:100%;min-height:47px;border-radius:13px;font-weight:800}
+#authDialog .premium-auth-primary{border:1px solid #a87936;background:linear-gradient(120deg,#762b38,#4c1c27);color:#fff3d8;box-shadow:0 7px 17px #5c202b30}
+#authDialog .premium-auth-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+#authDialog .premium-auth-divider{display:flex;align-items:center;gap:12px;margin:15px 0;color:#a38b6c;font-size:11px}
+#authDialog .premium-auth-divider:before,#authDialog .premium-auth-divider:after{content:"";height:1px;flex:1;background:#e2d2b5}
+#authDialog .premium-auth-google{display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid #d8c7a7;background:#fffdf8;color:#4b3330}
+#authDialog .premium-auth-google span{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#fff;color:#4285f4;font-size:17px;font-weight:900;box-shadow:0 1px 4px #0002}
+#authDialog .premium-auth-switch{display:block;margin:13px auto 0;border:0;background:transparent;color:#762b38;font-weight:800;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+#authDialog .premium-auth-footnote{margin:18px 0 0;color:#9c896f;font-family:Georgia,serif;font-size:11px;font-style:italic}
+@media(max-width:480px){#authDialog .premium-auth-card{padding:26px 22px 23px}#authDialog .premium-auth-ornament{width:66px;height:66px}#authDialog .premium-auth-ornament span{font-size:37px}}
+/* Faster first paint on long discovery pages; off-screen sections render on demand. */
+.section-block{content-visibility:auto;contain-intrinsic-size:1px 420px}
+img{max-width:100%;height:auto}
+#authDialog .premium-auth-facebook{margin-top:9px}#authDialog .premium-auth-facebook span{background:#1877f2;color:#fff;font-family:Arial,sans-serif}
+#authDialog.premium-auth-dialog{max-height:calc(100dvh - 24px);overflow:auto}

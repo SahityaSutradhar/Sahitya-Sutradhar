@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="preconnect" href="https://watjhnxfjaixrupktpuf.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <meta name="theme-color" content="#641f2b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,8 +15,8 @@
   <script>try{if(sessionStorage.getItem('ss_mobile_loader_seen_v1')==='1')document.documentElement.classList.add('ss-loader-seen');}catch(_){}</script>
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=20261107-final-mobile-1">
-  <link rel="stylesheet" href="mobile-app.css?v=20261107-final-mobile-1">
+  <link rel="stylesheet" href="styles.css?v=20261110-final-i18n-premium-1">
+  <link rel="stylesheet" href="mobile-app.css?v=20261110-final-i18n-premium-1">
   <style>
     #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
     #networkStatus[hidden]{display:none}
@@ -630,24 +632,32 @@
     </div>
   </div>
 </dialog>
-  <dialog id="authDialog">
-    <form id="authForm">
+  <dialog id="authDialog" class="premium-auth-dialog">
+    <form id="authForm" class="premium-auth-card">
+      <button type="button" class="premium-auth-close" id="authClose" aria-label="बंद करें">×</button>
+      <div class="premium-auth-ornament" aria-hidden="true"><span>❀</span></div>
+      <p class="premium-auth-kicker">शब्दों का अपना संसार</p>
       <h2 id="authHeading">साहित्य सूत्रधार में प्रवेश</h2>
-      <label for="authEmail">ईमेल</label>
-      <input id="authEmail" type="email" required autocomplete="email">
-      <label for="authPassword">पासवर्ड</label>
-      <input id="authPassword" type="password" required minlength="6" autocomplete="current-password">
-      <p id="authMessage" role="status"></p>
-      <button type="submit" id="authSubmit">लॉगिन करें</button>
-      <button type="button" id="authGoogle">🌐 Google से लॉगिन करें</button>
-      <button type="button" id="authRegister">नया खाता बनाएँ</button>
-      <button type="button" id="authClose">बंद करें</button>
+      <p class="premium-auth-subtitle" id="authSubtitle">साहित्य, संवेदना और सृजन का आपका अपना संसार</p>
+      <div class="premium-auth-fields">
+        <label for="authEmail">ईमेल</label>
+        <input id="authEmail" type="email" required autocomplete="email" placeholder="आपका ईमेल पता">
+        <label for="authPassword">पासवर्ड</label>
+        <input id="authPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="कम-से-कम 6 अक्षर">
+      </div>
+      <p id="authMessage" role="status" aria-live="polite"></p>
+      <button type="submit" id="authSubmit" class="premium-auth-primary">लॉगिन करें</button>
+      <div class="premium-auth-divider"><span>या</span></div>
+      <button type="button" id="authGoogle" class="premium-auth-google"><span aria-hidden="true">G</span> Google से लॉगिन करें</button>
+      <button type="button" id="authFacebook" class="premium-auth-google premium-auth-facebook"><span aria-hidden="true">f</span> Facebook से लॉगिन करें</button>
+      <button type="button" id="authRegister" class="premium-auth-switch">नया खाता बनाएँ</button>
+      <p class="premium-auth-footnote">आपकी साहित्यिक यात्रा यहीं से आरम्भ होती है।</p>
     </form>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261108-author-declaration-1"></script>
+  <script src="app.js?v=20261110-final-i18n-premium-1"></script>
   <script>
     (() => {
       const status = document.getElementById("networkStatus");
@@ -688,7 +698,7 @@
       <button type="submit" class="primary-button full-width">आगे बढ़ें</button>
     </form>
   </dialog>
-  <script src="mobile-app-enhancements.js?v=20261107-final-mobile-1"></script>
+  <script src="mobile-app-enhancements.js?v=20261110-final-i18n-premium-1"></script>
 
 </body>
 </html>
