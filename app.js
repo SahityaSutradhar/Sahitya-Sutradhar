@@ -3858,7 +3858,6 @@ if(state.stories.some(x=>String(x.id)===String(id))){
 }
 }
 function toggleTheme(){state.theme=state.theme==="dark"?"light":"dark";saveState();applyTheme();}
-init();
 /* साहित्य सूत्रधार: Supabase लॉगिन */
 
 (function setupSahityaGramAuth() {
@@ -4356,3 +4355,6 @@ async function openAvatarCropEditor(file) {
  window.addEventListener("focus",refresh);
  applyUILanguage();
 })();
+
+// पहले सभी आवश्यक इवेंट-हैंडलर (विशेषकर लॉगिन) रजिस्टर हों, फिर ऐप initialize हो।
+init();
