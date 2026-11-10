@@ -1,29 +1,30 @@
+
 {
   "id": "./mobile-app.html",
   "name": "साहित्य सूत्रधार",
   "short_name": "साहित्य सूत्रधार",
   "description": "पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।",
   "lang": "hi-IN",
-  "start_url": "./mobile-app.html",
+  "start_url": "./mobile-app.html?v=20261110-global-refresh-4",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f8f3e6",
   "theme_color": "#641f2b",
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "assets/icon-192.png?v=20261110-global-refresh-4",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "assets/icon-512.png?v=20261110-global-refresh-4",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-maskable-512.png",
+      "src": "assets/icon-maskable-512.png?v=20261110-global-refresh-4",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
