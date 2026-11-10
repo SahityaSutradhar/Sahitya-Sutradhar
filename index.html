@@ -96,8 +96,10 @@
       <div class="search-control">
         <span aria-hidden="true">⌕</span>
         <input id="workSearchInput" type="search" placeholder="कहानी, कविता, लेखक का नाम…" aria-label="रचना या लेखक खोजें">
+        <button id="workSearchSubmit" type="button" class="primary-button search-submit">खोजें</button>
         <button id="workSearchClear" type="button" class="search-clear" aria-label="खोज मिटाएँ">×</button>
       </div>
+      <p id="websiteSearchStatus" class="search-status" aria-live="polite"></p>
     </section>
 
     <section class="section-block">
@@ -575,8 +577,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261108-author-declaration-1"></script>
-  <script src="mobile-app-enhancements.js?v=20261110-admin-entry-1"></script>
+  <script src="app.js?v=20261110-ui-search-inbox-1"></script>
+  <script src="mobile-app-enhancements.js?v=20261110-ui-search-inbox-1"></script>
   <script>
     (() => {
       const status = document.getElementById("networkStatus");

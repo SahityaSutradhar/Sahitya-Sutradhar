@@ -1095,3 +1095,80 @@ body.dark .resume-progress-track{background:#473832}
 .author-profile-page .community-post{margin:14px 0;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:16px;}
 .author-profile-page .community-comment{padding:9px 0;border-bottom:1px solid var(--line);}
 @media(max-width:600px){.author-profile-inner{padding:12px 14px 28px}.profile-community-comment-form{align-items:stretch}.profile-community-comment-form button{white-space:nowrap;}}
+
+
+/* 2026-11-10: premium authentication and text-only literary inbox */
+#authDialog{
+  width:min(94vw,480px);max-width:480px;padding:0;border:1px solid #b58a45;
+  border-radius:26px;background:#160f14;color:#fff8ed;
+  box-shadow:0 28px 90px rgba(0,0,0,.55);overflow:hidden;
+}
+#authDialog::backdrop{background:rgba(10,6,10,.78);backdrop-filter:blur(7px)}
+#authDialog #authForm{
+  display:grid;gap:13px;padding:30px 26px 26px;
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(181,138,69,.25),transparent 55%),
+    linear-gradient(155deg,#28131c,#120d13 72%);
+}
+#authDialog #authHeading{
+  margin:0 0 8px;text-align:center;color:#f0d7a5;
+  font-family:Georgia,serif;font-size:25px;letter-spacing:.2px;
+}
+#authDialog label{color:#e9d8bd;font-size:13px}
+#authDialog input{
+  width:100%;min-height:48px;padding:12px 14px;border-radius:13px;
+  border:1px solid rgba(216,183,123,.4);background:#211922;color:#fff;
+}
+#authDialog button{
+  min-height:46px;border-radius:13px;font-weight:700;
+}
+#authDialog #authSubmit{
+  color:#26151a;background:linear-gradient(110deg,#e8c98c,#b58a45);
+  border:0;box-shadow:0 8px 22px rgba(181,138,69,.22);
+}
+#authDialog #authGoogle,#authDialog #authRegister{
+  background:rgba(255,255,255,.055);color:#f7ead6;
+  border:1px solid rgba(216,183,123,.32);
+}
+#authDialog #authClose{background:transparent;color:#cdbbaf;border:0}
+#inboxView{--inbox-gold:#d9b779}
+#inboxConversation{
+  padding:14px;border:1px solid rgba(217,183,121,.25);
+  border-radius:22px;background:#100e13;
+  box-shadow:0 18px 48px rgba(0,0,0,.18);
+}
+.inbox-conversation-heading{
+  padding:4px 2px 12px;border-bottom:1px solid rgba(217,183,121,.2);
+}
+.inbox-conversation-heading h2{color:#f0d8b0}
+.inbox-messages{
+  position:relative;isolation:isolate;min-height:280px;max-height:58vh;
+  border:1px solid rgba(217,183,121,.22);border-radius:18px;
+  background:
+    linear-gradient(180deg,rgba(20,13,18,.42),rgba(16,12,17,.78)),
+    radial-gradient(ellipse at 50% 100%,rgba(184,111,112,.32),transparent 62%),
+    linear-gradient(160deg,#4c2634,#17141d 68%);
+  padding:18px 14px;gap:14px;
+}
+.inbox-messages::before{
+  content:"";position:absolute;inset:0;z-index:-1;opacity:.38;border-radius:inherit;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 420'%3E%3Cpath fill='%2308060a' d='M0 350 Q80 300 150 350 Q210 300 270 350 Q350 290 430 350 Q510 300 600 350 V420 H0Z'/%3E%3Cpath stroke='%2308060a' stroke-width='13' fill='none' d='M300 380 Q290 250 310 120 M305 220 Q230 180 195 110 M308 195 Q390 155 420 80 M295 280 Q220 250 170 205 M310 270 Q385 240 455 185'/%3E%3Cg fill='%2308060a'%3E%3Cellipse cx='185' cy='100' rx='75' ry='25' transform='rotate(20 185 100)'/%3E%3Cellipse cx='245' cy='155' rx='65' ry='22' transform='rotate(35 245 155)'/%3E%3Cellipse cx='420' cy='75' rx='85' ry='25' transform='rotate(-25 420 75)'/%3E%3Cellipse cx='390' cy='170' rx='75' ry='24' transform='rotate(-20 390 170)'/%3E%3Cellipse cx='165' cy='205' rx='60' ry='20' transform='rotate(15 165 205)'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:cover;background-position:center bottom;
+}
+.inbox-message{max-width:min(82%,560px);padding:11px 15px;border-radius:18px 18px 18px 5px;
+  background:rgba(245,232,216,.94);color:#2a1c1e;box-shadow:0 5px 16px rgba(0,0,0,.18)}
+.inbox-message.mine{align-self:flex-end;border-radius:18px 18px 5px 18px;
+  background:linear-gradient(135deg,#8a4b54,#5f2835);color:#fff8ed}
+.inbox-message small{display:block;text-align:right;margin-top:5px;color:inherit;opacity:.68}
+.inbox-compose{grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:9px}
+.inbox-compose textarea{min-height:48px;max-height:130px;resize:none;border-radius:16px;
+  border:1px solid rgba(217,183,121,.45);background:#211922;color:#fff8ed;padding:13px}
+.inbox-compose button{min-height:48px;border-radius:15px;background:linear-gradient(110deg,#e8c98c,#b58a45);color:#26151a;border:0}
+.search-control .search-submit{flex:0 0 auto;min-width:82px}
+.search-status{min-height:1.2em;margin:6px 2px 0;color:var(--muted);font-size:12px}
+@media(max-width:600px){
+  #authDialog #authForm{padding:25px 19px}
+  .inbox-compose{grid-template-columns:1fr}
+  .inbox-compose button{width:100%}
+}
+
