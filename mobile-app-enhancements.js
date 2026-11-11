@@ -326,33 +326,97 @@
 
   function setupLoginOnboarding() {
     if (!client) return;
-    async function showOnboardingIfNeeded(user) {
-      if (!user || sessionStorage.getItem('ss_mobile_onboarded') === user.id) return;
-      const result = await client.from('profiles').select('reading_language,preferred_categories').eq('id', user.id).maybeSingle();
-      const profile = result.data || null;
-      if (profile?.preferred_categories?.length) { sessionStorage.setItem('ss_mobile_onboarded', user.id); return; }
-      const dialog = $('mobileOnboarding');
-      if (dialog && !dialog.open) { $('mobileOnboardingLanguage').value = profile?.reading_language || 'hi'; dialog.showModal(); }
+    const markerKey = userId => `ss_mobile_onboarding_completed:${userId}`;
+    const checkingUsers = new Set();
+
+    function hasCompleted(user) {
+      if (!user?.id) return false;
+      try {
+        if (localStorage.getItem(markerKey(user.id)) === '1') return true;
+      } catch (_) {}
+      return user.user_metadata?.ss_mobile_onboarding_completed === true;
     }
+
+    async function showOnboardingIfNeeded(user) {
+      if (!user?.id || hasCompleted(user) || checkingUsers.has(user.id)) return;
+      checkingUsers.add(user.id);
+      try {
+        const {data: profile, error} = await client.from('profiles')
+          .select('reading_language,preferred_categories')
+          .eq('id', user.id).maybeSingle();
+        if (error) console.warn('पठन-पसंद लोड नहीं हुई:', error.message);
+
+        // पुराने खातों में पहले से पसंदीदा श्रेणियाँ मौजूद हों तो उन्हें पूरा माना जाए।
+        if (profile?.preferred_categories?.length) {
+          try { localStorage.setItem(markerKey(user.id), '1'); } catch (_) {}
+          return;
+        }
+
+        // खाते के metadata में भी स्थिति रखने से दूसरे डिवाइस पर भी दोबारा प्रश्न नहीं आएगा।
+        if (user.user_metadata?.ss_mobile_onboarding_completed === true) return;
+        const dialog = $('mobileOnboarding');
+        if (dialog && !dialog.open) {
+          const language = $('mobileOnboardingLanguage');
+          if (language) language.value = profile?.reading_language || 'hi';
+          dialog.showModal();
+        }
+      } finally {
+        checkingUsers.delete(user.id);
+      }
+    }
+
     $('mobileOnboardingForm')?.addEventListener('submit', async event => {
       event.preventDefault();
-      const {data:{user}} = await client.auth.getUser(); if (!user) return;
+      const {data:{user}} = await client.auth.getUser();
+      if (!user) return;
       const selected = [...document.querySelectorAll('#mobileOnboardingCategories input:checked')].map(input => input.value);
       const message = $('mobileOnboardingMessage');
-      if (selected.length > 4) { if (message) message.textContent = 'अधिकतम चार श्रेणियाँ चुनें।'; return; }
-      const {error} = await client.from('profiles').update({reading_language:$('mobileOnboardingLanguage').value,preferred_categories:selected}).eq('id',user.id);
-      if (error) { if (message) message.textContent = 'पसंद सुरक्षित नहीं हुई: ' + error.message; return; }
-      sessionStorage.setItem('ss_mobile_onboarded',user.id); $('mobileOnboarding')?.close();
+      if (selected.length > 4) {
+        if (message) message.textContent = 'अधिकतम चार श्रेणियाँ चुनें।';
+        return;
+      }
+      const {error} = await client.from('profiles').update({
+        reading_language: $('mobileOnboardingLanguage')?.value || 'hi',
+        preferred_categories: selected
+      }).eq('id', user.id);
+      if (error) {
+        if (message) message.textContent = 'पसंद सुरक्षित नहीं हुई: ' + error.message;
+        return;
+      }
+
+      // पूरा किया गया चिह्न खाली श्रेणी चयन पर भी सहेजा जाता है।
+      try { localStorage.setItem(markerKey(user.id), '1'); } catch (_) {}
+      try {
+        await client.auth.updateUser({data:{ss_mobile_onboarding_completed:true}});
+      } catch (metadataError) {
+        console.warn('खाते में स्वागत-चयन की स्थिति सुरक्षित नहीं हुई:', metadataError);
+      }
+      $('mobileOnboarding')?.close();
       if (typeof loadCloudProfile === 'function') await loadCloudProfile();
       if (typeof loadCloudWorks === 'function') await loadCloudWorks();
     });
+
     async function gate() {
-      const {data} = await client.auth.getSession();
-      if (!data.session) { const dialog = $('authDialog'); const close = $('authClose'); if (close) close.hidden = true; if (dialog && !dialog.open) dialog.showModal(); }
-      else await showOnboardingIfNeeded(data.session.user);
+      const {data, error} = await client.auth.getSession();
+      if (error) console.warn('लॉगिन सत्र नहीं पढ़ा जा सका:', error.message);
+      if (!data.session) {
+        const dialog = $('authDialog');
+        const close = $('authClose');
+        if (close) close.hidden = true;
+        if (dialog && !dialog.open) dialog.showModal();
+      } else {
+        await showOnboardingIfNeeded(data.session.user);
+      }
       client.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) { $('authDialog')?.close(); showOnboardingIfNeeded(session.user); }
-        if (event === 'SIGNED_OUT') { sessionStorage.removeItem('ss_mobile_onboarded'); const dialog = $('authDialog'); if (dialog && !dialog.open) dialog.showModal(); }
+        if (event === 'SIGNED_IN' && session?.user) {
+          $('authDialog')?.close();
+          showOnboardingIfNeeded(session.user);
+        }
+        if (event === 'SIGNED_OUT') {
+          // पूर्णता का चिह्न जानबूझकर नहीं मिटाया जाता; अगली बार लॉगिन पर स्क्रीन नहीं खुलेगी।
+          const dialog = $('authDialog');
+          if (dialog && !dialog.open) dialog.showModal();
+        }
       });
     }
     gate().catch(error => console.warn('मोबाइल लॉगिन गेट:', error));
