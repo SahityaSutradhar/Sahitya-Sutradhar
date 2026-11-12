@@ -97,6 +97,8 @@
   let tapStart = null;
   let dragState = null;
   let repositionFrame = 0;
+  let initialized = false;
+  let bootObserver = null;
 
   function makeButton(className, label, title) {
     const button = document.createElement('button');
@@ -583,14 +585,30 @@
   }
 
   function init() {
-    if (!createUI()) return;
+    if (initialized) return true;
+    if (!createUI()) return false;
+    initialized = true;
     observeReader();
     bindGlobalEvents();
+    if (bootObserver) { bootObserver.disconnect(); bootObserver = null; }
+    return true;
+  }
+
+  // The reader dialog/body may be created lazily by app.js only after a work is opened.
+  // A one-shot DOMContentLoaded init misses that case, so watch until the reader exists.
+  function boot() {
+    if (init()) return;
+    if (!bootObserver) {
+      bootObserver = new MutationObserver(() => {
+        if (init()) { bootObserver?.disconnect(); bootObserver = null; }
+      });
+      bootObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
   } else {
-    init();
+    boot();
   }
 })();
