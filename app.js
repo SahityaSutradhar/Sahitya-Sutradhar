@@ -1234,26 +1234,79 @@ if (editingWorkId && seriesMode === "standalone") {
 
 
 
+let savedExcerptSelection = "";
+let excerptPreviewUrl = "";
+
+function captureExcerptSelection(){
+  const body=document.getElementById("readerBody");
+  const sel=window.getSelection();
+  if(!body||!sel||!sel.toString().trim()||!sel.anchorNode||!sel.focusNode)return;
+  if(body.contains(sel.anchorNode)&&body.contains(sel.focusNode)){
+    savedExcerptSelection=sel.toString().trim();
+  }
+}
+document.addEventListener("selectionchange",captureExcerptSelection);
+document.addEventListener("pointerdown",e=>{
+  if(e.target?.closest?.("#shareExcerptImage"))captureExcerptSelection();
+},true);
+
 async function shareExcerptAsImage(){
   const s=state.stories.find(x=>x.id===currentReaderId);if(!s)return;
-  const sel=window.getSelection(),selection=sel?.toString().trim();
-  const body=document.getElementById("readerBody");
-  if(!selection||!sel.anchorNode||!body?.contains(sel.anchorNode)||!sel.focusNode||!body.contains(sel.focusNode)){toast("केवल रचना के पृष्ठ के भीतर का अंश चुनें।");return;}
+  captureExcerptSelection();
+  const selection=savedExcerptSelection;
+  if(!selection){toast("पहले रचना के पृष्ठ में अपना अंश चुनें, फिर इस बटन को दबाएँ।");return;}
+  if(selection.length>1800){toast("कृपया 1800 अक्षरों से छोटा अंश चुनें।");return;}
   try{await document.fonts?.ready;}catch{}
   const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1350;
-  const ctx=canvas.getContext("2d");const g=ctx.createLinearGradient(0,0,1080,1350);g.addColorStop(0,"#5b1d28");g.addColorStop(1,"#9a7047");ctx.fillStyle=g;ctx.fillRect(0,0,1080,1350);
+  const ctx=canvas.getContext("2d");
+  if(!ctx){toast("इस डिवाइस पर चित्र तैयार नहीं हो सका।");return;}
+  const g=ctx.createLinearGradient(0,0,1080,1350);g.addColorStop(0,"#5b1d28");g.addColorStop(1,"#9a7047");ctx.fillStyle=g;ctx.fillRect(0,0,1080,1350);
   ctx.strokeStyle="#e8cf9d";ctx.lineWidth=4;ctx.strokeRect(42,42,996,1266);
   ctx.fillStyle="#f6dfb5";ctx.textAlign="center";ctx.font="bold 38px sans-serif";ctx.fillText("साहित्य सूत्रधार",540,145);
   try{const logo=new Image();logo.src="assets/sahitya-sutradhar-logo.png";await logo.decode();ctx.drawImage(logo,490,65,100,70);}catch{}
-  ctx.fillStyle="#fff8e9";ctx.font="bold 48px sans-serif";wrapCanvasText(ctx,s.title,540,250,850,64,5);
+  ctx.fillStyle="#fff8e9";ctx.font="bold 48px sans-serif";wrapCanvasText(ctx,s.title,540,250,850,64,4);
   ctx.strokeStyle="#d9b56e";ctx.beginPath();ctx.moveTo(160,390);ctx.lineTo(920,390);ctx.stroke();
   ctx.textAlign="left";ctx.fillStyle="#fffaf0";ctx.font="36px sans-serif";wrapCanvasText(ctx,selection,140,480,800,58,11);
   ctx.textAlign="center";ctx.fillStyle="#f5dcae";ctx.font="bold 32px sans-serif";ctx.fillText("— "+(s.author||"अनाम लेखक"),540,1160);
   ctx.font="22px sans-serif";ctx.fillText(location.href.split("#")[0]+"#work-"+s.id,540,1220);
-  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob){toast("चित्र तैयार नहीं हो सका।");return;}
-  const file=new File([blob],"sahitya-sutradhar-excerpt.png",{type:"image/png"});
-  if(navigator.canShare?.({files:[file]})&&navigator.share){try{await navigator.share({files:[file],title:s.title,text:"साहित्य सूत्रधार पर पढ़ें — "+s.author});return;}catch(e){if(e.name==="AbortError")return;}}
-  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sahitya-sutradhar-excerpt.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);toast("चुने हुए अंश का चित्र डाउनलोड हो गया।");
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+  if(!blob){toast("चित्र तैयार नहीं हो सका।");return;}
+  if(excerptPreviewUrl)URL.revokeObjectURL(excerptPreviewUrl);
+  excerptPreviewUrl=URL.createObjectURL(blob);
+  showExcerptImagePreview(blob,excerptPreviewUrl,s);
+}
+
+function showExcerptImagePreview(blob,url,story){
+  document.getElementById("excerptImagePreview")?.remove();
+  const overlay=document.createElement("div");overlay.id="excerptImagePreview";
+  overlay.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(15,10,12,.94);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;";
+  const panel=document.createElement("div");
+  panel.style.cssText="width:min(100%,520px);max-height:100%;overflow:auto;background:#fffaf0;color:#321b1c;border-radius:18px;padding:16px;box-shadow:0 12px 48px #0008;text-align:center;";
+  const heading=document.createElement("h2");heading.textContent="चुने हुए अंश का चित्र";heading.style.cssText="margin:4px 0 12px;font-size:20px;";
+  const preview=document.createElement("img");preview.src=url;preview.alt="चुने हुए अंश का साझा करने योग्य चित्र";preview.style.cssText="display:block;width:auto;max-width:100%;max-height:62vh;object-fit:contain;margin:0 auto 14px;border-radius:8px;";
+  const actions=document.createElement("div");actions.style.cssText="display:flex;flex-wrap:wrap;gap:9px;justify-content:center;";
+  const makeButton=(label)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="border:0;border-radius:9px;padding:12px 16px;background:#641f2b;color:#fff;font-weight:600;font-size:15px;";return b;};
+  const share=makeButton("शेयर करें"),download=makeButton("चित्र डाउनलोड करें"),back=makeButton("वापस जाएँ");
+  share.addEventListener("click",async()=>{
+    const file=new File([blob],"sahitya-sutradhar-excerpt.png",{type:"image/png"});
+    if(navigator.share&&navigator.canShare?.({files:[file]})){
+      try{await navigator.share({files:[file],title:story.title,text:"साहित्य सूत्रधार पर पढ़ें — "+(story.author||"")});}
+      catch(e){if(e.name!=="AbortError")toast("शेयर नहीं हो सका। आप चित्र डाउनलोड करके साझा कर सकते हैं।");}
+    }else{
+      downloadExcerptBlob(blob);
+      toast("इस ब्राउज़र में सीधे चित्र शेयर की सुविधा नहीं है; चित्र डाउनलोड किया गया है।");
+    }
+  });
+  download.addEventListener("click",()=>downloadExcerptBlob(blob));
+  const close=()=>{overlay.remove();if(excerptPreviewUrl){URL.revokeObjectURL(excerptPreviewUrl);excerptPreviewUrl="";}};
+  back.addEventListener("click",close);
+  overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
+  actions.append(share,download,back);panel.append(heading,preview,actions);overlay.append(panel);document.body.append(overlay);
+}
+function downloadExcerptBlob(blob){
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="sahitya-sutradhar-excerpt.png";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines){
   const words=String(text).split(/\s+/);let line="",lines=[];
