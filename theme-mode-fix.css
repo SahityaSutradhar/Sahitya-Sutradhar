@@ -1,0 +1,47 @@
+/* Sahitya Sutradhar — consistent light/dark surfaces */
+:root{
+ color-scheme:light;
+ --ss-page:#fbf8f2;--ss-surface:#fffdf9;--ss-surface-2:#f4eee5;--ss-text:#302522;--ss-muted:#76675e;--ss-border:#e5d9cc;--ss-accent:#641f2b;--ss-accent-soft:#f3e7e5;--ss-input:#fff;--ss-shadow:0 8px 28px rgba(54,31,24,.08);
+}
+body{background:var(--ss-page);color:var(--ss-text)}
+body :is(.topbar,.bottom-nav,.app-frame,.app-header,.reader-header,.reader-main,.reader-card,.story-card,.writer-card,.profile-card,.stats-grid>div,.empty-state,.modal,.dropdown-menu,.popover,.notification-item,.community-post,.review-card,.message-card,.inbox-panel,.settings-panel,.mobile-category-card,.mobile-horizontal-card,.mobile-editorial-note,.mobile-detail-part,.reader-page,.reader-panel,.part-card,.chapter-item,.search-panel,.search-results,.toolbar,.form-card,.auth-card){background-color:var(--ss-surface);color:var(--ss-text);border-color:var(--ss-border)}
+body :is(input,textarea,select){background:var(--ss-input);color:var(--ss-text);border-color:var(--ss-border)}
+body :is(button,.button,.chip,.tag,.nav-item){color:inherit}
+body :is(.muted,.subtle,small,.story-card p,.writer-card small,.profile-card p){color:var(--ss-muted)}
+body :is(.secondary-button,.chip,.tag,.setting-row,.story-meta,.reader-top,.reader-bottom){border-color:var(--ss-border)}
+body.dark{color-scheme:dark;--ss-page:#171312;--ss-surface:#241d1b;--ss-surface-2:#302522;--ss-text:#f3e9df;--ss-muted:#c1afa1;--ss-border:#493a34;--ss-accent:#a64c58;--ss-accent-soft:#40292b;--ss-input:#211a18;--ss-shadow:0 10px 30px rgba(0,0,0,.28);background:var(--ss-page);color:var(--ss-text)}
+body.dark :is(.topbar,.bottom-nav,.app-frame,.app-header,.reader-header,.reader-main,.reader-card,.story-card,.writer-card,.profile-card,.stats-grid>div,.empty-state,.modal,.dropdown-menu,.popover,.notification-item,.community-post,.review-card,.message-card,.inbox-panel,.settings-panel,.mobile-category-card,.mobile-horizontal-card,.mobile-editorial-note,.mobile-detail-part,.reader-page,.reader-panel,.part-card,.chapter-item,.search-panel,.search-results,.toolbar,.form-card,.auth-card){background-color:var(--ss-surface);color:var(--ss-text);border-color:var(--ss-border)}
+body.dark :is(input,textarea,select){background:var(--ss-input);color:var(--ss-text);border-color:var(--ss-border)}
+body.dark :is(.muted,.subtle,small,.story-card p,.writer-card small,.profile-card p){color:var(--ss-muted)}
+body.dark :is(.secondary-button,.chip,.tag){background:var(--ss-surface-2);color:var(--ss-text);border-color:var(--ss-border)}
+body.dark :is(.primary-button,.read-button,.mobile-read-button){background:#8d3542;color:#fff}
+body.dark .welcome{color:#fff3e2}
+body.dark .reader-body,body.dark .reader-pages,body.dark .page-reader{background:transparent;color:var(--ss-text)}
+body.dark .reader-page mark{background:#8a7131;color:#fff4d5}
+body.dark img{background-color:#302522}
+
+html.ss-theme-dark body{color-scheme:dark;--ss-page:#171312;--ss-surface:#241d1b;--ss-surface-2:#302522;--ss-text:#f3e9df;--ss-muted:#c1afa1;--ss-border:#493a34;--ss-accent:#a64c58;--ss-accent-soft:#40292b;--ss-input:#211a18;--ss-shadow:0 10px 30px rgba(0,0,0,.28);background:var(--ss-page);color:var(--ss-text)}
+html.ss-theme-dark body :is(.reader-frame,.app-header,.reader-main,.reader-heading,.page-reader,.reader-pages,.reader-state,.reader-progress){background-color:var(--ss-surface);color:var(--ss-text);border-color:var(--ss-border)}
+
+/* Photorealistic lotus identity: static crown + softly animated lower trio */
+.lotus-art{position:relative;width:210px;height:155px;flex:0 0 210px;opacity:1;isolation:isolate}
+.lotus-art .lotus-trio{position:absolute;inset:34px -6px -5px;width:220px;height:125px;object-fit:contain;z-index:1;filter:drop-shadow(0 7px 10px rgba(20,10,8,.22))}
+.lotus-art .lotus-crown{position:absolute;z-index:2;width:104px;height:94px;object-fit:contain;left:50%;top:-4px;transform:translateX(-50%);filter:drop-shadow(0 5px 9px rgba(20,10,8,.22))}
+.brand-mark{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;font-size:0!important;background:url('lotus-crown.png?v=20261112-literary-design-1') center/contain no-repeat}
+.profile-shortcut-avatar,.profile-nav-avatar{display:grid;place-items:center;overflow:hidden;border-radius:50%;background:var(--ss-accent);color:#fff!important;font-weight:800}
+.profile-shortcut-avatar{padding:0!important;width:40px;height:40px}
+.profile-shortcut-avatar img,.profile-nav-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.profile-nav-avatar{width:24px;height:24px;font-size:12px!important;line-height:1.1!important}
+.ss-work-detail-dialog{padding:0;max-width:760px}
+.ss-detail-wrap{padding:22px;position:relative}.ss-detail-close{position:absolute;right:14px;top:8px;z-index:2}
+.ss-detail-hero{display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:20px;align-items:start;padding:24px 12px 12px}
+.ss-detail-cover{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:13px;background:var(--ss-surface-2)}
+.ss-detail-placeholder{display:grid;place-items:center;color:var(--ss-muted);padding:12px;text-align:center}
+.ss-detail-hero h2{font-size:clamp(22px,4vw,30px);line-height:1.35;margin:5px 0 8px}
+.ss-detail-author{color:var(--ss-muted);margin:0 0 12px}.ss-detail-meta,.ss-detail-tags{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0;color:var(--ss-muted);font-size:12px}
+.ss-detail-meta span,.ss-detail-tags span{border:1px solid var(--ss-border);background:var(--ss-surface-2);border-radius:99px;padding:4px 9px}
+.ss-detail-summary{line-height:1.9;white-space:pre-wrap}.ss-detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.story-card{content-visibility:auto;contain-intrinsic-size:280px}
+@media(max-width:620px){.lotus-art{width:112px;height:112px;flex-basis:112px;transform:none!important;margin:0!important}.lotus-art .lotus-trio{width:125px;height:83px;inset:28px -6px 0}.lotus-art .lotus-crown{width:64px;height:62px;top:0}.ss-detail-hero{grid-template-columns:92px 1fr;gap:12px;padding:25px 0 10px}.ss-detail-wrap{padding:16px}.ss-work-detail-dialog{max-height:88vh}}
+@media(prefers-reduced-motion:reduce){.lotus-art .lotus-trio{animation:none!important}}
+
