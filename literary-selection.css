@@ -1,0 +1,167 @@
+/* साहित्य सूत्रधार — साहित्यिक अंश चयन 2.0 */
+#readerDialog .ss-literary-selection-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px 12px;
+  margin: 14px 0 4px;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--gold, #a4792f) 42%, transparent);
+  border-radius: 15px;
+  background: linear-gradient(110deg, rgba(164,121,47,.11), rgba(100,31,43,.035));
+}
+#readerDialog .ss-literary-mode-button {
+  min-height: 42px;
+  padding: 9px 15px;
+  border: 1px solid #a77c3e;
+  border-radius: 999px;
+  color: #fff8e8;
+  background: linear-gradient(135deg, #641f2b, #8a553b);
+  box-shadow: 0 4px 13px rgba(75,31,26,.16), inset 0 1px rgba(255,255,255,.16);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: .1px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+#readerDialog .ss-literary-selection-control.is-active .ss-literary-mode-button {
+  color: #4a281d;
+  background: linear-gradient(135deg, #f6e7bd, #d6ad62);
+  border-color: #b1843e;
+}
+#readerDialog .ss-literary-selection-hint {
+  flex: 1 1 180px;
+  margin: 0;
+  color: var(--muted, #71583f);
+  font-size: 12px;
+  line-height: 1.55;
+}
+#readerDialog #readerBody.ss-literary-selection-active {
+  cursor: text;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default;
+}
+#readerDialog #readerBody.ss-literary-selection-active::selection,
+#readerDialog #readerBody.ss-literary-selection-active *::selection {
+  color: inherit;
+  background: rgba(218, 177, 91, .58);
+  text-shadow: 0 0 0 transparent;
+}
+#readerDialog #readerBody.ss-literary-selection-active::-moz-selection,
+#readerDialog #readerBody.ss-literary-selection-active *::-moz-selection {
+  color: inherit;
+  background: rgba(218, 177, 91, .58);
+}
+#readerDialog .ss-literary-selection-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  overflow: visible;
+}
+#readerDialog .ss-literary-selection-layer[hidden] { display: none !important; }
+#readerDialog .ss-literary-selection-actions {
+  position: fixed;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  padding: 6px;
+  border: 1px solid rgba(227,195,130,.72);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #35151d, #642631 70%, #785037);
+  box-shadow: 0 9px 28px rgba(22,10,12,.34), inset 0 1px rgba(255,255,255,.12);
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+}
+#readerDialog .ss-literary-action {
+  min-height: 39px;
+  padding: 8px 10px;
+  border: 1px solid rgba(227,195,130,.28);
+  border-radius: 10px;
+  background: rgba(255,248,230,.08);
+  color: #fff4dc;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+#readerDialog .ss-literary-action-primary {
+  border-color: #d8b56e;
+  color: #40221e;
+  background: linear-gradient(135deg, #f7e8bf, #d5ad67);
+  font-weight: 800;
+}
+#readerDialog .ss-literary-action-clear { color: #f4d8cc; }
+#readerDialog .ss-literary-handle {
+  position: fixed;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid #fff4d8;
+  border-radius: 50%;
+  color: transparent;
+  background: #9b6a2d;
+  box-shadow: 0 2px 9px rgba(42,20,15,.32), inset 0 0 0 3px #d9b56e;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+#readerDialog .ss-literary-handle::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 21px;
+  width: 3px;
+  height: 9px;
+  border-radius: 4px;
+  background: #b88743;
+}
+#readerDialog .ss-literary-handle:active { cursor: grabbing; transform: scale(1.08); }
+.ss-literary-live-note {
+  position: fixed;
+  z-index: 2147483647;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 12px);
+  max-width: min(92vw, 440px);
+  padding: 10px 15px;
+  border: 1px solid #cba45e;
+  border-radius: 12px;
+  color: #fff4df;
+  background: #4b2028;
+  box-shadow: 0 8px 24px #0004;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.ss-literary-live-note.is-visible { opacity: 1; transform: translate(-50%, 0); }
+body.dark #readerDialog .ss-literary-selection-control {
+  background: linear-gradient(110deg, rgba(214,173,98,.13), rgba(124,48,59,.12));
+  border-color: rgba(214,173,98,.4);
+}
+body.dark #readerDialog .ss-literary-selection-hint { color: var(--muted, #c1ab91); }
+@media (max-width: 520px) {
+  #readerDialog .ss-literary-selection-control { align-items: flex-start; padding: 10px; }
+  #readerDialog .ss-literary-selection-hint { flex-basis: 100%; }
+  #readerDialog .ss-literary-selection-actions { gap: 4px; padding: 5px; border-radius: 14px; }
+  #readerDialog .ss-literary-action { min-height: 42px; padding: 8px 7px; font-size: 11px; }
+  #readerDialog .ss-literary-handle { width: 30px; height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-literary-live-note { transition: none; }
+}
+
+#readerDialog .ss-literary-selection-actions[hidden],
+#readerDialog .ss-literary-handle[hidden] { display: none !important; }
