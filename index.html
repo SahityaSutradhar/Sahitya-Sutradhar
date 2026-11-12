@@ -14,7 +14,8 @@
   <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest?v=20261110-button-recovery-1">
-  <link rel="stylesheet" href="styles.css?v=20261110-button-recovery-1">
+  <link rel="stylesheet" href="styles.css?v=20261112-literary-design-1">
+  <link rel="stylesheet" href="theme-mode-fix.css?v=20261112-literary-design-1">
   <style>
     #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
     #networkStatus[hidden]{display:none}
@@ -68,7 +69,7 @@
     </a>
     <div class="top-actions">
       <button class="icon-button" id="themeToggle" aria-label="थीम बदलें" title="डार्क/ब्राइट मोड">◐</button>
-      <button class="top-icon" id="profileShortcut" aria-label="प्रोफ़ाइल">♙</button>
+      <button class="top-icon profile-shortcut-avatar" id="profileShortcut" aria-label="प्रोफ़ाइल"><span class="profile-shortcut-fallback">अ</span></button>
       <button class="top-icon" id="settingsShortcut" aria-label="सेटिंग्स">⚙</button>
       <select id="layoutLanguage" aria-label="भाषा" style="width:auto;padding:7px">
         <option value="hi">हिंदी</option>
@@ -86,7 +87,7 @@
         <h1 id="welcomeTitle">जहाँ शब्द मिलते हैं।</h1>
         <p class="welcome-copy" id="welcomeText">पढ़िए, लिखिए और अपनी रचनाओं को पाठकों तक पहुँचाइए।</p>
       </div>
-      <div class="lotus-art" aria-hidden="true"><span>❀</span><span>❀</span><span>❀</span></div>
+      <div class="lotus-art" aria-hidden="true"><img class="lotus-crown" src="lotus-crown.png?v=20261112-lotus-1" alt=""><img class="lotus-trio" src="lotus-trio-animated.gif?v=20261112-lotus-1" alt=""></div>
     </section>
 
     <section class="discovery-search" aria-label="रचनाएँ खोजें">
@@ -168,7 +169,7 @@
   <span id="inboxBadge" class="notification-badge hidden">0</span>
 </button>
 <button class="nav-item write-nav" data-tab="write"><span>＋</span>लिखें</button>
-    <button class="nav-item" data-tab="profile"><span>♙</span>प्रोफ़ाइल</button>
+    <button class="nav-item" data-tab="profile"><span class="profile-nav-avatar" id="profileNavAvatar">अ</span>प्रोफ़ाइल</button>
     <button class="nav-item" data-tab="settings"><span>⚙</span>सेटिंग्स</button>
   </nav>
 
@@ -600,7 +601,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js?v=20261110-button-recovery-1"></script>
   <script src="app.js?v=20261110-button-recovery-1"></script>
-  <script src="mobile-app-enhancements.js?v=20261110-button-recovery-1"></script>
+  <script src="mobile-app-enhancements.js?v=20261112-literary-design-1"></script>
   <script>
     (() => {
       const status = document.getElementById("networkStatus");
@@ -628,5 +629,51 @@
  }catch(error){console.error('साहित्य सूत्रधार अपडेट जाँच विफल:',error);}});
 })();
 </script>
+
+<dialog id="ssWorkDetailDialog" class="modal ss-work-detail-dialog">
+ <div class="ss-detail-wrap"><button type="button" class="close-button ss-detail-close" aria-label="बंद करें">×</button><div id="ssWorkDetailContent"></div></div>
+</dialog>
+<script id="ss-work-detail-navigation-20261112">
+(()=>{
+ const dlg=document.getElementById('ssWorkDetailDialog'),box=document.getElementById('ssWorkDetailContent');if(!dlg||!box)return;
+ const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+ function find(id){try{return state.stories.find(w=>String(w.id)===String(id));}catch(_){return null;}}
+ document.addEventListener('click',e=>{
+  const read=e.target.closest('[data-read]');
+  if(read&&!read.closest('#readerDialog')&&!read.closest('#ssWorkDetailDialog')){
+   const w=find(read.dataset.read);if(!w)return;e.preventDefault();e.stopImmediatePropagation();
+   const words=(String(w.body||'').trim().match(/[\p{L}\p{N}]+/gu)||[]).length;
+   const mins=Math.max(1,Math.ceil(words/200));
+   const cover=w.coverUrl?'<img class="ss-detail-cover" src="'+esc(w.coverUrl)+'" alt="">':'<div class="ss-detail-cover ss-detail-placeholder">साहित्य सूत्रधार</div>' ;
+   box.innerHTML='<div class="ss-detail-hero">'+cover+'<div><p class="eyebrow">रचना का परिचय</p><h2>'+esc(w.title)+'</h2><p class="ss-detail-author">'+esc(w.author||'अनाम रचनाकार')+'</p><div class="ss-detail-meta"><span>'+esc(w.type||'रचना')+'</span><span>'+esc(w.subtype||'')+'</span><span>'+words.toLocaleString('hi-IN')+' शब्द</span><span>'+mins+' मिनट</span></div><div class="ss-detail-tags">'+(w.categories||[]).map(c=>'<span>'+esc(c)+'</span>').join('')+'</div></div></div><h3>रचना का सार</h3><p class="ss-detail-summary">'+esc(String(w.body||'').replace(/\s+/g,' ').slice(0,900))+(String(w.body||'').length>900?'…':'')+'</p><div class="ss-detail-actions"><button type="button" class="primary-button" data-ss-detail-read="'+esc(w.id)+'">पढ़ें</button><button type="button" class="secondary-button" data-ss-detail-share="'+esc(w.id)+'">शेयर करें</button></div>' ;
+   dlg.showModal();return;
+  }
+  const next=e.target.closest('[data-ss-detail-read]');if(next){e.preventDefault();const id=next.dataset.ssDetailRead;dlg.close();if(typeof openReader==='function')openReader(id);}
+  if(e.target.closest('.ss-detail-close'))dlg.close();
+ },true);
+})();
+</script>
+
+
+<script id="ss-visual-polish-20261112">
+(()=>{
+ const $=id=>document.getElementById(id);
+ function syncProfileAvatar(){
+  const source=$('profileAvatar'); if(!source)return;
+  const img=source.querySelector('img');
+  const name=($('profileName')?.textContent||'अनाम पाठक').trim();
+  const target=$('profileShortcut'), nav=$('profileNavAvatar');
+  const html=img?'<img src="'+img.src.replace(/&/g,'&amp;').replace(/\"/g,'&quot;')+'" alt="">':(name.slice(0,1)||'अ');
+  if(target){target.innerHTML=html;target.setAttribute('aria-label',name+' की प्रोफ़ाइल');}
+  if(nav){nav.innerHTML=html;nav.setAttribute('aria-label',name+' की प्रोफ़ाइल');}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncProfileAvatar,{once:true});else syncProfileAvatar();
+ const profile=$('profileAvatar'); if(profile&&'MutationObserver'in window)new MutationObserver(syncProfileAvatar).observe(profile,{childList:true,subtree:true,characterData:true,attributes:true});
+ const lazyImages=root=>{(root||document).querySelectorAll('img:not([loading])').forEach(img=>{img.loading='lazy';img.decoding='async';});};
+ lazyImages();
+ if('MutationObserver'in window)new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1){if(n.matches?.('img')&&!n.hasAttribute('loading')){n.loading='lazy';n.decoding='async';}lazyImages(n);}}))).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
 </body>
 </html>

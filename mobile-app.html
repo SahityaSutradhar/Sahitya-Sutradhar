@@ -15,8 +15,9 @@
   <script>try{if(sessionStorage.getItem('ss_mobile_loader_seen_v1')==='1')document.documentElement.classList.add('ss-loader-seen');}catch(_){}</script>
   <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest?v=20261110-button-recovery-1">
-  <link rel="stylesheet" href="styles.css?v=20261110-button-recovery-1">
-  <link rel="stylesheet" href="mobile-app.css?v=20261110-button-recovery-1">
+  <link rel="stylesheet" href="styles.css?v=20261112-literary-design-1">
+  <link rel="stylesheet" href="theme-mode-fix.css?v=20261112-literary-design-1">
+  <link rel="stylesheet" href="mobile-app.css?v=20261112-literary-design-1">
   <style>
     #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
     #networkStatus[hidden]{display:none}
@@ -87,7 +88,7 @@
         <h1 id="welcomeTitle">जहाँ शब्द मिलते हैं।</h1>
         <p class="welcome-copy" id="welcomeText">पढ़िए, लिखिए और अपनी रचनाओं को पाठकों तक पहुँचाइए।</p>
       </div>
-      <div class="lotus-art" aria-hidden="true"><span>❀</span><span>❀</span><span>❀</span></div>
+      <div class="lotus-art" aria-hidden="true"><img class="lotus-crown" src="lotus-crown.png?v=20261112-lotus-1" alt=""><img class="lotus-trio" src="lotus-trio-animated.gif?v=20261112-lotus-1" alt=""></div>
     </section>
 
     <section class="mobile-home-switch" aria-label="मुख्यपृष्ठ अनुभाग">
@@ -198,7 +199,7 @@
   <span id="inboxBadge" class="notification-badge hidden">0</span>
 </button>
 <button class="nav-item write-nav" data-tab="write"><span>＋</span>लिखें</button>
-    <button class="nav-item" data-tab="profile"><span>♙</span>प्रोफ़ाइल</button>
+    <button class="nav-item" data-tab="profile"><span class="profile-nav-avatar" id="profileNavAvatar">अ</span>प्रोफ़ाइल</button>
   </nav>
 
   <dialog id="writeDialog" class="modal">
@@ -698,7 +699,7 @@
       <button type="submit" class="primary-button full-width">आगे बढ़ें</button>
     </form>
   </dialog>
-  <script src="mobile-app-enhancements.js?v=20261110-button-recovery-1"></script>
+  <script src="mobile-app-enhancements.js?v=20261112-literary-design-1"></script>
 
 
 <script>
@@ -717,5 +718,26 @@
  }catch(error){console.error('साहित्य सूत्रधार अपडेट जाँच विफल:',error);}});
 })();
 </script>
+
+<script id="ss-visual-polish-20261112">
+(()=>{
+ const $=id=>document.getElementById(id);
+ function syncProfileAvatar(){
+  const source=$('profileAvatar'); if(!source)return;
+  const img=source.querySelector('img');
+  const name=($('profileName')?.textContent||'अनाम पाठक').trim();
+  const target=$('profileShortcut'), nav=$('profileNavAvatar');
+  const html=img?'<img src="'+img.src.replace(/&/g,'&amp;').replace(/\"/g,'&quot;')+'" alt="">':(name.slice(0,1)||'अ');
+  if(target){target.innerHTML=html;target.setAttribute('aria-label',name+' की प्रोफ़ाइल');}
+  if(nav){nav.innerHTML=html;nav.setAttribute('aria-label',name+' की प्रोफ़ाइल');}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncProfileAvatar,{once:true});else syncProfileAvatar();
+ const profile=$('profileAvatar'); if(profile&&'MutationObserver'in window)new MutationObserver(syncProfileAvatar).observe(profile,{childList:true,subtree:true,characterData:true,attributes:true});
+ const lazyImages=root=>{(root||document).querySelectorAll('img:not([loading])').forEach(img=>{img.loading='lazy';img.decoding='async';});};
+ lazyImages();
+ if('MutationObserver'in window)new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1){if(n.matches?.('img')&&!n.hasAttribute('loading')){n.loading='lazy';n.decoding='async';}lazyImages(n);}}))).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
 </body>
 </html>
