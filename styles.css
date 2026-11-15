@@ -1136,3 +1136,6 @@ body.dark .resume-progress-track{background:#473832}
 img{max-width:100%;height:auto}
 #authDialog .premium-auth-facebook{margin-top:9px}#authDialog .premium-auth-facebook span{background:#1877f2;color:#fff;font-family:Arial,sans-serif}
 #authDialog.premium-auth-dialog{max-height:calc(100dvh - 24px);overflow:auto}
+
+/* Sutradhar brand logo update (2026-11-15) */
+.brand-logo-image{width:42px;height:42px;object-fit:contain;display:block;flex:0 0 42px;border-radius:8px}

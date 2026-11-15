@@ -8,12 +8,12 @@
   <meta name="theme-color" content="#641f2b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="साहित्य सूत्रधार">
+  <meta name="apple-mobile-web-app-title" content="सूत्रधार">
   <link rel="apple-touch-icon" href="assets/icon-192.png?v=20261110-button-recovery-1">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png?v=20261110-button-recovery-1">
-  <meta name="description" content="साहित्य सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
+  <meta name="description" content="सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
   <script>try{if(sessionStorage.getItem('ss_mobile_loader_seen_v1')==='1')document.documentElement.classList.add('ss-loader-seen');}catch(_){}</script>
-  <title>साहित्य सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
+  <title>सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest?v=20261110-button-recovery-1">
   <link rel="stylesheet" href="styles.css?v=20261112-literary-design-1">
   <link rel="stylesheet" href="theme-mode-fix.css?v=20261112-literary-design-1">
@@ -65,9 +65,9 @@
   <div id="networkStatus" role="status" aria-live="polite" hidden>आप ऑफलाइन हैं। सहेजा हुआ वेबसाइट ढाँचा खुल सकता है; लॉगिन, रचनाएँ और क्लाउड सिंक के लिए इंटरनेट आवश्यक है।</div>
   <header class="topbar">
     <span class="brand-mark" aria-hidden="true">❀</span>
-    <a class="brand" href="#" aria-label="साहित्य सूत्रधार मुख्यपृष्ठ">
-      <span class="brand-mark">❀</span>
-      <span><strong>साहित्य सूत्रधार</strong><small>शब्दों का अपना संसार</small></span>
+    <a class="brand" href="#" aria-label="सूत्रधार मुख्यपृष्ठ">
+      <img class="brand-mark brand-logo-image" src="assets/sahitya-sutradhar-logo.png" alt="सूत्रधार लोगो">
+      <span><strong>सूत्रधार</strong><small>शब्दों का अपना संसार</small></span>
     </a>
     <div class="top-actions">
       <button class="icon-button" id="themeToggle" aria-label="थीम बदलें" title="डार्क/ब्राइट मोड">◐</button>
@@ -557,7 +557,7 @@
     <div id="mobileSeriesDetailContent"></div>
   </dialog>
 
-  <!-- साहित्य सूत्रधार: शास्त्रीय राजसी Loading Animation -->
+  <!-- सूत्रधार: शास्त्रीय राजसी Loading Animation -->
   <div id="appLoader" class="app-loader" role="status" aria-live="polite">
     <div class="loader-content">
       <div class="manuscript-scene">
@@ -586,7 +586,7 @@
         <div class="book-shadow"></div>
       </div>
       <div class="loader-brand">
-        <span class="loader-brand-title">साहित्य सूत्रधार</span>
+        <span class="loader-brand-title">सूत्रधार</span>
         <span class="loader-brand-subtitle">शब्दों का अपना संसार</span>
       </div>
       <div class="quill-writing">
@@ -638,7 +638,7 @@
       <button type="button" class="premium-auth-close" id="authClose" aria-label="बंद करें">×</button>
       <div class="premium-auth-ornament" aria-hidden="true"><span>❀</span></div>
       <p class="premium-auth-kicker">शब्दों का अपना संसार</p>
-      <h2 id="authHeading">साहित्य सूत्रधार में प्रवेश</h2>
+      <h2 id="authHeading">सूत्रधार में प्रवेश</h2>
       <p class="premium-auth-subtitle" id="authSubtitle">साहित्य, संवेदना और सृजन का आपका अपना संसार</p>
       <div class="premium-auth-fields">
         <label for="authEmail">ईमेल</label>
@@ -716,7 +716,7 @@
   await registration.update();
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')registration.update().catch(()=>{});});
   window.addEventListener('focus',()=>registration.update().catch(()=>{}));
- }catch(error){console.error('साहित्य सूत्रधार अपडेट जाँच विफल:',error);}});
+ }catch(error){console.error('सूत्रधार अपडेट जाँच विफल:',error);}});
 })();
 </script>
 

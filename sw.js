@@ -1,12 +1,12 @@
-/* साहित्य सूत्रधार — global refresh worker (20261110-button-recovery-1) */
-const BUILD = '20261110-button-recovery-1';
-const CACHE_PREFIX = 'sahitya-sutradhar-';
-const CACHE_NAME = `${CACHE_PREFIX}20261110-button-recovery-1`;
+/* सूत्रधार — global refresh worker (20261115-sutradhar-branding-1) */
+const BUILD = '20261115-sutradhar-branding-1';
+const CACHE_PREFIX = 'sutradhar-';
+const CACHE_NAME = `${CACHE_PREFIX}20261115-sutradhar-branding-1`;
 const PRECACHE_ASSETS = [
   './', './index.html', './mobile-app.html', './mobile-reader.html', './shastriya.html', './admin-bulk-upload.html',
   './styles.css', './mobile-app.css', './mobile-reader.css', './shastriya.css', './admin-bulk-upload.css',
   './app.js', './mobile-app.js', './mobile-app-enhancements.js', './mobile-reader.js', './shastriya.js', './admin-bulk-upload.js', './ui-localization.js', './supabase-config.js',
-  './manifest.webmanifest', './assets/sahitya-sutradhar-logo.png', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable-512.png'
+  './manifest.webmanifest', './assets/sutradhar-logo.png', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable-512.png'
 ];
 
 self.addEventListener('install', event => {

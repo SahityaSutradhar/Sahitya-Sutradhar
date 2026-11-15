@@ -6,8 +6,8 @@
   <link rel="preconnect" href="https://watjhnxfjaixrupktpuf.supabase.co" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <meta name="theme-color" content="#641f2b">
-<meta name="description" content="साहित्य सूत्रधार — मोबाइल साहित्यिक रीडर">
-<title>रचना पढ़ें — साहित्य सूत्रधार</title>
+<meta name="description" content="सूत्रधार — मोबाइल साहित्यिक रीडर">
+<title>रचना पढ़ें — सूत्रधार</title>
 <link rel="manifest" href="manifest.webmanifest?v=20261110-global-refresh-4">
 <link rel="stylesheet" href="mobile-app.css?v=20261110-global-refresh-4">
 <link rel="stylesheet" href="mobile-reader.css?v=20261110-global-refresh-4">
@@ -16,7 +16,7 @@
 <div class="app-frame reader-frame">
   <header class="app-header reader-header">
     <a class="back-link" href="mobile-app.html?v=20261110-global-refresh-4" aria-label="वापस">←</a>
-    <a class="brand" href="mobile-app.html?v=20261110-global-refresh-4"><span class="brand-symbol">❀</span><span><b>साहित्य सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a>
+    <a class="brand" href="mobile-app.html?v=20261110-global-refresh-4"><span class="brand-symbol">❀</span><span><b>सूत्रधार</b><small>शब्दों का अपना संसार</small></span></a>
     <button id="readerTextSettings" class="round-btn" type="button" aria-label="पाठ सेटिंग">अ</button>
   </header>
   <main id="readerMain" class="reader-main">
@@ -31,7 +31,7 @@
       </div>
       <div class="reader-progress"><div class="reader-progress-track"><span id="readerProgressBar"></span></div><small id="readerProgressText">0% पढ़ा</small></div>
       <section class="page-reader" aria-label="रचना के पृष्ठ">
-        <div class="page-topline"><span id="pageNumber">पृष्ठ 1 / 1</span><span>साहित्य सूत्रधार</span></div>
+        <div class="page-topline"><span id="pageNumber">पृष्ठ 1 / 1</span><span>सूत्रधार</span></div>
         <div id="readerPages" class="reader-pages"></div>
         <div class="page-controls">
           <button id="prevPage" type="button" disabled>‹ पिछला</button>
@@ -89,7 +89,7 @@
   await registration.update();
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')registration.update().catch(()=>{});});
   window.addEventListener('focus',()=>registration.update().catch(()=>{}));
- }catch(error){console.error('साहित्य सूत्रधार अपडेट जाँच विफल:',error);}});
+ }catch(error){console.error('सूत्रधार अपडेट जाँच विफल:',error);}});
 })();
 </script>
 </body>
