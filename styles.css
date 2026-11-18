@@ -1159,3 +1159,66 @@ body.dark .ss-reader-watermark{mix-blend-mode:screen;opacity:.10}
 .ss-offline-entry{padding:12px;border:1px solid var(--line);border-radius:12px;margin:10px 0;background:var(--paper)}
 .ss-offline-entry button{margin:4px}
 @media print{.reader-page,.reader-body{visibility:hidden!important}.ss-reader-watermark{display:none!important}}
+
+
+/* =========================================
+   SUTRADHAR PREMIUM UI — INBOX PHASE 1
+   Existing literary palette retained; refined surfaces and states.
+========================================= */
+:root{--ss-ease:cubic-bezier(.2,.75,.25,1);--ss-shadow:0 22px 70px rgba(48,24,20,.16)}
+button,.story-card,.writer-card,.profile-card,.empty-state,.modal{transition:background-color .2s var(--ss-ease),border-color .2s var(--ss-ease),box-shadow .2s var(--ss-ease),transform .2s var(--ss-ease)}
+button:not(:disabled):active{transform:translateY(1px) scale(.99)}
+button:disabled{opacity:.48;cursor:not-allowed}
+.primary-button,.secondary-button,.danger-button{min-height:42px;letter-spacing:.05px}
+.primary-button{box-shadow:0 7px 18px rgba(91,29,40,.14)}
+.primary-button:not(:disabled):hover{filter:brightness(1.07);box-shadow:0 10px 24px rgba(91,29,40,.2)}
+.secondary-button:hover{border-color:var(--gold);box-shadow:0 5px 16px rgba(69,39,27,.07)}
+input:not([type=checkbox]),textarea,select{transition:border-color .2s,box-shadow .2s,background .2s}
+input:not([type=checkbox]):focus,textarea:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(199,154,72,.14);outline:0}
+.modal,.premium-auth-dialog{border-radius:26px;box-shadow:var(--ss-shadow);backdrop-filter:blur(18px)}
+.modal::backdrop,.premium-auth-dialog::backdrop{background:rgba(24,14,13,.58);backdrop-filter:blur(7px)}
+.modal[open],.premium-auth-dialog[open]{animation:ssDialogIn .24s var(--ss-ease) both}
+@keyframes ssDialogIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.toast{border:1px solid rgba(255,255,255,.13);box-shadow:0 12px 35px rgba(20,12,10,.24);backdrop-filter:blur(12px);padding:12px 18px;border-radius:15px}
+#inboxView{max-width:1080px;padding-top:12px}
+#inboxView>h1{font-family:Georgia,"Nirmala UI",serif;font-size:clamp(27px,4vw,36px);letter-spacing:-.35px}
+#inboxView>.eyebrow{letter-spacing:1.7px}
+.inbox-tabs{padding:6px;background:var(--soft);border:1px solid var(--line);border-radius:17px;gap:6px}
+.inbox-tabs button{border-radius:12px;background:transparent;color:var(--muted);border:1px solid transparent}
+.inbox-tabs button:focus,.inbox-tabs button:hover{background:var(--paper);color:var(--maroon);border-color:var(--line)}
+#inboxRequestsList,#inboxConversationsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:14px 0}
+#inboxRequestsList .story-card{min-height:0;border-radius:19px;box-shadow:0 7px 24px rgba(65,38,28,.055)}
+#inboxConversationsList .writer-card{width:100%;min-height:82px;padding:17px 18px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:18px;color:var(--ink);box-shadow:0 6px 22px rgba(65,38,28,.045)}
+#inboxConversationsList .writer-card:hover{transform:translateY(-2px);border-color:var(--gold);box-shadow:0 12px 28px rgba(65,38,28,.09)}
+#inboxConversationsList .writer-card-main{display:grid;gap:4px;min-width:0}
+#inboxConversationsList .writer-card-main strong{font-size:15px}
+#inboxConversationsList .writer-card-main small{font-size:12px;color:var(--muted)}
+#inboxConversationsList .writer-card>span:last-child{font-size:11px;font-weight:800;color:var(--maroon);background:var(--soft);padding:7px 10px;border-radius:99px;white-space:nowrap}
+#inboxConversation{margin-top:18px;padding:clamp(14px,3vw,24px);background:var(--paper);border:1px solid var(--line);border-radius:24px;box-shadow:0 12px 35px rgba(65,38,28,.07)}
+.inbox-conversation-heading{margin:0 0 14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.inbox-conversation-heading h2{margin:0;font-family:Georgia,"Nirmala UI",serif;font-size:21px;overflow-wrap:anywhere}
+.inbox-conversation-status{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:11px 14px;border:1px solid rgba(181,139,71,.25);border-radius:13px;background:linear-gradient(110deg,rgba(199,154,72,.11),rgba(199,154,72,.035));color:var(--muted);font-size:12px}
+.inbox-accept-inline{min-height:34px;padding:7px 12px;font-size:12px;white-space:nowrap}
+.inbox-messages{min-height:260px;max-height:58vh;padding:18px;background:var(--bg);border:1px solid var(--line);border-radius:18px;scroll-behavior:smooth}
+.inbox-message{max-width:min(82%,560px);padding:12px 15px;border-radius:18px;box-shadow:0 3px 12px rgba(40,24,18,.045)}
+.inbox-message.mine{background:linear-gradient(135deg,var(--maroon),#82434a);color:#fff6e9;border-bottom-right-radius:6px}
+.inbox-message.theirs{background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:6px}
+.inbox-message small{display:block;text-align:right;margin-top:5px}
+.inbox-message.mine small{color:rgba(255,246,233,.72)}
+.inbox-compose{grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;padding-top:14px}
+.inbox-compose textarea{min-height:54px;max-height:150px;border-radius:16px;background:var(--bg);padding:13px 15px}
+.inbox-compose button{min-width:124px;min-height:52px;border-radius:15px}
+.inbox-compose.is-locked textarea{opacity:.65}
+#inboxNotice{margin:8px 0}
+body.dark .inbox-conversation-status{background:rgba(214,173,98,.08);border-color:rgba(214,173,98,.2)}
+body.dark #inboxConversation{box-shadow:0 12px 35px rgba(0,0,0,.16)}
+@media(max-width:680px){
+ #inboxRequestsList,#inboxConversationsList{grid-template-columns:1fr}
+ #inboxConversation{padding:12px;border-radius:19px}
+ .inbox-messages{min-height:230px;max-height:52vh;padding:12px}
+ .inbox-message{max-width:91%}
+ .inbox-compose{grid-template-columns:1fr}
+ .inbox-compose button{width:100%}
+ .inbox-conversation-status{align-items:flex-start;flex-direction:column}
+ .inbox-accept-inline{width:100%}
+}

@@ -25,6 +25,7 @@ let toastTimer;
 // SAHITYA SUTRADHAR — PRIVATE INBOX
 // =====================================
 let inboxCurrentRequestId = null;
+let inboxCurrentRequest = null;
 let inboxCurrentOtherUserId = null;
 let inboxCurrentMode = "messages";
 let inboxRequestsCache = [];
@@ -2805,87 +2806,52 @@ ${!follow && !cannotMessage
 }
 
 async function startInboxRequest(recipientId){
+  if(!supabaseClient){toast("संदेश सेवा उपलब्ध नहीं है।");return;}
   const {data:{user}} = await supabaseClient.auth.getUser();
-
-  if(!user){
-    toast("पहले लॉगिन करें।");
-    return;
-  }
-
+  if(!user){toast("पहले लॉगिन करें।");return;}
+  if(!recipientId || recipientId===user.id)return;
   currentUserId = user.id;
 
   const {data:existing,error:existingError} = await supabaseClient
     .from("message_requests")
-    .select("id,sender_id,recipient_id,status")
-    .or(
-      `and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`
-    )
+    .select("id,sender_id,recipient_id,status,created_at")
+    .or(`and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`)
     .limit(1)
     .maybeSingle();
 
-  if(existingError){
-    toast("पुरानी बातचीत की जाँच नहीं हो सकी।");
+  if(existingError){toast("इनबॉक्स नहीं खुल सका। कृपया पुनः प्रयास करें।");return;}
+
+  if(existing && ["accepted","pending"].includes(existing.status)){
+    inboxCurrentMode = existing.status==="pending" && existing.recipient_id===user.id ? "requests" : "messages";
+    switchTab("inbox");
+    await loadInbox();
+    await openInboxConversation(existing.id);
     return;
   }
 
-  if(existing){
-    if(existing.status==="accepted"){
-      switchTab("inbox");
-      await openInboxConversation(existing.id);
-    }else if(existing.status==="pending"){
-      toast(
-        existing.sender_id===user.id
-          ? "आपका संदेश अनुरोध पहले से भेजा जा चुका है।"
-          : "इस रचनाकार का संदेश अनुरोध आपके इनबॉक्स में है।"
-      );
-    }else{
-      toast("इस रचनाकार के साथ पुराना संदेश अनुरोध अस्वीकार या ब्लॉक किया गया है।");
-    }
-    return;
-  }
-
-  const message = prompt("अपना पहला निजी संदेश लिखें:");
-
-  if(!message || !message.trim()) return;
-
-  const text = message.trim();
-
-  if(text.length>5000){
-    toast("संदेश अधिकतम 5000 अक्षरों का हो सकता है।");
+  if(existing && ["rejected","blocked"].includes(existing.status)){
+    switchTab("inbox");
+    const notice=document.getElementById("inboxNotice");
+    if(notice)notice.textContent="इस उपयोगकर्ता के साथ पुराना संदेश अनुरोध अस्वीकार या ब्लॉक किया गया है।";
     return;
   }
 
   const {data:request,error:requestError} = await supabaseClient
     .from("message_requests")
-    .insert({
-      sender_id:user.id,
-      recipient_id:recipientId,
-      status:"pending"
-    })
-    .select("id")
+    .insert({sender_id:user.id,recipient_id:recipientId,status:"pending"})
+    .select("id,sender_id,recipient_id,status,created_at")
     .single();
 
   if(requestError){
-    toast("संदेश अनुरोध नहीं भेजा गया: "+requestError.message);
+    toast("नई बातचीत शुरू नहीं हो सकी: "+requestError.message);
     return;
   }
 
-  const {error:messageError} = await supabaseClient
-    .from("messages")
-    .insert({
-      request_id:request.id,
-      sender_id:user.id,
-      message_text:text,
-      is_read:false
-    });
-
-  if(messageError){
-    toast("अनुरोध बन गया, लेकिन पहला संदेश नहीं भेजा जा सका: "+messageError.message);
-    return;
-  }
-
-  toast("संदेश अनुरोध भेज दिया गया।");
-  loadNotificationBadge();
+  // नया संदेश-थ्रेड सीधे इनबॉक्स में खुलेगा; पहला संदेश वहीं से लिखा जाएगा।
+  inboxCurrentMode="messages";
+  switchTab("inbox");
+  await loadInbox();
+  await openInboxConversation(request.id);
 }
 
 async function openFollowList(profileId, type){
@@ -3346,6 +3312,9 @@ async function respondInboxRequest(requestId,status){
 
   await loadInboxRequests();
   await loadInboxConversations();
+  if(status==="accepted" && inboxCurrentRequestId===requestId){
+    await openInboxConversation(requestId);
+  }
 }
 
 async function loadInboxConversations(){
@@ -3355,8 +3324,7 @@ async function loadInboxConversations(){
   const {data,error} = await supabaseClient
     .from("message_requests")
     .select("id,sender_id,recipient_id,status,created_at")
-    .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
-    .eq("status","accepted")
+    .or(`status.eq.accepted,and(status.eq.pending,sender_id.eq.${currentUserId})`)
     .order("updated_at",{ascending:false});
 
   if(error){
@@ -3393,9 +3361,9 @@ async function loadInboxConversations(){
         data-inbox-conversation="${r.id}">
         <span class="writer-card-main">
           <strong>${escapeHtml(p.display_name||p.username||"रचनाकार")}</strong>
-          <small>निजी बातचीत खोलें</small>
+          <small>${r.status==="pending"?"संदेश अनुरोध भेजा गया · उत्तर की प्रतीक्षा":"निजी बातचीत"}</small>
         </span>
-        <span>खोलें ↗</span>
+        <span>${r.status==="pending"?"प्रतीक्षारत":"खोलें ↗"}</span>
       </button>`;
   }).join("");
 
@@ -3420,6 +3388,7 @@ async function openInboxConversation(requestId){
   }
 
   inboxCurrentRequestId=request.id;
+  inboxCurrentRequest=request;
   inboxCurrentOtherUserId=
     request.sender_id===currentUserId
       ? request.recipient_id
@@ -3458,6 +3427,34 @@ async function loadInboxMessages(){
   }
 
   inboxMessagesCache=data||[];
+
+  const statusBox=document.getElementById("inboxConversationStatus");
+  const composer=document.getElementById("inboxMessageForm");
+  const composerInput=document.getElementById("inboxMessageText");
+  const composerButton=composer?.querySelector('button[type="submit"]');
+  const pending=inboxCurrentRequest?.status==="pending";
+  const isRequestRecipient=inboxCurrentRequest?.recipient_id===currentUserId;
+  const canSend=inboxCurrentRequest?.status==="accepted" ||
+    (pending && !isRequestRecipient && inboxMessagesCache.length===0);
+
+  if(statusBox){
+    if(pending && isRequestRecipient){
+      statusBox.innerHTML='<span>यह एक नया संदेश अनुरोध है। उत्तर देने के लिए पहले इसे स्वीकार करें।</span> <button type="button" class="primary-button inbox-accept-inline" id="inboxAcceptCurrent">अनुरोध स्वीकारें</button>';
+      statusBox.querySelector("#inboxAcceptCurrent")?.addEventListener("click",()=>respondInboxRequest(inboxCurrentRequestId,"accepted"));
+    }else if(pending && inboxMessagesCache.length){
+      statusBox.textContent="आपका संदेश अनुरोध भेज दिया गया है। उत्तर मिलने तक प्रतीक्षा करें।";
+    }else if(pending){
+      statusBox.textContent="यह आपकी नई बातचीत है। पहला संदेश लिखकर अनुरोध भेजें।";
+    }else{
+      statusBox.textContent="आपकी निजी बातचीत सुरक्षित है।";
+    }
+  }
+  if(composerInput){
+    composerInput.disabled=!canSend;
+    composerInput.placeholder=canSend?(pending?"अपना पहला निजी संदेश लिखें…":"अपना संदेश लिखें…"):("अनुरोध स्वीकार होने के बाद आप उत्तर दे सकेंगे।");
+  }
+  if(composerButton)composerButton.disabled=!canSend;
+  if(composer)composer.classList.toggle("is-locked",!canSend);
 
   box.innerHTML=inboxMessagesCache.map(m=>`
     <div class="inbox-message ${m.sender_id===currentUserId?"mine":"theirs"}">

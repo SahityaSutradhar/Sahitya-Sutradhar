@@ -1,7 +1,7 @@
-/* सूत्रधार — global refresh worker (20261118-sutradhar-security-offline-1) */
-const BUILD = '20261118-sutradhar-security-offline-1';
+/* सूत्रधार — global refresh worker (20261118-inbox-premium-phase1) */
+const BUILD = '20261118-inbox-premium-phase1';
 const CACHE_PREFIX = 'sutradhar-';
-const CACHE_NAME = `${CACHE_PREFIX}20261118-sutradhar-security-offline-1`;
+const CACHE_NAME = `${CACHE_PREFIX}20261118-inbox-premium-phase1`;
 const PRECACHE_ASSETS = [
   './', './index.html', './mobile-app.html', './mobile-reader.html', './shastriya.html', './admin-bulk-upload.html',
   './styles.css', './mobile-app.css', './mobile-reader.css', './shastriya.css', './admin-bulk-upload.css',

@@ -14,7 +14,7 @@
   <meta name="description" content="सूत्रधार — पढ़ने, लिखने और साहित्य से जुड़ने का स्वतंत्र मंच।">
   <title>सूत्रधार — पढ़ें, लिखें, जुड़ें</title>
   <link rel="manifest" href="manifest.webmanifest?v=20261110-button-recovery-1">
-  <link rel="stylesheet" href="styles.css?v=20261112-literary-design-1">
+  <link rel="stylesheet" href="styles.css?v=20261118-inbox-premium-1">
   <link rel="stylesheet" href="theme-mode-fix.css?v=20261112-literary-design-1">
   <style>
     #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
@@ -389,6 +389,7 @@
         <h2 id="inboxContactName">बातचीत</h2>
       </div>
 
+      <div id="inboxConversationStatus" class="inbox-conversation-status" role="status" aria-live="polite"></div>
       <div id="inboxMessagesList" class="inbox-messages"></div>
 
       <form id="inboxMessageForm" class="inbox-compose">
@@ -600,7 +601,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js?v=20261110-button-recovery-1"></script>
-  <script src="app.js?v=20261112-excerpt-share-preview-1"></script>
+  <script src="app.js?v=20261118-inbox-premium-1"></script>
   <script src="excerpt-share-fix.js?v=20261112-dialog-toplayer-1"></script>
   <script src="mobile-app-enhancements.js?v=20261112-literary-design-1"></script>
   <script>
@@ -618,7 +619,7 @@
 // Global update bootstrap: independent of app.js, so it runs even if app initialization fails.
 (()=>{
  if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
- const BUILD='20261110-button-recovery-1', KEY='ss_applied_build';
+ const BUILD='20261118-inbox-premium-1', KEY='ss_applied_build';
  const reloadOnce=()=>{try{if(sessionStorage.getItem(KEY)!==BUILD){sessionStorage.setItem(KEY,BUILD);location.reload();}}catch(_){}};
  navigator.serviceWorker.addEventListener('controllerchange',reloadOnce);
  navigator.serviceWorker.addEventListener('message',event=>{if(event.data?.type==='SS_APP_UPDATED'&&event.data.build===BUILD)reloadOnce();});
