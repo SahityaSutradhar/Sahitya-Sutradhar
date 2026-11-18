@@ -189,3 +189,23 @@ body.dark .mobile-category-card,body.dark .mobile-horizontal-card,body.dark .mob
 
 /* Sutradhar brand logo update (2026-11-15) */
 .brand-logo-image{width:42px;height:42px;object-fit:contain;display:block;flex:0 0 42px;border-radius:8px}
+
+
+/* सूत्रधार सुरक्षा: पाठ पर पहचान-चिह्न और अनावश्यक कॉपी/प्रिंट नियंत्रण */
+.reader-page{position:relative;isolation:isolate}
+.ss-reader-watermark{position:absolute;inset:8px;z-index:4;pointer-events:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(6,1fr);overflow:hidden;opacity:.13;mix-blend-mode:multiply;user-select:none}
+.ss-reader-watermark span{display:flex;align-items:center;justify-content:center;white-space:nowrap;font:700 10px/1.2 system-ui,sans-serif;color:#8a2432;transform:rotate(-24deg);text-align:center}
+body.dark .ss-reader-watermark{mix-blend-mode:screen;opacity:.10}
+.ss-protected-content{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ss-admin-books{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:15px;background:var(--paper)}
+.ss-admin-books h3{margin:0 0 10px}
+.ss-admin-book-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.ss-admin-book-item a{font-weight:700}
+.ss-admin-books form{display:grid;gap:8px;margin-top:12px}
+.ss-admin-books input[type=file]{max-width:100%}
+.ss-offline-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.ss-offline-tools button{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:10px;padding:9px 12px}
+.ss-offline-library{position:fixed;inset:0;z-index:10000;background:var(--bg);color:var(--ink);padding:18px;overflow:auto}
+.ss-offline-entry{padding:12px;border:1px solid var(--line);border-radius:12px;margin:10px 0;background:var(--paper)}
+.ss-offline-entry button{margin:4px}
+@media print{.reader-page,.reader-body{visibility:hidden!important}.ss-reader-watermark{display:none!important}}

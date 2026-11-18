@@ -1567,6 +1567,23 @@ function anonymousPreview(work){
   }
   const words=body.match(/\S+\s*/g)||[];return {html:formatMarkup(words.slice(0,target).join("")),locked:true};
 }
+
+function applySutradharReaderProtection(user){
+  const page=document.querySelector("#readerDialog .reader-page")||document.querySelector(".reader-page");
+  const body=document.getElementById("readerBody");
+  if(!page||!body)return;
+  page.querySelector(".ss-reader-watermark")?.remove();
+  const identity=(user?.id||currentUserId||"पाठक").toString();
+  const shortId=identity.length>14?identity.slice(0,6)+"…"+identity.slice(-4):identity;
+  const label=`सूत्रधार · ${state.profile?.name||"पाठक"} · ${shortId} · ${new Date().toLocaleDateString("hi-IN")}`;
+  const layer=document.createElement("div");
+  layer.className="ss-reader-watermark";
+  layer.setAttribute("aria-hidden","true");
+  layer.innerHTML=Array.from({length:12},()=>`<span>${escapeHtml(label)}</span>`).join("");
+  page.appendChild(layer);
+  body.classList.add("ss-protected-content");
+}
+
 async function openReader(id){
   const s=state.stories.find(x=>String(x.id)===String(id));if(!s)return;
   if(currentReaderId&&String(currentReaderId)!==String(id))await flushCloudReaderProgress(currentReaderId);
@@ -1584,6 +1601,7 @@ async function openReader(id){
     document.getElementById("readerAuthorAvatar").innerHTML=s.authorAvatar?`<img src="${escapeHtml(s.authorAvatar)}" alt="">`:escapeHtml((s.author||"अ").trim().slice(0,1));
     const previewCover=document.getElementById("readerCoverSlot");previewCover.innerHTML=s.coverUrl?`<img class="cover-thumb" src="${escapeHtml(s.coverUrl)}" alt="कवर">`:`<div class="cover-placeholder">कवर नहीं</div>`;
     document.getElementById("readerBody").innerHTML=preview.html+(preview.html?'<p class="login-preview-prompt">… आगे पढ़ने के लिए खाता बनाएँ या लॉगिन करें।</p>':'<p class="login-preview-prompt">इस भाग को पढ़ने के लिए लॉगिन करें।</p>');
+    applySutradharReaderProtection(null);
     document.getElementById("readerWords").textContent=`रचना में कुल ${wordCount(s.body)} शब्द`;
     document.getElementById("feedbackPanel").classList.add("hidden");
     document.getElementById("editWorkAction")?.classList.add("hidden");document.getElementById("workOwnerAction")?.classList.add("hidden");
@@ -1598,6 +1616,8 @@ async function openReader(id){
   document.getElementById("readerAuthorAvatar").innerHTML=s.authorAvatar?`<img src="${escapeHtml(s.authorAvatar)}" alt="">`:escapeHtml((s.author||"अ").trim().slice(0,1));
   const coverSlot=document.getElementById("readerCoverSlot"); coverSlot.innerHTML=s.coverUrl?`<img class="cover-thumb" src="${escapeHtml(s.coverUrl)}" alt="कवर">`:`<div class="cover-placeholder">कवर नहीं</div>`;
   document.getElementById("readerBody").innerHTML=formatMarkup(s.body);
+  applySutradharReaderProtection(user);
+  window.dispatchEvent(new CustomEvent("sutradhar:reader-opened",{detail:{id:s.id,title:s.title,author:s.author,body:s.body}}));
   document.getElementById("readerMeta").textContent=`लगभग ${minutesFor(s.body)} मिनट`;
   document.getElementById("readerWords").textContent=`रचना में कुल ${wordCount(s.body)} शब्द`;
   document.getElementById("bookmarkButton").textContent=(state.profile.bookmarks||[]).includes(id)?"♥":"♧";
@@ -2644,6 +2664,7 @@ ${!follow && !cannotMessage
 
   document.body.appendChild(d);
   d.showModal();
+  if(window.SutradharAdminBooks?.mount) window.SutradharAdminBooks.mount(d,targetId,user);
 
   d.querySelectorAll("[data-profile-pane]").forEach(tab=>tab.addEventListener("click",()=>{
     const pane=tab.dataset.profilePane;
@@ -3444,6 +3465,7 @@ async function loadInboxMessages(){
       <small>${new Date(m.created_at).toLocaleString("hi-IN")}</small>
     </div>
   `).join("")||'<p class="muted">अभी कोई संदेश नहीं है।</p>';
+  window.dispatchEvent(new CustomEvent("sutradhar:inbox-loaded",{detail:{requestId:inboxCurrentRequestId,messages:inboxMessagesCache}}));
 
   box.scrollTop=box.scrollHeight;
 
@@ -4121,7 +4143,7 @@ document.getElementById("editProfile")?.addEventListener("click",async()=>{const
   // साहित्य सूत्रधार PWA Service Worker
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js?v=20261110-button-recovery-1", {updateViaCache:"none"})
+      navigator.serviceWorker.register("./sw.js?v=20261118-sutradhar-security-offline-1", {updateViaCache:"none"})
         .then(async registration => {
           console.log("साहित्य सूत्रधार PWA तैयार है।", registration.scope);
           try { await registration.update(); } catch (_) {}
