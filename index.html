@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=20261110-button-recovery-1">
   <link rel="stylesheet" href="styles.css?v=20261118-web-premium-1">
   <link rel="stylesheet" href="theme-mode-fix.css?v=20261112-literary-design-1">
-  <link rel="stylesheet" href="site-premium.css?v=20261118-web-premium-1">
+  <link rel="stylesheet" href="site-premium.css?v=20261119-discovery-library-1">
   <style>
     #networkStatus{position:sticky;top:0;z-index:9999;padding:10px 14px;background:#fff1d6;color:#5c1c23;border-bottom:1px solid #d8b978;text-align:center;font-size:14px;font-weight:600}
     #networkStatus[hidden]{display:none}
@@ -102,6 +102,12 @@
         <input id="workSearchInput" type="search" placeholder="कहानी, कविता, लेखक का नाम…" aria-label="रचना या लेखक खोजें">
         <button id="workSearchClear" type="button" class="search-clear" aria-label="खोज मिटाएँ">×</button>
       </div>
+      <div class="discovery-filter-row" aria-label="खोज फ़िल्टर">
+        <label class="discovery-filter"><span>रचना-रूप</span><select id="discoveryFormFilter"><option value="all">सभी रूप</option><option value="गद्य">गद्य</option><option value="पद्य">पद्य</option></select></label>
+        <label class="discovery-filter"><span>भाषा</span><select id="discoveryLanguageFilter"><option value="all">सभी भाषाएँ</option><option value="hi">हिंदी</option><option value="sa">संस्कृत</option><option value="en">English</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option><option value="pa">ਪੰਜਾਬੀ</option><option value="kn">ಕನ್ನಡ</option><option value="ta">தமிழ்</option></select></label>
+        <label class="discovery-filter"><span>क्रम</span><select id="discoverySort"><option value="newest">नवीनतम</option><option value="reads">सबसे अधिक पढ़ी गई</option><option value="title">शीर्षक क्रम</option></select></label>
+      </div>
+      <p id="discoveryFilterStatus" class="discovery-filter-status" aria-live="polite"></p>
     </section>
 
     <section class="section-block">
@@ -405,6 +411,7 @@
     <p class="eyebrow">आपकी किताबें</p>
     <h1>पुस्तकालय</h1>
     <p class="muted">आपकी सेव की गई और बुकमार्क की गई रचनाएँ यहाँ दिखेंगी।</p>
+    <div class="library-reading-stats" id="libraryReadingStats" aria-live="polite"></div>
     <div class="story-list" id="libraryList"></div>
   </section>
 

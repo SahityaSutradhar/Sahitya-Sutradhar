@@ -407,6 +407,16 @@ function renderStories(){
     list=list.filter(s=>[s.title,s.author,s.body,s.type,s.subtype,...(s.categories||[]) ]
       .some(value=>String(value||"").toLocaleLowerCase("hi").includes(query)));
   }
+  const formFilter=document.getElementById("discoveryFormFilter")?.value||"all";
+  const languageFilter=document.getElementById("discoveryLanguageFilter")?.value||"all";
+  const sortMode=document.getElementById("discoverySort")?.value||"newest";
+  if(formFilter!=="all")list=list.filter(s=>String(s.type||"").includes(formFilter));
+  if(languageFilter!=="all")list=list.filter(s=>(s.language||"hi")===languageFilter);
+  if(sortMode==="reads")list.sort((a,b)=>(Number(b.reads)||0)-(Number(a.reads)||0));
+  else if(sortMode==="title")list.sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"hi"));
+  else list.sort((a,b)=>(b.created||0)-(a.created||0));
+  const status=document.getElementById("discoveryFilterStatus");
+  if(status)status.textContent=(query||formFilter!=="all"||languageFilter!=="all"||sortMode!=="newest"||activeCategory!=="सभी")?`फ़िल्टर के अनुसार ${list.length} रचनाएँ`:"";
   document.getElementById("storyCount").textContent=`${list.length} रचनाएँ`;
   document.getElementById("storyList").innerHTML=renderStoryCards(list);
   document.getElementById("emptyState").classList.toggle("hidden",list.length!==0);
@@ -1874,6 +1884,10 @@ function renderLibrary(){
     .map(work=>({work,progress:readerProgressFor(work.id)}))
     .filter(x=>Number(x.progress.updatedAt)>0||Number(x.progress.words)>0||Number(x.progress.page)>0)
     .sort((a,b)=>(Number(b.progress.updatedAt)||0)-(Number(a.progress.updatedAt)||0));
+  const totalWords=progressItems.reduce((sum,item)=>sum+Number(item.progress.words||0),0);
+  const finishedCount=progressItems.filter(item=>readerProgressRatio(item.progress)>=1).length;
+  const stats=document.getElementById("libraryReadingStats");
+  if(stats)stats.innerHTML=progressItems.length?`<div class="library-stat"><strong>${progressItems.length.toLocaleString("hi-IN")}</strong><span>पढ़ना शुरू किया</span></div><div class="library-stat"><strong>${finishedCount.toLocaleString("hi-IN")}</strong><span>पूरी पढ़ी गई</span></div><div class="library-stat"><strong>${totalWords.toLocaleString("hi-IN")}</strong><span>पढ़े शब्द</span></div>`:"";
   const resumeHtml=progressItems.length?`<section class="library-subsection"><h2>पढ़ना जारी रखें</h2><div class="story-list">${progressItems.map(x=>readingProgressCard(x.work,x.progress)).join("")}</div></section>`:"";
   const bookmarksHtml=list.length?`<section class="library-subsection"><h2>आपका पुस्तकालय</h2><div class="story-list">${renderStoryCards(list)}</div></section>`:`<div class="empty-state"><span class="empty-flower">✿</span><h3>आपका पुस्तकालय खाली है</h3><p>किसी रचना को खोलकर बुकमार्क करें। वह यहाँ दिखाई देगी।</p></div>`;
   document.getElementById("libraryList").innerHTML=resumeHtml+bookmarksHtml;
@@ -3939,6 +3953,7 @@ document.getElementById("inboxMessageForm")
   document.getElementById("workSearchClear")?.addEventListener("click",()=>{
     if(workSearchInput){workSearchInput.value="";renderStories();workSearchInput.focus();}
   });
+  ["discoveryFormFilter","discoveryLanguageFilter","discoverySort"].forEach(id=>document.getElementById(id)?.addEventListener("change",renderStories));
   document.querySelectorAll("[data-go]").forEach(b=>{b.addEventListener("click",()=>switchTab(b.dataset.go));b.dataset.ssNavigationBound="1";});
 
 document.getElementById("inboxNotificationsTab")?.addEventListener("click",()=>{switchTab("inbox");openNotifications();});
