@@ -206,3 +206,13 @@ body.dark .empty-state{background:var(--paper)}
 .library-stat strong{display:block;font-size:clamp(19px,4vw,25px);line-height:1.35;color:var(--maroon);font-weight:800;font-variant-numeric:tabular-nums}
 .library-stat span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
 @media(max-width:520px){.discovery-filter{min-width:calc(50% - 8px)}.library-reading-stats{gap:7px}.library-stat{padding:11px 5px}.library-stat span{font-size:10px}}
+
+/* Library search and shelf filtering: responsive, keyboard-friendly controls */
+.library-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(155px,220px);gap:10px;margin:12px 0 4px;align-items:end}
+.library-search{display:flex;align-items:center;gap:8px;min-width:0;padding:0 12px;border:1px solid var(--line);border-radius:13px;background:var(--paper);color:var(--muted)}
+.library-search input{width:100%;min-width:0;border:0;outline:none;background:transparent;color:var(--ink);font:inherit;padding:11px 0}
+.library-search:focus-within,.library-filter select:focus{outline:2px solid color-mix(in srgb,var(--maroon) 35%,transparent);outline-offset:2px}
+.library-filter{display:grid;gap:4px;color:var(--muted);font-size:11px;font-weight:700}
+.library-filter select{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-size:13px}
+.library-filter-status{min-height:1.1em;color:var(--muted);font-size:12px;margin:4px 0 12px}
+@media(max-width:520px){.library-controls{grid-template-columns:1fr;gap:8px}.library-filter{grid-template-columns:80px 1fr;align-items:center}.library-filter select{min-width:0}}

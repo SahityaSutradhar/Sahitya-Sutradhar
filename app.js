@@ -1878,19 +1878,32 @@ function readingProgressCard(work,progress){
 }
 function renderLibrary(){
   const ids=state.profile.bookmarks||[];
-  const list=state.stories.filter(s=>ids.some(id=>String(id)===String(s.id)));
-  const progressItems=state.stories
+  const allBookmarks=state.stories.filter(s=>ids.some(id=>String(id)===String(s.id)));
+  const allProgress=state.stories
     .filter(s=>s.status==="published"&&s.source==="supabase")
     .map(work=>({work,progress:readerProgressFor(work.id)}))
     .filter(x=>Number(x.progress.updatedAt)>0||Number(x.progress.words)>0||Number(x.progress.page)>0)
     .sort((a,b)=>(Number(b.progress.updatedAt)||0)-(Number(a.progress.updatedAt)||0));
-  const totalWords=progressItems.reduce((sum,item)=>sum+Number(item.progress.words||0),0);
-  const finishedCount=progressItems.filter(item=>readerProgressRatio(item.progress)>=1).length;
+  const totalWords=allProgress.reduce((sum,item)=>sum+Number(item.progress.words||0),0);
+  const finishedCount=allProgress.filter(item=>readerProgressRatio(item.progress)>=1).length;
   const stats=document.getElementById("libraryReadingStats");
-  if(stats)stats.innerHTML=progressItems.length?`<div class="library-stat"><strong>${progressItems.length.toLocaleString("hi-IN")}</strong><span>पढ़ना शुरू किया</span></div><div class="library-stat"><strong>${finishedCount.toLocaleString("hi-IN")}</strong><span>पूरी पढ़ी गई</span></div><div class="library-stat"><strong>${totalWords.toLocaleString("hi-IN")}</strong><span>पढ़े शब्द</span></div>`:"";
-  const resumeHtml=progressItems.length?`<section class="library-subsection"><h2>पढ़ना जारी रखें</h2><div class="story-list">${progressItems.map(x=>readingProgressCard(x.work,x.progress)).join("")}</div></section>`:"";
-  const bookmarksHtml=list.length?`<section class="library-subsection"><h2>आपका पुस्तकालय</h2><div class="story-list">${renderStoryCards(list)}</div></section>`:`<div class="empty-state"><span class="empty-flower">✿</span><h3>आपका पुस्तकालय खाली है</h3><p>किसी रचना को खोलकर बुकमार्क करें। वह यहाँ दिखाई देगी।</p></div>`;
-  document.getElementById("libraryList").innerHTML=resumeHtml+bookmarksHtml;
+  if(stats)stats.innerHTML=allProgress.length?`<div class="library-stat"><strong>${allProgress.length.toLocaleString("hi-IN")}</strong><span>पढ़ना शुरू किया</span></div><div class="library-stat"><strong>${finishedCount.toLocaleString("hi-IN")}</strong><span>पूरी पढ़ी गई</span></div><div class="library-stat"><strong>${totalWords.toLocaleString("hi-IN")}</strong><span>पढ़े शब्द</span></div>`:`<div class="library-stat"><strong>0</strong><span>पठन शुरू</span></div><div class="library-stat"><strong>0</strong><span>पूर्ण रचनाएँ</span></div><div class="library-stat"><strong>0</strong><span>पढ़े शब्द</span></div>`;
+  const filter=document.getElementById("libraryShelfFilter")?.value||"all";
+  const query=(document.getElementById("librarySearchInput")?.value||"").trim().toLocaleLowerCase("hi");
+  const matches=(work)=>!query||[work.title,work.author,work.type,work.subtype,...(work.categories||[])].some(value=>String(value||"").toLocaleLowerCase("hi").includes(query));
+  let bookmarks=allBookmarks.filter(matches);
+  let progress=allProgress.filter(item=>matches(item.work));
+  if(filter==="reading")progress=progress.filter(item=>readerProgressRatio(item.progress)<1);
+  if(filter==="completed")progress=progress.filter(item=>readerProgressRatio(item.progress)>=1);
+  if(filter==="bookmarked")progress=[];
+  if(filter==="reading"||filter==="completed")bookmarks=[];
+  const resumeHtml=progress.length?`<section class="library-subsection"><h2>${filter==="completed"?"पूरी पढ़ी गई रचनाएँ":"पढ़ना जारी रखें"}</h2><div class="story-list">${progress.map(x=>readingProgressCard(x.work,x.progress)).join("")}</div></section>`:"";
+  const bookmarksHtml=bookmarks.length?`<section class="library-subsection"><h2>बुकमार्क रचनाएँ</h2><div class="story-list">${renderStoryCards(bookmarks)}</div></section>`:"";
+  const output=resumeHtml+bookmarksHtml;
+  const library=document.getElementById("libraryList");
+  if(library)library.innerHTML=output||`<div class="empty-state"><span class="empty-flower">✿</span><h3>${query?"कोई मेल नहीं मिला":"यह पुस्तकालय अभी खाली है"}</h3><p>${query?"दूसरे शब्द से खोजें या फ़िल्टर बदलें।":"किसी रचना को पढ़ना शुरू करें या बुकमार्क करें; आपकी पठन-प्रगति यहाँ दिखाई देगी।"}</p></div>`;
+  const status=document.getElementById("libraryFilterStatus");
+  if(status)status.textContent=filter==="all"?`${progress.length} पढ़ने की गतिविधियाँ · ${bookmarks.length} बुकमार्क`:`${filter==="reading"?progress.length+bookmarks.length:filter==="completed"?progress.length:bookmarks.length} परिणाम`;
   bindReadButtons();
 }
 
@@ -3954,6 +3967,8 @@ document.getElementById("inboxMessageForm")
     if(workSearchInput){workSearchInput.value="";renderStories();workSearchInput.focus();}
   });
   ["discoveryFormFilter","discoveryLanguageFilter","discoverySort"].forEach(id=>document.getElementById(id)?.addEventListener("change",renderStories));
+  document.getElementById("librarySearchInput")?.addEventListener("input",renderLibrary);
+  document.getElementById("libraryShelfFilter")?.addEventListener("change",renderLibrary);
   document.querySelectorAll("[data-go]").forEach(b=>{b.addEventListener("click",()=>switchTab(b.dataset.go));b.dataset.ssNavigationBound="1";});
 
 document.getElementById("inboxNotificationsTab")?.addEventListener("click",()=>{switchTab("inbox");openNotifications();});

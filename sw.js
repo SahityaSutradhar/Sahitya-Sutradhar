@@ -1,7 +1,7 @@
-/* सूत्रधार — global refresh worker (20261119-discovery-library-phase3) */
-const BUILD = '20261119-discovery-library-phase3';
+/* सूत्रधार — global refresh worker (20261119-library-refine-phase4) */
+const BUILD = '20261119-library-refine-phase4';
 const CACHE_PREFIX = 'sutradhar-';
-const CACHE_NAME = `${CACHE_PREFIX}20261119-discovery-library-phase3`;
+const CACHE_NAME = `${CACHE_PREFIX}20261119-library-refine-phase4`;
 const PRECACHE_ASSETS = [
   './', './index.html', './mobile-app.html', './mobile-reader.html', './shastriya.html', './admin-bulk-upload.html',
   './styles.css', './site-premium.css', './mobile-app.css', './mobile-reader.css', './shastriya.css', './admin-bulk-upload.css',
